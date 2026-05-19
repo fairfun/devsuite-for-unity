@@ -1,0 +1,57 @@
+@import "../Common.uss";
+
+:root {
+    --counter-bg-color: rgba(42, 42, 42, 0.7);
+    --text-value-color: rgb(225, 183, 116);
+    --graph-color-good: rgb(121, 175, 85);
+    --graph-color-bad: rgb(202, 65, 60);
+    --reference-line-color: rgba(202, 65, 60, 0.6);
+}
+
+.panel-root {
+    padding: 8px;
+    flex-direction: column;
+    min-width: 250px;
+    align-self: stretch;
+}
+
+
+.graph-view {
+    height: 80px;
+    width: 100%;
+    margin-bottom: 8px;
+    flex-direction: row;
+    align-items: flex-end;
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.graph-view--last {
+    margin-bottom: 0;
+}
+
+.graph-bar {
+    background-color: var(--graph-color-good);
+}
+
+.reference-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: var(--reference-line-color);
+}
+
+.ff-performance-graph-info {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    -unity-text-align: lower-left;
+    color: var(--text-color);
+    font-size: 10px;
+    -unity-font-style: bold;
+    background-color: rgba(0, 0, 0, 0.6);
+    padding: 1px 4px;
+    border-radius: 3px;
+}

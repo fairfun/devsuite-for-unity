@@ -1,0 +1,19 @@
+{
+    "name": "DevSuite.Examples",
+    "rootNamespace": "",
+    "references": [
+        "DevSuite",
+        "MemoryPack.Unity",
+        "MessagePack.Unity",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

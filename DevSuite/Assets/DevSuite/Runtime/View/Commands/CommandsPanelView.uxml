@@ -1,0 +1,12 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="commands-panel" class="ff-commands-panel">
+        <ui:VisualElement name="categories-container" class="ff-commands-categories">
+            <!-- Categories will be added here dynamically -->
+        </ui:VisualElement>
+        <ui:ScrollView name="commands-scroll-view" class="ff-commands-scroll-view">
+            <ui:VisualElement name="commands-content" class="ff-commands-content">
+                <!-- Concrete commands (groups and commands) will be added here -->
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

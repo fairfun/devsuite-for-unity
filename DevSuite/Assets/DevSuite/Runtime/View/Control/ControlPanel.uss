@@ -1,0 +1,101 @@
+@import "../Common.uss";
+
+.ff-control-panel {
+    flex-direction: row;
+    align-items: center;
+    align-self: stretch;
+    flex-grow: 0;
+    flex-shrink: 0;
+    padding: 4px 4px;
+}
+
+.ff-control-panel.editor {
+
+}
+
+.ff-control-panel.ff-panel.collapsed {
+    background-color: transparent !important;
+    border-color: transparent !important;
+}
+
+.ff-control-panel-btn {
+    font-size: 14px;
+    width: 28px;
+    height: 24px;
+    margin: 0;
+    margin-right: 2px;
+    padding: 0;
+    color: var(--text-color-semi);
+    background-color: transparent;
+    border-width: 0;
+    border-radius: 4px;
+    transition-property: background-color;
+    transition-duration: 0.1s;
+    transition-timing-function: linear;
+}
+
+.ff-control-panel-btn:hover {
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.ff-control-panel-btn.active {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--text-color);
+}
+
+.ff-control-panel-btn.normal {
+    color: var(--text-color);
+}
+
+.ff-control-panel-btn.last-item {
+    margin-right: 0;
+}
+
+.ff-control-panel-btn.first-item {
+    margin-left: 0;
+}
+
+.ff-control-panel-divider {
+    width: 1px;
+    height: 14px;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 0 2px;
+}
+
+.ff-control-panel-version {
+    font-size: 10px;
+    color: var(--text-color-semi);
+    -unity-text-align: middle-center;
+    margin: 0 4px;
+    padding: 0;
+}
+
+.ff-control-panel-btn.error-blink {
+    background-color: rgba(255, 60, 60, 0.5);
+}
+
+.ff-control-panel-btn.warning {
+    background-color: rgba(255, 200, 0, 0.5);
+    transition-duration: 0s;
+}
+
+.ff-control-panel-spacer {
+    flex-grow: 1;
+    justify-content: center;
+    align-items: center;
+}
+
+.ff-control-panel-root {
+    flex-direction: row;
+    align-self: stretch;
+    align-items: center;
+    justify-content: flex-end;
+    flex-grow: 1;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.ff-control-panel-root-left {
+    justify-content: flex-start;
+}

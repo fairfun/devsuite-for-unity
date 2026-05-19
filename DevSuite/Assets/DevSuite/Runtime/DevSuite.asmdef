@@ -1,0 +1,34 @@
+{
+    "name": "DevSuite",
+    "rootNamespace": "",
+    "references": [
+        "MemoryPack.Unity",
+        "MessagePack.Unity",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.cysharp.memorypack",
+            "expression": "",
+            "define": "DEVSUITE_MEMORYPACK"
+        },
+        {
+            "name": "com.unity.nuget.newtonsoft-json",
+            "expression": "",
+            "define": "DEVSUITE_NEWTONSOFT"
+        },
+        {
+            "name": "com.github.messagepack-csharp",
+            "expression": "",
+            "define": "DEVSUITE_MESSAGEPACK"
+        }
+    ],
+    "noEngineReferences": false
+}

@@ -1,0 +1,509 @@
+@import "../Common.uss";
+
+.ff-commands-panel {
+    padding: 0;
+    align-self: stretch;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 200px;
+    color: var(--text-color);
+    font-size: 12px;
+}
+
+.ff-commands-categories {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 0;
+    padding: 6px;
+    padding-bottom: 0;
+}
+
+.ff-commands-category-button {
+    background-color: rgba(54, 54, 54, 0.8);
+    border-radius: 4px;
+    padding: 4px 10px;
+    margin: 2px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.05);
+    border-top-width: 2px;
+    color: var(--text-label-color);
+    font-size: 12px;
+    -unity-font-style: bold;
+    cursor: arrow;
+    transition-duration: 0.1s;
+}
+
+.ff-commands-category-button .unity-label {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin: 0px;
+}
+
+.ff-commands-category-button:hover {
+    background-color: rgba(70, 70, 70, 0.9);
+    color: var(--text-color);
+}
+
+.ff-commands-category-button:active {
+    background-color: rgba(40, 40, 40, 1);
+    scale: 0.98;
+}
+
+.ff-commands-category-button--selected {
+    background-color: rgba(45, 45, 45, 1);
+    color: var(--text-color);
+    border-top-width: 2px;
+    border-top-color: var(--accent-color);
+}
+
+.ff-commands-category-icon {
+    margin-right: 2px;
+    font-size: 11px;
+}
+
+.ff-commands-scroll-view {
+    flex-grow: 1;
+}
+
+.ff-commands-scroll-view .unity-scroll-view__content-container {
+    width: 100%;
+}
+
+.ff-commands-content {
+    padding: 6px;
+}
+
+.ff-commands-group {
+    margin-top: 0;
+    margin-bottom: 4px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.05);
+    padding: 3px;
+}
+
+ .ff-commands-group--last {
+      margin-bottom: 0;
+  }
+
+.ff-commands-group-header {
+    -unity-font-style: bold;
+    padding: 0;
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 1px;
+    -unity-text-align: middle-left;
+}
+
+.ff-commands-group-header-container {
+    height: 22px;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 4px;
+    border-radius: 4px;
+}
+
+.ff-commands-group-toggle-indicator {
+    font-size: 12px;
+    width: 14px;
+    padding: 0;
+    margin: 0px;
+    margin-right: 4px;
+    color: var(--text-label-color);
+    -unity-text-align: middle-left;
+}
+
+.ff-commands-group-description {
+    font-size: 11px;
+    margin: 0;
+    margin-left: 8px;
+    padding: 0;
+    -unity-font-style: normal;
+}
+
+.ff-commands-command-row {
+    flex-direction: row;
+    align-items: center;
+    padding-left: 4px;
+    padding-right: 0;
+    background-color: rgba(255, 255, 255, 0.01);
+    margin-bottom: 3px;
+    border-radius: 4px;
+    height: 28px;
+    min-width: 0;
+}
+
+.ff-commands-command-row--last {
+    margin-bottom: 0;
+}
+
+.ff-commands-command-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 0px;
+    margin-left: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    opacity: 0.7;
+    background-color: transparent;
+    border-width: 0;
+    padding: 0;
+    color: rgb(204, 204, 204);
+    font-size: 14px;
+    cursor: arrow;
+}
+
+.ff-commands-command-icon:hover {
+    opacity: 1;
+    color: var(--text-color);
+}
+
+.ff-commands-command-label {
+    flex-grow: 0;
+    flex-shrink: 1;
+    min-width: 0;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    color: rgb(204, 204, 204);
+    margin: 0px 5px;
+}
+
+.ff-commands-units-container {
+    flex-direction: row;
+    flex-grow: 1;
+    flex-shrink: 1;
+    align-items: center;
+    min-width: 0;
+}
+
+/* Unit Styles */
+.ff-commands-unit {
+    margin-right: 4px;
+    margin-left: 0px;
+}
+
+.ff-commands-unit--last {
+    margin-right: 5px !important;
+}
+
+.ff-commands-unit-button {
+    background-color: rgba(75, 75, 75, 1);
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-color);
+    padding: 0 6px;
+    height: 18px;
+}
+
+.ff-commands-unit-button:hover {
+    background-color: rgba(90, 90, 90, 1);
+}
+
+.ff-commands-unit-button:active {
+    background-color: rgba(55, 55, 55, 1);
+    scale: 0.96;
+}
+
+.ff-commands-unit-text {
+    background-color: rgba(0, 0, 0, 0.2); /* semi-transparent black */
+    border-width: 0;
+    border-radius: 3px;
+    color: var(--text-color);
+    padding: 0;
+    min-width: 0;
+    flex-shrink: 1;
+    min-height: 20px;
+    --unity-cursor-color: rgb(180, 180, 180);
+}
+
+.ff-commands-unit-text--disabled {
+    opacity: 0.5;
+}
+
+.ff-commands-unit-text .unity-text-field__input {
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    padding: 0;
+    font-size: 11px;
+    min-width: 0;
+    -unity-text-align: middle-left !important;
+}
+
+.ff-commands-unit-dropdown {
+    background-color: rgba(0, 0, 0, 0.2); /* semi-transparent black */
+    border-width: 0 !important;
+    border-radius: 3px;
+    min-height: 20px;
+    min-width: 0;
+    flex-shrink: 1;
+}
+
+.ff-commands-unit-dropdown .unity-base-field__input {
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    padding: 0 4px;
+    font-size: 11px;
+    color: var(--text-color);
+}
+
+.ff-commands-unit-dropdown .unity-base-popup-field__text {
+    color: var(--text-color);
+    margin-right: 4px;
+}
+
+.ff-commands-unit-dropdown .unity-base-popup-field__arrow {
+    -unity-background-image-tint-color: rgb(255, 255, 255);
+}
+
+/* Force hide any focus rings or background images on ALL slider components */
+.ff-commands-unit-slider *,
+.ff-commands-unit-slider *:focus,
+.ff-commands-unit-slider *:active,
+.ff-commands-unit-slider *:hover {
+    background-image: none !important;
+    border-color: transparent !important;
+    --unity-focus-color: transparent !important;
+}
+
+.ff-commands-unit-slider {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    min-height: 20px !important;
+    align-self: center;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.ff-commands-unit-slider .unity-base-slider__input,
+.ff-commands-unit-slider .unity-base-slider__drag-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 100% !important;
+    background-color: transparent !important;
+    min-width: 0 !important;
+}
+
+.ff-commands-unit-slider .unity-base-slider__tracker {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 2px !important;
+    height: 4px !important;
+    position: absolute !important;
+    top: 50% !important;
+    margin-top: -2px !important;
+    left: 0 !important;
+    right: 0 !important;
+}
+
+.ff-commands-unit-slider .unity-base-slider__dragger {
+    background-color: rgb(204, 204, 204) !important;
+    border-radius: 4px !important;
+    width: 8px !important;
+    height: 16px !important;
+    position: absolute !important;
+    top: 50% !important;
+    margin-top: -8px !important;
+}
+
+.ff-commands-unit-slider .unity-base-slider__dragger:focus,
+.ff-commands-unit-slider .unity-base-slider__dragger:active,
+.ff-commands-unit-slider .unity-base-slider__dragger:hover,
+.ff-commands-unit-slider .unity-base-field__input:focus .unity-base-slider__dragger,
+.ff-commands-unit-slider .unity-base-slider__input:focus .unity-base-slider__dragger {
+    background-image: none !important;
+    -unity-background-image-tint-color: transparent !important;
+    border-width: 0 !important;
+    background-color: rgb(255, 255, 255) !important;
+}
+
+.ff-commands-unit-toggle {
+    margin-right: 3px;
+    padding: 0;
+    min-height: 20px;
+}
+
+.ff-commands-unit-toggle .unity-toggle__input {
+    margin: 0;
+    padding: 0;
+}
+
+.ff-commands-unit-toggle .unity-toggle__checkmark {
+    background-image: none;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.08); /* Persistent background */
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    justify-content: center;
+    align-items: center;
+    display: flex; /* Ensure it stays visible */
+    width: 18px;
+    height: 18px;
+    margin: 0;
+}
+
+.ff-commands-unit-toggle:checked .unity-toggle__checkmark {
+    background-image: none;
+}
+
+.ff-commands-unit-toggle-icon {
+    color: var(--text-color); /* Check color moved to the tick itself */
+    font-size: 13px;
+    -unity-font-style: bold;
+    padding: 0;
+    margin: 0;
+    display: none;
+    text-overflow: clip;
+}
+
+.ff-commands-unit-toggle:checked .ff-commands-unit-toggle-icon {
+    display: flex;
+}
+
+.ff-commands-unit-nullable-container {
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(119, 119, 119);
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+
+/* Dropdown Popup Menu Styling */
+.unity-base-dropdown,
+.unity-base-dropdown *,
+.unity-base-dropdown-field__container,
+.unity-base-dropdown-field__container * {
+    border-width: 0 !important;
+}
+
+.unity-base-dropdown,
+.unity-base-dropdown-field__container {
+    background-color: transparent !important;
+}
+
+.unity-base-dropdown__container-inner {
+    background-color: rgb(36, 36, 36) !important;
+    border-radius: 4px !important;
+}
+
+.unity-base-dropdown .unity-scroll-view {
+    background-color: rgb(36, 36, 36) !important;
+}
+
+.unity-base-dropdown__item {
+    background-color: transparent !important;
+    padding: 2px 4px !important;
+}
+
+.unity-base-dropdown__item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.unity-base-dropdown__label {
+    color: var(--text-color) !important;
+    font-size: 11px !important;
+}
+
+.unity-base-dropdown__item:hover .unity-base-dropdown__label {
+    color: rgb(255, 255, 255) !important;
+}
+
+/* Ensure the checkmark/radio is visible and bright */
+.unity-base-dropdown__checkmark {
+    -unity-background-image-tint-color: rgb(255, 255, 255) !important;
+    width: 12px !important;
+    height: 12px !important;
+}
+
+.unity-base-dropdown__header,
+.unity-base-dropdown__title {
+    display: none !important;
+}
+
+.ff-commands-unit-nullable-toggle {
+    margin-right: 2px;
+    margin-left: 0;
+    padding-left: 0;
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+
+.ff-tooltip {
+    position: absolute;
+    background-color: rgb(42, 42, 42);
+    color: rgb(238, 238, 238);
+    padding: 6px 10px;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgb(68, 68, 68);
+    font-size: 13px;
+    display: none;
+    max-width: 300px;
+    white-space: normal;
+}
+
+.ff-commands-filter-panel {
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(36, 36, 36, 0.6);
+    border-radius: 4px;
+    padding: 0px 5px;
+    margin: 2px;
+    margin-left: 0px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.ff-commands-filter-icon {
+    color: var(--text-label-color);
+    font-size: 11px;
+    margin-right: 1px;
+}
+
+.ff-commands-filter-input {
+    background-color: transparent;
+    border-width: 0;
+    color: rgb(255, 255, 255);
+    padding: 0;
+    min-width: 10px;
+    height: 16px;
+    --unity-cursor-color: rgb(180, 180, 180);
+}
+
+.ff-commands-filter-input .unity-text-field__input {
+    background-color: transparent;
+    border-width: 0;
+    padding: 0;
+    color: var(--text-color);
+    font-size: 12px;
+}
+
+.ff-commands-filter-clear-button {
+    background-color: transparent;
+    border-width: 0;
+    color: var(--text-label-color);
+    font-size: 12px;
+    min-width: 0;
+    width: 10px;
+    height: 16px;
+    margin-left: 2px;
+    padding: 0;
+}
+
+.ff-commands-filter-clear-button .unity-button {
+    background-color: transparent;
+    border-width: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.ff-commands-filter-clear-button:hover {
+    color: rgb(221, 221, 221);
+}
+
+.ff-commands-filter-clear-button:active {
+    color: rgb(255, 255, 255);
+}

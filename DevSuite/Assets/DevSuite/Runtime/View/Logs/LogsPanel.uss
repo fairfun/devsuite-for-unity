@@ -1,0 +1,199 @@
+@import "../Common.uss";
+
+:root {
+    --toolbar-bg: rgba(38, 38, 38, 0.5);
+    --text-color: rgb(210, 210, 210);
+    --divider-color: rgba(51, 51, 51, 0.8);
+    --item-hover-bg: rgba(255, 255, 255, 0.03);
+}
+
+.logs-panel-container {
+    flex-grow: 1;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--text-color);
+    font-size: 12px;
+    border-radius: var(--panel-border-radius);
+}
+
+.logs-toolbar {
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 6px;
+    background-color: var(--toolbar-bg);
+    border-bottom-width: 0px;
+    border-bottom-color: var(--border-color);
+}
+
+.logs-filter-container {
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(36, 36, 36, 0.6);
+    border-radius: 4px;
+    padding: 4px 5px;
+    margin: 2px 0;
+    margin-right: 4px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.05);
+    flex-grow: 1;
+}
+
+.logs-filter-icon {
+    color: var(--text-label-color);
+    font-size: 11px;
+    padding: 0;
+    margin: 0;
+    margin-right: 2px;
+}
+
+.logs-filter-field {
+    flex-grow: 1;
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    padding: 0;
+    margin: 0;
+    height: 16px;
+    --unity-cursor-color: rgb(180, 180, 180);
+}
+
+.logs-filter-field .unity-base-text-field__input {
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    padding: 0;
+    color: rgb(255, 255, 255);
+    font-size: 12px;
+}
+
+
+.logs-regex-btn {
+    margin-right: 8px;
+}
+
+.logs-severity-btn {
+    margin-left: 2px;
+    padding: 0 8px;
+    height: 24px;
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    border-radius: 4px;
+    color: rgb(136, 136, 136);
+    flex-direction: row;
+    align-items: center;
+    font-size: 13px;
+}
+
+.logs-severity-btn.active {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: rgb(255, 255, 255);
+}
+
+.logs-severity-btn.ordinary.active { color: rgb(128, 200, 255); }
+.logs-severity-btn.warning.active { color: rgb(255, 200, 0); }
+.logs-severity-btn.error.active { color: rgb(255, 100, 100); }
+
+.logs-icon-btn {
+    font-size: 14px;
+    width: 28px;
+    height: 24px;
+    margin-left: 2px;
+    padding: 0;
+    color: var(--text-label-color);
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    border-radius: 4px;
+}
+
+.logs-icon-btn:hover {
+    color: rgb(255, 255, 255);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.clear-btn {
+    margin-right: 2px;
+}
+
+.logs-list-view {
+    flex-grow: 1;
+    min-height: 0px;
+}
+
+.logs-list-view .unity-scroll-view__content-container {
+    justify-content: flex-start;
+    width: 100%;
+}
+
+.log-item-container {
+    flex-direction: column;
+    padding: 0;
+    padding-right: 2px;
+    padding-left: 1px;
+    border-bottom-width: 0px;
+    border-bottom-color: var(--divider-color);
+    transition-duration: 0.1s;
+}
+
+.log-item-container.last-item {
+    padding-bottom: 2px;
+}
+
+.log-item-container.hover-active {
+    background-color: var(--item-hover-bg);
+}
+
+.log-item-header {
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.log-item-message {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    white-space: normal;
+    padding: 0;
+    margin: 0;
+    margin-top: 4px;
+    margin-right: 2px;
+}
+
+.log-item-time {
+    color: rgb(136, 136, 136);
+    margin: 0px;
+    padding: 0px;
+    margin-right: 4px;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.log-item-copy-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    font-size: 12px;
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    color: rgb(102, 102, 102);
+    margin: 0px;
+}
+
+.log-item-copy-btn:hover {
+    color: rgb(255, 255, 255);
+}
+
+.log-item-callstack {
+    white-space: normal;
+    flex-shrink: 1;
+    min-width: 0;
+    color: rgb(136, 136, 136);
+    margin-top: 0px;
+    margin-left: 4px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-left: 10px;
+    border-left-width: 2px;
+    border-left-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Scrollbar styles removed, using Common.uss */

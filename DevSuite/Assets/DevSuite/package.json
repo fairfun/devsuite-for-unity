@@ -1,0 +1,15 @@
+{
+  "name": "com.ff.devsuite",
+  "version": "0.1.0",
+  "displayName": "DevSuite",
+  "description": "A suite of custom editor and runtime windows for making troubleshooting easier",
+  "unity": "2022.3",
+  "keywords": [
+    "debug",
+    "troubleshooting",
+    "utility",
+    "tool",
+    "custom"
+  ],
+  "license": "MIT"
+}

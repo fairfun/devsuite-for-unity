@@ -1,0 +1,90 @@
+:root {
+    --panel-bg-color: rgba(40, 40, 40, 0.95); /* is overwritten at DevSuitePanelUI */
+    --panel-border-color: rgba(255, 255, 255, 0.25); /* is overwritten at DevSuitePanelUI */
+    --panel-border-width: 1px;
+    --panel-border-radius: 8px;
+    --text-color: rgb(220, 220, 220);
+    --text-label-color: rgb(170, 170, 170);
+    --text-color-semi: rgba(220, 220, 220, 0.5);
+    --accent-color: rgb(128, 200, 255);
+}
+
+.ff-panel {
+    background-color: var(--panel-bg-color);
+    color: var(--text-color);
+    border-width: var(--panel-border-width) !important;
+    border-color: var(--panel-border-color) !important; 
+    border-radius: var(--panel-border-radius);
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-text-generator: standard;
+}
+
+.ff-panel Label,
+.ff-panel .unity-label,
+.ff-panel .unity-text-field__input {
+    color: var(--text-color);
+}
+
+.ff-panel.editor,
+.editor .ff-panel {
+    background-color: transparent !important;
+    border-width: 0 !important;
+    border-radius: 0 !important;
+}
+
+.unity-light-theme .ff-panel.editor,
+.unity-light-theme .editor .ff-panel,
+.light-theme .ff-panel.editor,
+.light-theme.ff-panel.editor,
+.editor.light-theme .ff-panel {
+    background-color: var(--panel-bg-color) !important;
+    border-width: var(--panel-border-width) !important;
+    border-color: var(--panel-border-color) !important;
+    border-radius: var(--panel-border-radius) !important;
+}
+
+/* Scrollbar styling */
+.unity-scroller {
+    width: 12px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.02);
+    margin: 1px;
+}
+
+.unity-scroller__low-button,
+.unity-scroller__high-button {
+    height: 0;
+    width: 0;
+    opacity: 0;
+    display: none;
+}
+
+.unity-scroller > .unity-base-slider {
+    margin: 0;
+}
+
+.unity-base-slider__tracker {
+    background-color: transparent;
+    border-width: 0;
+}
+
+.unity-base-slider__dragger {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    width: 9px;
+    left: 2px;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    border-width: 0;
+    transition-property: background-color;
+    transition-duration: 0.2s;
+}
+
+.unity-base-slider__dragger:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.unity-base-slider__dragger:active {
+    background-color: rgba(255, 255, 255, 0.3);
+}

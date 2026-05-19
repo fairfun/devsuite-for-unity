@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="logs-panel-root" class="logs-panel-container">
+        <ui:VisualElement class="logs-toolbar" style="flex-direction: row;">
+            <ui:VisualElement class="logs-filter-container">
+                <ui:Label text="&#xf0b0;" class="logs-filter-icon"/>
+                <ui:TextField name="filterField" class="logs-filter-field"/>
+            </ui:VisualElement>
+            <ui:Button name="regexButton" text=".*" class="logs-severity-btn logs-regex-btn"/>
+            <ui:Button name="ordinaryButton" class="logs-severity-btn ordinary"/>
+            <ui:Button name="warningButton" class="logs-severity-btn warning"/>
+            <ui:Button name="errorButton" class="logs-severity-btn error"/>
+            <ui:Button name="copyButton" class="logs-icon-btn"/>
+            <ui:Button name="saveButton" class="logs-icon-btn"/>
+            <ui:Button name="folderButton" class="logs-icon-btn"/>
+            <ui:Button name="clearButton" class="logs-icon-btn clear-btn"/>
+        </ui:VisualElement>
+        <ui:ScrollView name="logsScrollView" class="logs-list-view"/>
+    </ui:VisualElement>
+</ui:UXML>

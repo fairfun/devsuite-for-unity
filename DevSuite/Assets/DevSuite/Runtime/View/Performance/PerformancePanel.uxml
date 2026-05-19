@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="PerformancePanel.uss" />
+    <ui:VisualElement name="panel-root" class="panel-root">
+        <ui:VisualElement name="graphs-container" class="graphs-container">
+            <!-- Bars will be added programmatically -->
+        </ui:VisualElement>
+        <ui:VisualElement name="labels-container" class="labels-container">
+            <!-- Counters will be added programmatically -->
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
