@@ -1375,7 +1375,7 @@ namespace Ff.DevSuite
             return _getValuesProviderCache.Get(type);
         }
 
-        private struct AdapterChainStepTransition
+        private readonly struct AdapterChainStepTransition : IEquatable<AdapterChainStepTransition>
         {
             public Type From { get; }
             public Type To { get; }
@@ -1385,9 +1385,24 @@ namespace Ff.DevSuite
                 From = from;
                 To = to;
             }
+
+            public bool Equals(AdapterChainStepTransition other)
+            {
+                return From == other.From && To == other.To;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is AdapterChainStepTransition other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(From, To);
+            }
         }
 
-        private struct AdapterChainStep
+        private readonly struct AdapterChainStep
         {
             public AdapterChainStepTransition Transition { get; }
             public CommandValueAdapter Adapter { get; }
@@ -1747,9 +1762,9 @@ namespace Ff.DevSuite
         {
             while (true)
             {
-                foreach (var provider in PerformancePanelProviders)
+                for (var i = 0; i < PerformancePanelProviders.Count; i++) // foreach here causes allocations
                 {
-                    provider.Process();
+                    PerformancePanelProviders[i].Process();
                 }
 
                 OnEveryFrameDispatcher.Dispatch();
@@ -1900,16 +1915,31 @@ namespace Ff.DevSuite
         }
     }
 
-    internal struct CategoryKey
+    internal struct CategoryKey : IEquatable<CategoryKey>
     {
         public string Id;
 
         public CategoryKey(string id) {
             Id = id;
         }
+
+        public bool Equals(CategoryKey other)
+        {
+            return Id == other.Id;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is CategoryKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Id != null ? Id.GetHashCode() : 0);
+        }
     }
 
-    internal struct GroupKey
+    internal struct GroupKey : IEquatable<GroupKey>
     {
         public string Id;
         public string CategoryId;
@@ -1919,9 +1949,24 @@ namespace Ff.DevSuite
             Id = id;
             CategoryId = categoryId;
         }
+
+        public bool Equals(GroupKey other)
+        {
+            return Id == other.Id && CategoryId == other.CategoryId;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is GroupKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Id, CategoryId);
+        }
     }
 
-    internal struct CommandKey
+    internal struct CommandKey : IEquatable<CommandKey>
     {
         public string Id;
         public string GroupId;
@@ -1934,6 +1979,21 @@ namespace Ff.DevSuite
             GroupId = groupId;
             CategoryId = categoryId;
             Instance = instance;
+        }
+
+        public bool Equals(CommandKey other)
+        {
+            return Id == other.Id && GroupId == other.GroupId && CategoryId == other.CategoryId && Equals(Instance, other.Instance);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is CommandKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Id, GroupId, CategoryId, Instance);
         }
     }
 

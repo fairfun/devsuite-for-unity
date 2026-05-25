@@ -51,33 +51,38 @@ namespace Ff.DevSuite
         private static void PlayerPrefs_DeleteAll() => PlayerPrefs.DeleteAll();
 
 #if !UNITY_WEBGL || UNITY_EDITOR
+        private static string _cachingPath; // to avoid allocations of calling Caching.currentCacheForWriting.path
         [CommandGroup(GroupData), Command(DisplayName = "Asset Bundles (Caching)"), CommandValue(nameof(AssetBundles))]
-        private static string AssetBundles => Caching.currentCacheForWriting.path;
+        private static string AssetBundles => _cachingPath ??= Caching.currentCacheForWriting.path;
         [CommandGroup(GroupData), CommandButton(nameof(AssetBundles), Title = "Clear", Flex = 0f, Color = ColorRed)]
         private static void AssetBundles_ClearCache() => Caching.ClearCache();
         [CommandGroup(GroupData), CommandButton(nameof(AssetBundles), Title = "Open", Flex = 0f)]
         private static void AssetBundles_Open() => Application.OpenURL($"file://{AssetBundles}");
 #endif
 
+        private static string _persistentDataPath; // to avoid allocations of calling Application.persistentDataPath
         [CommandGroup(GroupData), CommandValue(nameof(Persistent))]
-        private static string Persistent => Application.persistentDataPath;
+        private static string Persistent => _persistentDataPath ??= Application.persistentDataPath;
         [CommandGroup(GroupData), CommandButton(nameof(Persistent), Title = "Clear", Flex = 0f, Color = ColorRed)]
         private static void PersistentDataPath_Delete() => Directory.Delete(Persistent, true);
         [CommandGroup(GroupData), CommandButton(nameof(Persistent), Title = "Open", Flex = 0f)]
         private static void PersistentDataPath_Open() => Application.OpenURL($"file://{Persistent}");
 
+        private static string _dataPath; // to avoid allocations of calling Application.dataPath
         [CommandGroup(GroupData), CommandValue(nameof(Data))]
-        private static string Data => Application.dataPath;
+        private static string Data => _dataPath ??= Application.dataPath;
         [CommandGroup(GroupData), CommandButton(nameof(Data), Title = "Open", Flex = 0f)]
         private static void DataPath_Open() => Application.OpenURL($"file://{Data}");
 
+        private static string _streamingAssetsPath; // to avoid allocations of calling Application.streamingAssetsPath
         [CommandGroup(GroupData), CommandValue(nameof(Streaming))]
-        private static string Streaming => Application.streamingAssetsPath;
+        private static string Streaming => _streamingAssetsPath ??= Application.streamingAssetsPath;
         [CommandGroup(GroupData), CommandButton(nameof(Streaming), Title = "Open", Flex = 0f)]
         private static void StreamingAssetsPath_Open() => Application.OpenURL($"file://{Streaming}");
 
+        private static string _temporaryCachePath; // to avoid allocations of calling Application.temporaryCachePath
         [CommandGroup(GroupData), CommandValue(nameof(Temporary))]
-        private static string Temporary => Application.temporaryCachePath;
+        private static string Temporary => _temporaryCachePath ??= Application.temporaryCachePath;
         [CommandGroup(GroupData), CommandButton(nameof(Temporary), Title = "Open", Flex = 0f)]
         private static void TemporaryCachePath_Open() => Application.OpenURL($"file://{Temporary}");
 

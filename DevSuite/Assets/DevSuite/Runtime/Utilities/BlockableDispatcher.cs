@@ -13,12 +13,20 @@ namespace Ff.DevSuite
             _action = action;
         }
 
+        private bool _needDispatch;
+        private bool _isSubscribed;
+
         public void Dispatch()
         {
-            Reset();
+            _needDispatch = false;
             if (_block.Value)
             {
-                _block.OnChanged += HandleBlockChanged;
+                if (!_isSubscribed)
+                {
+                    _block.OnChanged += HandleBlockChanged;
+                    _isSubscribed = true;
+                }
+                _needDispatch = true;
                 return;
             }
             _action?.Invoke();
@@ -31,11 +39,16 @@ namespace Ff.DevSuite
                 return;
             }
 
-            Dispatch();
+            if (_needDispatch)
+            {
+                Dispatch();
+            }
         }
 
         public void Reset()
         {
+            _needDispatch = false;
+            _isSubscribed = false;
             _block.OnChanged -= HandleBlockChanged;
         }
     }

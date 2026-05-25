@@ -297,8 +297,18 @@ namespace Ff.DevSuite
             return _getReturnTypeCache[member];
         }
 
+        private static LazyCache<Type, string, PropertyInfo> _getTypePropertyCache;
+        public static PropertyInfo GetTypeProperty(Type type, string name)
+        {
+            _getTypePropertyCache ??= new(
+                (t, n) => t.GetProperty(n, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+            );
+            return _getTypePropertyCache[type, name];
+        }
+
         public static void InvalidateCache()
         {
+            _getTypePropertyCache?.Clear();
             _getReturnTypeCache?.Clear();
             _getCustomAttributesCache?.Clear();
             _getAllInheritedClassesCache?.Clear();
@@ -366,7 +376,8 @@ namespace Ff.DevSuite
             ? Application.targetFrameRate
             : DisplayFrameRate;
 
-        internal static double DisplayFrameRate =>
+        private static double? _refreshRate; // cached to avoid allocations in Screen.mainWindowDisplayInfo
+        internal static double DisplayFrameRate => _refreshRate ??=
 #if UNITY_EDITOR || UNITY_STANDALONE
             Screen.mainWindowDisplayInfo.refreshRate.value;
 #else

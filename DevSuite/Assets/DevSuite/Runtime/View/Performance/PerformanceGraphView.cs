@@ -1,5 +1,6 @@
 using Ff.DevSuite.Performance;
 using System;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -41,6 +42,8 @@ namespace Ff.DevSuite.View
             generateVisualContent += OnGenerateVisualContent;
         }
 
+        private StringBuilder _labelStringBuilder = new();
+        private (double? val, string str) _referenceValueCached;
         internal void AddValue(BaseGraphDataProvider.DataPoint point)
         {
             _dataPointsBuffer[_dataPointsHead] = point;
@@ -59,16 +62,38 @@ namespace Ff.DevSuite.View
                 var average = point.AverageValue;
                 var reference = point.ReferenceValue;
 
-                var label = $"{_dataProvider.Label}";
+                _labelStringBuilder.Clear();
+                _labelStringBuilder.Append(_dataProvider.Label);
                 if (reference != null)
                 {
-                    label += $" / {reference:0.0} {_dataProvider.UnitName}";
+                    _labelStringBuilder.Append(" / ");
+                    if (_referenceValueCached.val != reference)
+                        _referenceValueCached = (reference, reference.Value.ToString("0.0"));
+                    _labelStringBuilder.Append(_referenceValueCached.str);
+                    _labelStringBuilder.Append(' ');
+                    _labelStringBuilder.AppendLine(_dataProvider.UnitName);
+                }
+                else
+                {
+                    _labelStringBuilder.Append('\n');
                 }
 
-                label += $"\nMin: {min:0.0} {_dataProvider.UnitName}";
-                label += $"\nAvg: {average:0.0} {_dataProvider.UnitName}";
-                label += $"\nMax: {max:0.0} {_dataProvider.UnitName}";
-                _infoLabel.text = label;
+                _labelStringBuilder.Append("Min: ");
+                _labelStringBuilder.Append(min.ToString("0.0"));
+                _labelStringBuilder.Append(' ');
+                _labelStringBuilder.AppendLine(_dataProvider.UnitName);
+
+                _labelStringBuilder.Append("Avg: ");
+                _labelStringBuilder.Append(average.ToString("0.0"));
+                _labelStringBuilder.Append(' ');
+                _labelStringBuilder.AppendLine(_dataProvider.UnitName);
+
+                _labelStringBuilder.Append("Max: ");
+                _labelStringBuilder.Append(max.ToString("0.0"));
+                _labelStringBuilder.Append(' ');
+                _labelStringBuilder.AppendLine(_dataProvider.UnitName);
+
+                _infoLabel.text = _labelStringBuilder.ToString();
             }
 
             MarkDirtyRepaint();

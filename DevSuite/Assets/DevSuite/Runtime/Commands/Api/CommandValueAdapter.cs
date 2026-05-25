@@ -653,7 +653,7 @@ namespace Ff.DevSuite.Commands
                 {
                     return null;
                 }
-                return objSource.GetType().GetProperty(nameof(SavedPrefsProperty<int>.Value)).GetValue(objSource);
+                return DevSuiteUtils.GetTypeProperty(objSource.GetType(), nameof(SavedPrefsProperty<int>.Value)).GetValue(objSource);
             }
         }
 
@@ -675,7 +675,7 @@ namespace Ff.DevSuite.Commands
 
             public override object Convert(object objSource, Type typeDestination, object objDestination)
             {
-                objDestination.GetType().GetProperty(nameof(SavedPrefsProperty<int>.Value)).SetValue(objDestination, objSource);
+                DevSuiteUtils.GetTypeProperty(objDestination.GetType(), nameof(SavedPrefsProperty<int>.Value)).SetValue(objDestination, objSource);
                 return objDestination;
             }
         }
@@ -855,7 +855,7 @@ namespace Ff.DevSuite.Commands
                 {
                     return null;
                 }
-                return objSource.GetType().GetProperty("Value").GetValue(objSource);
+                return DevSuiteUtils.GetTypeProperty(objSource.GetType(), nameof(Lazy<int>.Value)).GetValue(objSource);
             }
         }
     }

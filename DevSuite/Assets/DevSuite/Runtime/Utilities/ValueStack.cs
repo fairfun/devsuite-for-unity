@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Ff.DevSuite
 {
@@ -78,7 +77,7 @@ namespace Ff.DevSuite
             }
         }
 
-        public T Value => _values.Count <= 0 ? default : _values.Last().Value.Value;
+        public T Value => _values.Count <= 0 ? default : _values.Values[^1].Value;
 
         private void DispatchChanged()
         {
