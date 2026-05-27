@@ -75,7 +75,7 @@
 There are several ways to use DevSuite depending on your needs:
 
 ### 1. Runtime UI (Simplest)
-Add a <a href="DevSuite/Assets/DevSuite/Runtime/View/Panel/DevSuitePanelUI.cs"><code>DevSuitePanelUI</code></a> component to a persistent GameObject in your scene. This automatically initializes the suite and provides an overlay to access all tools during gameplay.
+Add an instance of <a href="DevSuite/Assets/DevSuite/Runtime/DevSuitePanel.prefab"><code>DevSuitePanel.prefab</code></a> to your scene. This automatically initializes the suite and provides an overlay to access all tools during gameplay, as long as <strong>Auto Initialize</strong> is set to true. Some panel settings are available under the <strong>Settings</strong> section of the prefab instance.
 
 Open the example scene [`DevSuite/Assets/DevSuite/Examples/ExampleAutoInitialization.unity`](DevSuite/Assets/DevSuite/Examples/ExampleAutoInitialization.unity) to see this setup in action.
 
