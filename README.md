@@ -66,9 +66,9 @@
    ```text
    https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite
    ```
-   To pin a specific version, append the tag (e.g. `#0.1.0`):
+   To pin a specific version, append the tag (e.g. `#0.1.1`):
    ```text
-   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.1.0
+   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.1.1
    ```
 ## Getting Started
 
