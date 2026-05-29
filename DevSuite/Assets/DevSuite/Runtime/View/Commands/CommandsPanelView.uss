@@ -31,12 +31,17 @@
     -unity-font-style: bold;
     cursor: arrow;
     transition-duration: 0.1s;
+    height: 28px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .ff-commands-category-button .unity-label {
     padding-top: 0;
     padding-bottom: 0;
-    margin: 0px;
+    margin: 0;
 }
 
 .ff-commands-category-button:hover {
@@ -450,17 +455,23 @@
     align-items: center;
     background-color: rgba(36, 36, 36, 0.6);
     border-radius: 4px;
-    padding: 0px 5px;
+    padding: 0 5px;
     margin: 2px;
     margin-left: 0px;
     border-width: 1px;
     border-color: rgba(255, 255, 255, 0.05);
+    height: 28px;
+    box-sizing: border-box;
 }
 
 .ff-commands-filter-icon {
     color: var(--text-label-color);
-    font-size: 11px;
+    font-size: 10px;
     margin-right: 1px;
+    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    -unity-text-align: middle-center;
 }
 
 .ff-commands-filter-input {
