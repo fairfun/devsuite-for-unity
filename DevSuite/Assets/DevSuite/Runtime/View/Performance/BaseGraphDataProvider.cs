@@ -6,7 +6,7 @@ namespace Ff.DevSuite.Performance
     {
         public const int CounterLength = 100;
 
-        internal NumberCounter<double> _counter = new(CounterLength);
+        internal NumberCounterDouble _counter = new(CounterLength);
         public virtual float? ReferenceValueColorImpact => 1.5f;
         internal event Action<DataPoint> OnUpdate;
         internal abstract string Label { get; }
@@ -16,7 +16,8 @@ namespace Ff.DevSuite.Performance
         {
             var currentValue = GetCurrentValue();
             _counter.Add(currentValue);
-            OnUpdate?.Invoke(new DataPoint(currentValue, GetReferenceValue(), _counter.AverageOrDefault(), _counter.MinOrDefault(), _counter.MaxOrDefault(), ReferenceValueColorImpact));
+            var stats = _counter.GetStats();
+            OnUpdate?.Invoke(new DataPoint(currentValue, GetReferenceValue(), stats.Average, stats.Min, stats.Max, ReferenceValueColorImpact));
         }
 
         public virtual void Dispose()
