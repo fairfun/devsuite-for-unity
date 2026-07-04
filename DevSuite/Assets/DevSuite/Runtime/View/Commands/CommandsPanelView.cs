@@ -191,6 +191,7 @@ namespace Ff.DevSuite.View
 
                     var filterInput = new TextField();
                     filterInput.AddToClassList("ff-commands-filter-input");
+                    DevSuiteUtils.SetupInputFieldFocus(filterInput);
                     Button clearFilterButton = null;
                     Action<string> updateClearFilterVisibility = value =>
                     {
@@ -640,6 +641,7 @@ namespace Ff.DevSuite.View
                     // Default TextField representation
                     var field = new TextField();
                     field.AddToClassList("ff-commands-unit-text");
+                    DevSuiteUtils.SetupInputFieldFocus(field);
                     if (command.HeightMultiplier > 1)
                     {
                         field.multiline = true;

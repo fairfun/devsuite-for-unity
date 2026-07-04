@@ -525,6 +525,49 @@ namespace Ff.DevSuite
                    (e.parent == null || IsVisible(e.parent));
         }
 
+        public static void SetupInputFieldFocus(TextField textField)
+        {
+            textField.focusable = false;
+            textField.tabIndex = -1;
+
+            void ConfigureTextInput(VisualElement input)
+            {
+                if (input != null)
+                {
+                    input.tabIndex = -1;
+                    input.focusable = false;
+                }
+            }
+
+            var textInput = textField.Q("unity-text-input");
+            if (textInput != null)
+            {
+                ConfigureTextInput(textInput);
+            }
+            else
+            {
+                textField.RegisterCallback<AttachToPanelEvent>(evt =>
+                {
+                    ConfigureTextInput(textField.Q("unity-text-input"));
+                });
+            }
+
+            textField.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                textField.focusable = true;
+                var input = textField.Q("unity-text-input");
+                input.focusable = true;
+            }, TrickleDown.TrickleDown);
+
+            textField.RegisterCallback<FocusOutEvent>(evt =>
+            {
+                textField.focusable = false;
+                var input = textField.Q("unity-text-input");
+                input.focusable = false;
+            });
+        }
+
+
         [System.Runtime.InteropServices.DllImport("__Internal")]
         private static extern void CopyToClipboardWebGL(string text);
 

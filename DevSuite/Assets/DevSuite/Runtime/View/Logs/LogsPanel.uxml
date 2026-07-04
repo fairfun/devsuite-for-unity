@@ -3,7 +3,7 @@
         <ui:VisualElement class="logs-toolbar" style="flex-direction: row;">
             <ui:VisualElement class="logs-filter-container">
                 <ui:Label text="&#xf0b0;" class="logs-filter-icon"/>
-                <ui:TextField name="filterField" class="logs-filter-field"/>
+                <ui:TextField name="filterField" class="logs-filter-field" tabindex="-1" focusable="false"/>
             </ui:VisualElement>
             <ui:Button name="regexButton" text=".*" class="logs-severity-btn logs-regex-btn"/>
             <ui:Button name="ordinaryButton" class="logs-severity-btn ordinary"/>

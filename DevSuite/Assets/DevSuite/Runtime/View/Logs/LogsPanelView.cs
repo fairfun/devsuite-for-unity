@@ -40,6 +40,7 @@ namespace Ff.DevSuite.View
             var root = this.Q<VisualElement>("logs-panel-root") ?? this;
 
             _filterField = root.Q<TextField>("filterField");
+            DevSuiteUtils.SetupInputFieldFocus(_filterField);
             _filterField.RegisterValueChangedCallback(evt => HandleTextChanged(evt.newValue));
             _filterField.RegisterCallback<FocusOutEvent>(evt =>
             {
