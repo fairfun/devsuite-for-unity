@@ -4,6 +4,7 @@ using System;
 
 namespace Ff.DevSuite.View
 {
+    [DefaultExecutionOrder(-1000)]
     [RequireComponent(typeof(UIDocument))]
     internal class DevSuitePanelUI : MonoBehaviour
     {
