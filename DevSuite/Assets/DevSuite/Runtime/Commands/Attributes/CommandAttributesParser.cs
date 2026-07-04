@@ -88,8 +88,8 @@ namespace Ff.DevSuite.Commands.Attributes
                 t =>
                 {
                     foreach (var assembly in assemblies)
-                    foreach (var type in assembly.DefinedTypes)
-                        Unregister(type, t);
+                        foreach (var type in assembly.DefinedTypes)
+                            Unregister(type, t);
                 }
             );
         }
@@ -195,6 +195,14 @@ namespace Ff.DevSuite.Commands.Attributes
                     if (string.IsNullOrEmpty(attributeGroup.CategoryId))
                     {
                         var possibleCategory = _categoriesForMembers.GetValueOrDefault(member) ?? _categoriesForMembers.GetValueOrDefault(type);
+                        if (possibleCategory == null)
+                        {
+                            var suitable = GetSuitableAttributeByLineNumber<CommandCategoryAttribute>(type, instance == null, attributeGroup.LineNumber);
+                            if (suitable.attribute != null)
+                            {
+                                possibleCategory = _categoriesForMembers.GetValueOrDefault(suitable.member);
+                            }
+                        }
                         attributeGroup.CategoryId = possibleCategory?.Id;
                     }
 
@@ -262,6 +270,14 @@ namespace Ff.DevSuite.Commands.Attributes
                     }
                     if (associatedCommand == null)
                     {
+                        var suitable = GetSuitableAttributeByLineNumber<CommandAttribute>(type, instance == null, attributeCommandUnit.LineNumber);
+                        if (suitable.attribute != null)
+                        {
+                            _commandsForMembers.TryGetValue((suitable.member, instance), out associatedCommand);
+                        }
+                    }
+                    if (associatedCommand == null)
+                    {
                         associatedCommand = new CommandAttribute(attributeCommandUnit.CommandId ?? member.Name, attributeCommandUnit.CommandId, attributeCommandUnit.LineNumber);
                         ServeCommandAttribute(member, associatedCommand);
                         AddCommandToContext(associatedCommand);
@@ -322,12 +338,28 @@ namespace Ff.DevSuite.Commands.Attributes
                 if (string.IsNullOrEmpty(attributeCommand.GroupId))
                 {
                     var possibleGroup = _groupsForMembers.GetValueOrDefault(member) ?? _groupsForMembers.GetValueOrDefault(type);
+                    if (possibleGroup == null)
+                    {
+                        var suitable = GetSuitableAttributeByLineNumber<CommandGroupAttribute>(type, instance == null, attributeCommand.LineNumber);
+                        if (suitable.attribute != null)
+                        {
+                            possibleGroup = _groupsForMembers.GetValueOrDefault(suitable.member);
+                        }
+                    }
                     attributeCommand.GroupId = possibleGroup?.Id;
                 }
 
                 if (string.IsNullOrEmpty(attributeCommand.CategoryId))
                 {
                     var possibleCategory = _categoriesForMembers.GetValueOrDefault(member) ?? _categoriesForMembers.GetValueOrDefault(type);
+                    if (possibleCategory == null)
+                    {
+                        var suitable = GetSuitableAttributeByLineNumber<CommandCategoryAttribute>(type, instance == null, attributeCommand.LineNumber);
+                        if (suitable.attribute != null)
+                        {
+                            possibleCategory = _categoriesForMembers.GetValueOrDefault(suitable.member);
+                        }
+                    }
                     attributeCommand.CategoryId = possibleCategory?.Id;
                 }
 
@@ -372,7 +404,7 @@ namespace Ff.DevSuite.Commands.Attributes
             return visibilityFunction;
         }
 
-        private object[][] _defaultArguments = new []
+        private object[][] _defaultArguments = new[]
         {
             new object[] {},
             new object[] { null },
@@ -380,6 +412,11 @@ namespace Ff.DevSuite.Commands.Attributes
             new object[] { null, null, null },
             new object[] { null, null, null, null },
             new object[] { null, null, null, null, null },
+            new object[] { null, null, null, null, null, null },
+            new object[] { null, null, null, null, null, null, null },
+            new object[] { null, null, null, null, null, null, null, null },
+            new object[] { null, null, null, null, null, null, null, null, null },
+            new object[] { null, null, null, null, null, null, null, null, null, null },
         };
 
         private Action GetActionFunction(MemberInfo member, object instance = null)
@@ -430,7 +467,6 @@ namespace Ff.DevSuite.Commands.Attributes
             typeof(CommandCategoryAttribute),
             typeof(CommandGroupAttribute),
             typeof(CommandAttribute),
-            typeof(BaseCommandUnit),
             typeof(CommandUnitAttribute),
         };
 
@@ -583,6 +619,42 @@ namespace Ff.DevSuite.Commands.Attributes
             }
         }
 
+        private (MemberInfo member, TAttr attribute) GetSuitableAttributeByLineNumber<TAttr>(Type type, bool isStatic, int lineNumber) where TAttr : BaseCommandAttribute
+        {
+            var attributes = GetAttributesFor(type, typeof(TAttr), isStatic);
+            var left = 0;
+            var right = attributes.Count - 1;
+            var bestIndex = -1;
+
+            while (left <= right)
+            {
+                var mid = left + (right - left) / 2;
+                var typedAttr = attributes[mid].Item2 as TAttr;
+                var attrLine = typedAttr?.LineNumber ?? 0;
+
+                if (attrLine <= lineNumber)
+                {
+                    bestIndex = mid;
+                    left = mid + 1;
+                }
+                else
+                {
+                    right = mid - 1;
+                }
+            }
+
+            if (bestIndex != -1)
+            {
+                var (m, attr) = attributes[bestIndex];
+                if (attr is TAttr { Scope: AttributeScope.Continuous } typedAttr)
+                {
+                    return (m, typedAttr);
+                }
+            }
+
+            return default;
+        }
+
         private static LazyCache<(Type type, Type attribute, bool isStatic), IReadOnlyList<(MemberInfo, Attribute)>> _getAttributesForCache;
         private static IReadOnlyList<(MemberInfo, Attribute)> GetAttributesFor(Type type, Type attributeType, bool isStatic)
         {
@@ -599,6 +671,10 @@ namespace Ff.DevSuite.Commands.Attributes
                         {
                             res.Add(e);
                         }
+                    }
+                    if (attributeType.IsAssignableTo(typeof(BaseCommandAttribute)))
+                    {
+                        res.Sort((a, b) => (a.Item2 as BaseCommandAttribute).LineNumber.CompareTo((b.Item2 as BaseCommandAttribute).LineNumber));
                     }
                     return res;
                 }

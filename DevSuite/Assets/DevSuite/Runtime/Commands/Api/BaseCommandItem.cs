@@ -65,8 +65,8 @@ namespace Ff.DevSuite.Commands
     {
         public string Id { get; }
         public string Description { get; protected set; }
-        public float Priority { get; }
-        public int LineNumber { get; internal set; }
+        protected float Priority { get; }
+        protected int LineNumber { get; set; }
         public Func<bool> Visibility { get; }
         public int RegistrationOrder { get; set; }
         public Color? Color { get; set; }

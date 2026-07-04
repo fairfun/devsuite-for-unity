@@ -12,14 +12,14 @@ namespace Ff.DevSuite.Commands.Attributes
 {
     public abstract class CommandUnitAttribute : BaseDevSuiteAttribute
     {
-        public string CommandId;
+        public readonly string CommandId;
         public int Priority;
         public string Description;
         public bool SuppressExceptions = true;
         public float Flex = -1f;
         public string Color;
         public string FontResource;
-        public int LineNumber;
+        public readonly int LineNumber;
 
         protected CommandUnitAttribute(string commandId, int lineNumber)
         {
@@ -36,7 +36,7 @@ namespace Ff.DevSuite.Commands.Attributes
     )]
     public class CommandValueAttribute : CommandUnitAttribute
     {
-        private static float ValueNotSetWorkaround = float.MinValue;
+        private const float ValueNotSetWorkaround = float.MinValue;
 
         public string PossibleValuesFunctionName;
         public bool ReadOnly;

@@ -36,7 +36,7 @@ namespace Ff.DevSuite
         //Game
 
         private static float? _originalGameSpeed;
-        [CommandGroup(GroupGame), Command(DisplayName = "Time Scale"), CommandValue(MinValue = 0.01f, MaxValue = 100f, ScaleType = ScaleType.Logarithmic)]
+        [CommandGroup(GroupGame, Scope = AttributeScope.Continuous), Command(DisplayName = "Time Scale"), CommandValue(MinValue = 0.01f, MaxValue = 100f, ScaleType = ScaleType.Logarithmic)]
         [CommandValue(Flex = 0.5f)]
         public static SavedPrefsProperty<float?> TimeScale = new(nameof(TimeScale), null, onTouch: t =>
         {
@@ -47,49 +47,49 @@ namespace Ff.DevSuite
 
         //Data
 
-        [CommandGroup(GroupData), CommandButton("Player Prefs", Title = "Clear", Flex = 0f, Color = ColorRed)]
+        [CommandGroup(GroupData, Scope = AttributeScope.Continuous), CommandButton("Player Prefs", Title = "Clear", Flex = 0f, Color = ColorRed)]
         private static void PlayerPrefs_DeleteAll() => PlayerPrefs.DeleteAll();
 
 #if !UNITY_WEBGL || UNITY_EDITOR
         private static string _cachingPath; // to avoid allocations of calling Caching.currentCacheForWriting.path
-        [CommandGroup(GroupData), Command(DisplayName = "Asset Bundles (Caching)"), CommandValue(nameof(AssetBundles))]
+        [Command(DisplayName = "Asset Bundles (Caching)"), CommandValue(nameof(AssetBundles))]
         private static string AssetBundles => _cachingPath ??= Caching.currentCacheForWriting.path;
-        [CommandGroup(GroupData), CommandButton(nameof(AssetBundles), Title = "Clear", Flex = 0f, Color = ColorRed)]
+        [CommandButton(nameof(AssetBundles), Title = "Clear", Flex = 0f, Color = ColorRed)]
         private static void AssetBundles_ClearCache() => Caching.ClearCache();
-        [CommandGroup(GroupData), CommandButton(nameof(AssetBundles), Title = "Open", Flex = 0f)]
+        [CommandButton(nameof(AssetBundles), Title = "Open", Flex = 0f)]
         private static void AssetBundles_Open() => Application.OpenURL($"file://{AssetBundles}");
 #endif
 
         private static string _persistentDataPath; // to avoid allocations of calling Application.persistentDataPath
-        [CommandGroup(GroupData), CommandValue(nameof(Persistent))]
+        [CommandValue(nameof(Persistent))]
         private static string Persistent => _persistentDataPath ??= Application.persistentDataPath;
-        [CommandGroup(GroupData), CommandButton(nameof(Persistent), Title = "Clear", Flex = 0f, Color = ColorRed)]
+        [CommandButton(nameof(Persistent), Title = "Clear", Flex = 0f, Color = ColorRed)]
         private static void PersistentDataPath_Delete() => Directory.Delete(Persistent, true);
-        [CommandGroup(GroupData), CommandButton(nameof(Persistent), Title = "Open", Flex = 0f)]
+        [CommandButton(nameof(Persistent), Title = "Open", Flex = 0f)]
         private static void PersistentDataPath_Open() => Application.OpenURL($"file://{Persistent}");
 
         private static string _dataPath; // to avoid allocations of calling Application.dataPath
-        [CommandGroup(GroupData), CommandValue(nameof(Data))]
+        [CommandValue(nameof(Data))]
         private static string Data => _dataPath ??= Application.dataPath;
-        [CommandGroup(GroupData), CommandButton(nameof(Data), Title = "Open", Flex = 0f)]
+        [CommandButton(nameof(Data), Title = "Open", Flex = 0f)]
         private static void DataPath_Open() => Application.OpenURL($"file://{Data}");
 
         private static string _streamingAssetsPath; // to avoid allocations of calling Application.streamingAssetsPath
-        [CommandGroup(GroupData), CommandValue(nameof(Streaming))]
+        [CommandValue(nameof(Streaming))]
         private static string Streaming => _streamingAssetsPath ??= Application.streamingAssetsPath;
-        [CommandGroup(GroupData), CommandButton(nameof(Streaming), Title = "Open", Flex = 0f)]
+        [CommandButton(nameof(Streaming), Title = "Open", Flex = 0f)]
         private static void StreamingAssetsPath_Open() => Application.OpenURL($"file://{Streaming}");
 
         private static string _temporaryCachePath; // to avoid allocations of calling Application.temporaryCachePath
-        [CommandGroup(GroupData), CommandValue(nameof(Temporary))]
+        [CommandValue(nameof(Temporary))]
         private static string Temporary => _temporaryCachePath ??= Application.temporaryCachePath;
-        [CommandGroup(GroupData), CommandButton(nameof(Temporary), Title = "Open", Flex = 0f)]
+        [CommandButton(nameof(Temporary), Title = "Open", Flex = 0f)]
         private static void TemporaryCachePath_Open() => Application.OpenURL($"file://{Temporary}");
 
         //System
 
         private static string _systemInfoText;
-        [CommandGroup(GroupSystem),
+        [CommandGroup(GroupSystem, Scope = AttributeScope.Continuous),
          Command(DisplayName = "Info", HeightMultiplier = 10.55f, Description = "You can change the information here by assigning CommonCommands.ModifySystemInfo. Compiler defines are not guaranteed to be 100% accurate. For adding custom build-time data use CommonCommands.CustomSystemInfoBuildTimeData."),
          CommandValue]
         private static string SystemInfoText
@@ -137,7 +137,7 @@ namespace Ff.DevSuite
             }
         }
 
-        [CommandGroup(GroupSystem), CommandButton(nameof(SystemInfoText), Title = "\uf0e2", Flex = 0f)]
+        [CommandButton(nameof(SystemInfoText), Title = "\uf0e2", Flex = 0f)]
         public static void SystemInfoReset()
         {
             _systemInfoText = null;
@@ -180,7 +180,7 @@ namespace Ff.DevSuite
         }
 
         private static int? _originalVSyncCount;
-        [CommandGroup(GroupSystem), CommandValue("vSyncCount", MinValue = 0, MaxValue = 4)]
+        [CommandValue("vSyncCount", MinValue = 0, MaxValue = 4)]
         [CommandValue(Flex = 0.5f)]
         public static SavedPrefsProperty<int?> VSyncCount = new(nameof(VSyncCount), null, onTouch: t =>
         {
@@ -193,27 +193,27 @@ namespace Ff.DevSuite
                 t.SetValue(_originalVSyncCount);
         });
 
-        [CommandGroup(GroupSystem), Command(DisplayName = "GC"), CommandButton(Title = "System.GC.Collect", Flex = 1f)]
+        [Command(DisplayName = "GC"), CommandButton(Title = "System.GC.Collect", Flex = 1f)]
         private static void ForceGC() => GC.Collect();
-        [CommandGroup(GroupSystem), CommandButton(nameof(ForceGC), Title = "GarbageCollector.CollectIncremental", Flex = 0f)]
+        [CommandButton(nameof(ForceGC), Title = "GarbageCollector.CollectIncremental", Flex = 0f)]
         private static void ForceGCIncremental() => GarbageCollector.CollectIncremental();
 
-        [CommandGroup(GroupSystem), Command(DisplayName = "Test Log"), CommandButton(Title = "Log", Flex = 1f)]
+        [Command(DisplayName = "Test Log"), CommandButton(Title = "Log", Flex = 1f)]
         private static void LogMessageLog() => Debug.Log("Test Log");
-        [CommandGroup(GroupSystem), CommandButton(nameof(LogMessageLog), Title = "Warning", Flex = 1f)]
+        [CommandButton(nameof(LogMessageLog), Title = "Warning", Flex = 1f)]
         private static void LogMessageWarning() => Debug.LogWarning("Test Log");
-        [CommandGroup(GroupSystem), CommandButton(nameof(LogMessageLog), Title = "Error", Flex = 1f)]
+        [CommandButton(nameof(LogMessageLog), Title = "Error", Flex = 1f)]
         private static void LogMessageError() => Debug.LogError("Test Log");
 
-        [CommandGroup(GroupSystem), Command(DisplayName = "Test Exception"), CommandButton(Title = "Throw", Color = ColorOrange, SuppressExceptions = false)]
+        [Command(DisplayName = "Test Exception"), CommandButton(Title = "Throw", Color = ColorOrange, SuppressExceptions = false)]
         private static void ThrowException() => throw new Exception("DevSuite: Forced Exception");
-        [CommandGroup(GroupSystem), CommandButton(nameof(ThrowException), Title = "Quit", Color = ColorRed, SuppressExceptions = false)]
+        [CommandButton(nameof(ThrowException), Title = "Quit", Color = ColorRed, SuppressExceptions = false)]
         private static void ForceQuit() => Application.Quit(1);
-        [CommandGroup(GroupSystem), CommandButton(nameof(ThrowException), Title = "Crash", Color = ColorRed, SuppressExceptions = false)]
+        [CommandButton(nameof(ThrowException), Title = "Crash", Color = ColorRed, SuppressExceptions = false)]
         private static void ForceCrash() => UnityEngine.Diagnostics.Utils.ForceCrash(UnityEngine.Diagnostics.ForcedCrashCategory.AccessViolation);
 
         //DevSuite
-        [CommandGroup(GroupDevSuite), Command(DisplayName = "Toggle Dev Suite Panel"), CommandButton(Title = "Toggle", Flex = 1f,
+        [CommandGroup(GroupDevSuite, Scope = AttributeScope.Continuous), Command(DisplayName = "Toggle Dev Suite Panel"), CommandButton(Title = "Toggle", Flex = 1f,
 #if ENABLE_INPUT_SYSTEM
             Shortcut = new[] { Key.LeftCtrl, Key.Backquote }
 #else
@@ -225,15 +225,15 @@ namespace Ff.DevSuite
             DevSuiteContext.DefaultInternal.PanelExpanded = !DevSuiteContext.DefaultInternal.PanelExpanded;
         }
 
-        [CommandGroup(GroupDevSuite), CommandValue(nameof(SavedPrefs))]
+        [CommandValue(nameof(SavedPrefs))]
         private static string SavedPrefs => Prefs.SavedPrefs.Default.FilePath;
-        [CommandGroup(GroupDevSuite), CommandButton(nameof(SavedPrefs), Title = "Clear", Flex = 0f, Color = ColorRed)]
+        [CommandButton(nameof(SavedPrefs), Title = "Clear", Flex = 0f, Color = ColorRed)]
         private static void SavedPrefs_Clear() => Prefs.SavedPrefs.Default.Clear();
-        [CommandGroup(GroupDevSuite), CommandButton(nameof(SavedPrefs), Title = "Open", Flex = 0f)]
+        [CommandButton(nameof(SavedPrefs), Title = "Open", Flex = 0f)]
         private static void SavedPrefs_Open() => Application.OpenURL($"file://{SavedPrefs}");
 
         private static int? _originalTargetFPS;
-        [CommandGroup(GroupDevSuite), CommandValue("Target FPS", MinValue = 0f, MaxValue = 2000f, ScaleType = ScaleType.Logarithmic)]
+        [CommandValue("Target FPS", MinValue = 0f, MaxValue = 2000f, ScaleType = ScaleType.Logarithmic)]
         [CommandValue(Flex = 0.5f)]
         public static SavedPrefsProperty<int?> TargetFPS = new(nameof(TargetFPS), null, onTouch: t =>
         {
@@ -246,7 +246,7 @@ namespace Ff.DevSuite
         });
 
         private static float? _originalTargetRamMb;
-        [CommandGroup(GroupDevSuite), CommandValue("Target RAM", MinValue = 0f, MaxValue = 32000f, ScaleType = ScaleType.Logarithmic)]
+        [CommandValue("Target RAM", MinValue = 0f, MaxValue = 32000f, ScaleType = ScaleType.Logarithmic)]
         [CommandValue(Flex = 0.5f)]
         public static SavedPrefsProperty<float?> TargetRamMb = new(nameof(TargetRamMb), null, onTouch: t =>
         {
@@ -262,7 +262,7 @@ namespace Ff.DevSuite
         });
 
         private static int? _originalTargetDrawCallsCount;
-        [CommandGroup(GroupDevSuite), CommandValue("Target Draw Calls", MinValue = 0f, MaxValue = 10000f, ScaleType = ScaleType.Logarithmic)]
+        [CommandValue("Target Draw Calls", MinValue = 0f, MaxValue = 10000f, ScaleType = ScaleType.Logarithmic)]
         [CommandValue(Flex = 0.5f)]
         public static SavedPrefsProperty<int?> TargetDrawCallsCount = new(nameof(TargetDrawCallsCount), null, onTouch: t =>
         {
@@ -277,21 +277,21 @@ namespace Ff.DevSuite
                 t.SetValue(_originalTargetDrawCallsCount);
         });
 
-        [CommandGroup(GroupDevSuite), Command(DisplayName = "Destroy DevSuite"), CommandButton(Title = "All", Color = ColorOrange, Flex = 0.5f)]
+        [Command(DisplayName = "Destroy DevSuite"), CommandButton(Title = "All", Color = ColorOrange, Flex = 0.5f)]
         private static void DestroyDevSuite()
         {
             DestroyDevSuitePanel();
             DestroyDevSuiteContext();
         }
 
-        [CommandGroup(GroupDevSuite), CommandButton(nameof(DestroyDevSuite), Title = "Panel", Color = ColorOrange, Flex = 0.5f)]
+        [CommandButton(nameof(DestroyDevSuite), Title = "Panel", Color = ColorOrange, Flex = 0.5f)]
         private static void DestroyDevSuitePanel()
         {
             var panel = UnityEngine.Object.FindAnyObjectByType<View.DevSuitePanelUI>();
             UnityEngine.Object.Destroy(panel.gameObject);
         }
 
-        [CommandGroup(GroupDevSuite), CommandButton(nameof(DestroyDevSuite), Title = "Context.Default", Color = ColorOrange)]
+        [CommandButton(nameof(DestroyDevSuite), Title = "Context.Default", Color = ColorOrange)]
         private static void DestroyDevSuiteContext()
         {
             DevSuiteContext.Default?.Reset();

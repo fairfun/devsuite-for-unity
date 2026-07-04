@@ -19,7 +19,8 @@ namespace Ff.DevSuite.Commands.Attributes
         public string DisplayName;
         public int Priority;
         public string Color;
-        public int LineNumber;
+        public readonly int LineNumber;
+        public AttributeScope Scope;
 
         protected BaseCommandAttribute(string id, [CallerLineNumber] int lineNumber = 0)
         {
@@ -29,4 +30,10 @@ namespace Ff.DevSuite.Commands.Attributes
     }
 
     public abstract class BaseDevSuiteAttribute : Attribute { }
+
+    public enum AttributeScope
+    {
+        Current,
+        Continuous,
+    }
 }
