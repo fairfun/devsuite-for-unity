@@ -42,6 +42,12 @@ namespace Ff.DevSuite.View
                 _header.AddToClassList("ff-commands-group-header");
                 _header.style.color = color ?? new Color(1f, 200f / 255f, 0f);
                 _labelDefaultAlpha = _header.style.color.value.a;
+                if (groupId == DevSuiteContext.PinnedCategoryId || 
+                    groupId == DevSuiteContext.DefaultGroupId || 
+                    groupId == DevSuiteContext.PinnedMockId)
+                {
+                    _header.style.unityFontStyleAndWeight = FontStyle.BoldAndItalic;
+                }
                 headerContainer.Add(_header);
 
                 if (!string.IsNullOrEmpty(description))

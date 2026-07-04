@@ -38,7 +38,10 @@ namespace Ff.DevSuite.Commands
         {
             if (other == null)
                 return -1;
-            var cmp = other.Priority.CompareTo(Priority);
+
+            var cmp = GetNameSortOrder(Id).CompareTo(GetNameSortOrder(other.Id));
+            if (cmp == 0)
+                cmp = other.Priority.CompareTo(Priority);
             if (cmp == 0)
                 cmp = LineNumber.CompareTo(other.LineNumber);
             if (cmp == 0)
@@ -46,6 +49,15 @@ namespace Ff.DevSuite.Commands
             if (cmp == 0)
                 cmp = string.Compare(Id, other.Id, StringComparison.Ordinal);
             return cmp;
+
+            int GetNameSortOrder(string id)
+            {
+                if (id == DevSuiteContext.PinnedCategoryId || id == DevSuiteContext.PinnedMockId)
+                    return 0;
+                if (id == DevSuiteContext.DefaultGroupId)
+                    return 1;
+                return 2;
+            }
         }
     }
 

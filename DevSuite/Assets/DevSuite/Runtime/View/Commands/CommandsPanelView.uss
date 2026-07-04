@@ -60,11 +60,6 @@
     border-top-color: var(--accent-color);
 }
 
-.ff-commands-category-icon {
-    margin-right: 2px;
-    font-size: 11px;
-}
-
 .ff-commands-scroll-view {
     flex-grow: 1;
 }

@@ -259,22 +259,15 @@ namespace Ff.DevSuite.View
                         btn.style.display = _context.CheckVisibilityByVisibilityFunction(category, null) ? DisplayStyle.Flex : DisplayStyle.None;
                     });
 
-                    if (category.Id == DevSuiteContext.PinnedCategoryId)
-                    {
-                        btn.style.flexDirection = FlexDirection.Row;
-                        btn.style.alignItems = Align.Center;
-                        btn.style.justifyContent = Justify.Center;
-
-                        var icon = new Label("\uf023");
-                        icon.AddToClassList("ff-commands-category-icon");
-                        btn.Add(icon);
-                    }
-
                     var label = new Label(category.DisplayName);
                     label.pickingMode = PickingMode.Ignore;
                     if (category.Color != null)
                     {
                         label.style.color = category.Color.Value;
+                    }
+                    if (category.Id == DevSuiteContext.PinnedCategoryId || category.Id == DevSuiteContext.DefaultGroupId)
+                    {
+                        label.style.unityFontStyleAndWeight = FontStyle.BoldAndItalic;
                     }
                     btn.Add(label);
 
