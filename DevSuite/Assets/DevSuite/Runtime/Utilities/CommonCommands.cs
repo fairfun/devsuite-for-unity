@@ -47,8 +47,87 @@ namespace Ff.DevSuite
 
         //Data
 
-        [CommandGroup(GroupData, Scope = AttributeScope.Continuous), CommandButton("Player Prefs", Title = "Clear", Flex = 0f, Color = ColorRed)]
+        [CommandGroup(GroupData, Scope = AttributeScope.Continuous), Command(nameof(PlayerPrefsPath), DisplayName = "PlayerPrefs"), CommandValue(nameof(PlayerPrefsPath))]
+        private static string PlayerPrefsPath => GetPlayerPrefsPath();
+
+        [CommandButton(nameof(PlayerPrefsPath), Title = "Clear", Flex = 0f, Color = ColorRed)]
         private static void PlayerPrefs_DeleteAll() => PlayerPrefs.DeleteAll();
+
+        [CommandButton(nameof(PlayerPrefsPath), Title = "Open", Flex = 0f)]
+        private static void PlayerPrefs_Open()
+        {
+            var path = GetPlayerPrefsPath();
+            if (string.IsNullOrEmpty(path))
+                return;
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+            System.Diagnostics.Process.Start("regedit.exe");
+#elif UNITY_WEBGL
+            Debug.LogError("Cannot open PlayerPrefs path on WebGL platform.");
+#else
+            var dir = Path.GetDirectoryName(path);
+            if (Directory.Exists(dir))
+            {
+                Application.OpenURL($"file://{dir}");
+            }
+#endif
+        }
+
+        private static string GetPlayerPrefsPath()
+        {
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+            return $@"HKEY_CURRENT_USER\Software\{Application.companyName}\{Application.productName}";
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), $"Library/Preferences/unity.{Application.companyName}.{Application.productName}.plist");
+#elif UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), $".config/unity3d/{Application.companyName}/{Application.productName}/");
+#elif UNITY_ANDROID
+            return $"/data/data/{Application.identifier}/shared_prefs/{Application.identifier}.xml";
+#elif UNITY_IOS
+            return Path.Combine(Path.GetDirectoryName(Application.persistentDataPath), "Library/Preferences", $"{Application.identifier}.plist");
+#elif UNITY_WEBGL
+            return "IndexedDB (Browser Storage)";
+#else
+            return string.Empty;
+#endif
+        }
+
+#if UNITY_EDITOR
+        [Command(nameof(EditorPrefs), "EditorPrefs")][CommandValue(nameof(EditorPrefs))]
+        private static string EditorPrefs => GetEditorPrefsPath();
+
+        [CommandButton(nameof(EditorPrefs), Title = "Clear", Flex = 0f, Color = ColorRed)]
+        private static void EditorPrefs_Clear() => UnityEditor.EditorPrefs.DeleteAll();
+
+        [CommandButton(nameof(EditorPrefs), Title = "Open", Flex = 0f)]
+        private static void EditorPrefs_Open()
+        {
+            var path = GetEditorPrefsPath();
+            if (string.IsNullOrEmpty(path))
+                return;
+#if UNITY_EDITOR_WIN
+            System.Diagnostics.Process.Start("regedit.exe");
+#else
+            var dir = Path.GetDirectoryName(path);
+            if (Directory.Exists(dir))
+            {
+                Application.OpenURL($"file://{dir}");
+            }
+#endif
+        }
+
+        private static string GetEditorPrefsPath()
+        {
+#if UNITY_EDITOR_WIN
+            return @"HKEY_CURRENT_USER\Software\Unity Technologies\UnityEditor";
+#elif UNITY_EDITOR_OSX
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library/Preferences/com.unity3d.UnityEditor.plist");
+#elif UNITY_EDITOR_LINUX
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local/share/unity3d/prefs");
+#else
+            return string.Empty;
+#endif
+        }
+#endif
 
 #if !UNITY_WEBGL || UNITY_EDITOR
         private static string _cachingPath; // to avoid allocations of calling Caching.currentCacheForWriting.path
@@ -90,7 +169,7 @@ namespace Ff.DevSuite
 
         private static string _systemInfoText;
         [CommandGroup(GroupSystem, Scope = AttributeScope.Continuous),
-         Command(DisplayName = "Info", HeightMultiplier = 10.55f, Description = "You can change the information here by assigning CommonCommands.ModifySystemInfo. Compiler defines are not guaranteed to be 100% accurate. For adding custom build-time data use CommonCommands.CustomSystemInfoBuildTimeData."),
+         Command(DisplayName = "Info", HeightMultiplier = 8.55f, Description = "You can change the information here by assigning CommonCommands.ModifySystemInfo. Compiler defines are not guaranteed to be 100% accurate. For adding custom build-time data use CommonCommands.CustomSystemInfoBuildTimeData."),
          CommandValue]
         private static string SystemInfoText
         {
