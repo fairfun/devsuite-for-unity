@@ -19,16 +19,18 @@ using Key =
 
 namespace Ff.DevSuite
 {
-    [CommandCategory("Common", Priority = 100)]
+    [CommandCategory(CategoryCommon, Priority = 100)]
     public static class CommonCommands
     {
         public static Func<string, string> ModifySystemInfo { get; set; }
         public static Func<List<string>> CustomSystemInfoBuildTimeData { get; set; }
 
+        public const string CategoryCommon = "Common";
         public const string GroupGame = "Game";
         public const string GroupData = "Data";
         public const string GroupSystem = "System";
         public const string GroupDevSuite = "Dev Suite";
+        public const string GroupScenes = "Scenes";
 
         private const string ColorOrange = "#FFCC00";
         private const string ColorRed = "#FF6666";
@@ -375,6 +377,177 @@ namespace Ff.DevSuite
         {
             DevSuiteContext.Default?.Reset();
             DevSuiteContext.Default = null;
+        }
+
+        public static void RegisterScenes()
+        {
+            var sceneNames = new List<string>();
+            var registeredSet = new HashSet<string>();
+            var editorOnlySet = new HashSet<string>();
+            var packageScenesSet = new HashSet<string>();
+            var buildIndices = new Dictionary<string, int>();
+            var scenePaths = new Dictionary<string, string>();
+
+            // get all scenes that are available in a build (runtime scenes)
+            for (var i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings; i++)
+            {
+                var scenePath = UnityEngine.SceneManagement.SceneUtility.GetScenePathByBuildIndex(i);
+                var sceneName = Path.GetFileNameWithoutExtension(scenePath);
+                if (IsValidScene(sceneName) && registeredSet.Add(sceneName))
+                {
+                    sceneNames.Add(sceneName);
+                    buildIndices[sceneName] = i;
+                    scenePaths[sceneName] = scenePath;
+                    if (scenePath != null && scenePath.StartsWith("Packages/"))
+                    {
+                        packageScenesSet.Add(sceneName);
+                    }
+                }
+            }
+
+#if UNITY_EDITOR
+            var guids = UnityEditor.AssetDatabase.FindAssets("t:Scene");
+            var editorFound = new List<(string name, string path)>();
+            foreach (var guid in guids)
+            {
+                var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                var sceneName = Path.GetFileNameWithoutExtension(path);
+                if (IsValidScene(sceneName) && !registeredSet.Contains(sceneName) && !editorFound.Exists(x => x.name == sceneName))
+                {
+                    editorFound.Add((sceneName, path));
+                }
+            }
+            editorFound.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.Ordinal));
+            foreach (var item in editorFound)
+            {
+                if (registeredSet.Add(item.name))
+                {
+                    sceneNames.Add(item.name);
+                    editorOnlySet.Add(item.name);
+                    scenePaths[item.name] = item.path;
+                    if (item.path != null && item.path.StartsWith("Packages/"))
+                    {
+                        packageScenesSet.Add(item.name);
+                    }
+                }
+            }
+#endif
+
+            sceneNames.Sort((a, b) =>
+            {
+                var cmp = packageScenesSet.Contains(a).CompareTo(packageScenesSet.Contains(b));
+                if (cmp == 0)
+                    cmp = (!buildIndices.ContainsKey(a)).CompareTo(!buildIndices.ContainsKey(b));
+                if (cmp == 0)
+                    cmp = buildIndices.GetValueOrDefault(a).CompareTo(buildIndices.GetValueOrDefault(b));
+                if (cmp == 0)
+                    cmp = string.Compare(a, b, StringComparison.Ordinal);
+                return cmp;
+            });
+
+            if (sceneNames.Count == 0)
+                return;
+
+            var api = DevSuiteContext.Default.CommandsApi;
+
+            api.AddGroup(new CommandGroup(GroupScenes, CategoryCommon, -100f, null).WithCollapsed(true));
+
+            foreach (var sceneName in sceneNames)
+            {
+                var isEditorOnly = editorOnlySet.Contains(sceneName);
+                var isPackage = packageScenesSet.Contains(sceneName);
+                AddSceneCommand(api, sceneName, isEditorOnly, isPackage, buildIndices, scenePaths);
+            }
+
+            bool IsValidScene(string sName)
+            {
+                return !string.IsNullOrEmpty(sName) && !sName.StartsWith('~');
+            }
+        }
+
+        private static void AddSceneCommand(DevSuiteCommandsApi api, string sceneName, bool isEditorOnly, bool isPackage, Dictionary<string, int> buildIndices, Dictionary<string, string> scenePaths)
+        {
+            var command = new Command(
+                sceneName,
+                GroupScenes,
+                CategoryCommon,
+                0f,
+                null,
+                null,
+                null
+            );
+
+            scenePaths.TryGetValue(sceneName, out var scenePath);
+            scenePath ??= string.Empty;
+
+            string displayName;
+            if (isEditorOnly)
+            {
+                var prefix = isPackage ? "Packages: " : "Project: ";
+                displayName = prefix + $"<i>{sceneName}</i>";
+                command.WithDescription($"Editor-only scene\n{scenePath}");
+            }
+            else
+            {
+                var buildIndex = buildIndices[sceneName];
+                displayName = $"{buildIndex}: {sceneName}";
+                command.WithDescription($"Build settings scene\n{scenePath}");
+            }
+
+            command.WithDisplayName(displayName);
+
+            api.AddCommand(command);
+
+            var commandKey = new CommandKey(sceneName, GroupScenes, CategoryCommon, null);
+
+            var countUnit = new CommandUnitValue(typeof(int), () => GetSceneInstanceCount(sceneName));
+            api.AttachCommandUnit(commandKey, countUnit);
+
+            var unloadUnit = new CommandUnitButton("Unload", () => UnloadLastSceneInstance(sceneName), flex: 0f);
+            api.AttachCommandUnit(commandKey, unloadUnit);
+
+            var loadNormalUnit = new CommandUnitButton("Load", () => LoadSceneNormal(sceneName), flex: 0f);
+            api.AttachCommandUnit(commandKey, loadNormalUnit);
+
+            var loadAdditiveUnit = new CommandUnitButton("Load Additive", () => LoadSceneAdditive(sceneName), flex: 0f);
+            api.AttachCommandUnit(commandKey, loadAdditiveUnit);
+        }
+
+        private static int GetSceneInstanceCount(string sceneName)
+        {
+            var count = 0;
+            for (var i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
+            {
+                var scene = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
+                if (scene.name == sceneName)
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        private static void UnloadLastSceneInstance(string sceneName)
+        {
+            for (var i = UnityEngine.SceneManagement.SceneManager.sceneCount - 1; i >= 0; i--)
+            {
+                var scene = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
+                if (scene.name == sceneName)
+                {
+                    UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(scene);
+                    break;
+                }
+            }
+        }
+
+        private static void LoadSceneNormal(string sceneName)
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+        }
+
+        private static void LoadSceneAdditive(string sceneName)
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Additive);
         }
     }
 }

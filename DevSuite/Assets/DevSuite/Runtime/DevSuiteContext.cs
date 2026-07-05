@@ -225,6 +225,7 @@ namespace Ff.DevSuite
             if (registerCommonCommands)
             {
                 AttributesParser.RegisterStatic(typeof(CommonCommands));
+                CommonCommands.RegisterScenes();
             }
             AttributesParser.RegisterStatic(staticCommandsAssemblies);
             _apiCalledDispatcher.Dispatch();
