@@ -170,7 +170,7 @@ namespace Ff.DevSuite.Commands.Attributes
                         continue;
                     _registeredItems.Add(category);
 
-                    _context.AddCategory(
+                    _context.CommandsApi.AddCategory(
                         new CommandCategory(
                             category.Id,
                             category.Priority,
@@ -219,7 +219,7 @@ namespace Ff.DevSuite.Commands.Attributes
                         continue;
                     _registeredItems.Add(group);
 
-                    _context.AddGroup(
+                    _context.CommandsApi.AddGroup(
                         new CommandGroup(
                             group.Id,
                             group.CategoryId,
@@ -320,7 +320,7 @@ namespace Ff.DevSuite.Commands.Attributes
                     }
 
                     _commandsForUnits[attributeCommandUnit] = associatedCommand;
-                    _context.AttachCommandUnit(
+                    _context.CommandsApi.AttachCommandUnit(
                         new CommandKey(associatedCommand.Id, associatedCommand.GroupId, associatedCommand.CategoryId, instance),
                         unit,
                         SuppressWarnings
@@ -369,7 +369,7 @@ namespace Ff.DevSuite.Commands.Attributes
 
             void AddCommandToContext(CommandAttribute command)
             {
-                _context.AddCommand(
+                _context.CommandsApi.AddCommand(
                     new Command(
                         command.Id,
                         command.GroupId,
@@ -601,7 +601,7 @@ namespace Ff.DevSuite.Commands.Attributes
                 {
                     if (_commandsForMembers.TryGetValue((member, instance), out var command))
                     {
-                        _context.RemoveCommand(command.Id, command.GroupId, command.CategoryId, instance);
+                        _context.CommandsApi.RemoveCommand(command.Id, command.GroupId, command.CategoryId, instance);
                     }
                 }
             }
@@ -613,7 +613,7 @@ namespace Ff.DevSuite.Commands.Attributes
                     var commandUnit = attribute as CommandUnitAttribute;
                     if (_commandsForUnits.TryGetValue(commandUnit, out var command))
                     {
-                        _context.RemoveCommand(command.Id, command.GroupId, command.CategoryId, instance);
+                        _context.CommandsApi.RemoveCommand(command.Id, command.GroupId, command.CategoryId, instance);
                     }
                 }
             }

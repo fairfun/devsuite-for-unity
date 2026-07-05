@@ -190,11 +190,11 @@ Refer to the documentation or sample scenes for more detailed configuration and 
       <td style="padding: 10px; border: 1px solid #88888855; width: 33%;">
         <p>Extend how command values are displayed, edited, and populated.</p>
         <p><strong>Adapters</strong> — convert between custom types and their UI string representation:</p>
-        <p><code>DevSuiteContext.Default.RegisterAdapter(new <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Api/CommandValueAdapter.cs">DelegateCommandValueAdapterToString&lt;MyType&gt;</a>(toString, fromString));</code></p>
+        <p><code><a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteCommandsApi.cs">CommandsApi</a>.RegisterAdapter(new <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Api/CommandValueAdapter.cs">DelegateCommandValueAdapterToString&lt;MyType&gt;</a>(toString, fromString));</code></p>
         <p><strong>Values providers</strong> — supply dropdown lists for a type:</p>
-        <p><code>RegisterValuesProvider(new <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Api/CommandValuesProvider.cs">CommandValuesProvider</a>(typeof(MyType), _ =&gt; myValues));</code></p>
+        <p><code><a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteCommandsApi.cs">CommandsApi</a>.RegisterValuesProvider(new <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Api/CommandValuesProvider.cs">CommandValuesProvider</a>(typeof(MyType), _ =&gt; myValues));</code></p>
         <p><strong>Functions providers</strong> — expose static/instance methods (e.g. for <code>VisibilityFunctionName</code>) from external types:</p>
-        <p><code>RegisterTargetForFunctionsProvider(new <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Api/CommandFunctionsSourceProvider.cs">CommandFunctionsSourceProvider</a>(typeof(MyClass)));</code></p>
+        <p><code><a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteCommandsApi.cs">CommandsApi</a>.RegisterTargetForFunctionsProvider(new <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Api/CommandFunctionsSourceProvider.cs">CommandFunctionsSourceProvider</a>(typeof(MyClass)));</code></p>
         <p>Default adapters and an enum values provider are registered automatically during initialization.</p>
       </td>
       <td style="padding: 10px; border: 1px solid #88888855; width: 33%;">

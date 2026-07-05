@@ -34,17 +34,12 @@ namespace Ff.DevSuite
     public interface IDevSuiteContext : IDisposable
     {
         CommandAttributesParser AttributesParser { get; }
+        DevSuiteCommandsApi CommandsApi { get; }
         IDisposable SuspendEvents(object requestor);
         bool Disposed { get; }
         void Initialize(MonoBehaviour coroutineStarter, IList<Assembly> staticCommandsAssemblies = null, ISavedPrefs savedPrefs = null, bool registerCommonCommands = true);
         void Reset();
         void RegisterPerformancePanelGraph(BaseGraphDataProvider provider);
-        void RegisterAdapter(CommandValueAdapter valueAdapter, bool silent = false);
-        void UnregisterAdapter(CommandValueAdapter valueAdapter);
-        void RegisterValuesProvider(CommandValuesProvider valuesProvider, bool silent = false);
-        void UnregisterValuesProvider(CommandValuesProvider valuesProvider);
-        void RegisterTargetForFunctionsProvider(CommandFunctionsSourceProvider provider, bool silent = false);
-        void UnregisterTargetForFunctionsProvider(CommandFunctionsSourceProvider provider);
         void SetPerformanceReferenceValue<T>(Func<double?> referenceValueProvider) where T : BaseGraphDataProvider;
         Func<string> BuildVersionToDisplay { get; set; }
         string GetAllLogsText();
@@ -90,6 +85,7 @@ namespace Ff.DevSuite
         internal static DevSuiteContext DefaultInternal => Default as DevSuiteContext;
 
         public CommandAttributesParser AttributesParser { get; private set; }
+        public DevSuiteCommandsApi CommandsApi { get; private set; }
         public IDisposable SuspendEvents(object requestor) => Block.SetAndTrack(true, 1, requestor);
 
         internal static string PinnedMockId { get; set; } = "<Default$Pinned>";
@@ -111,6 +107,7 @@ namespace Ff.DevSuite
         private readonly BlockableDispatcher _onEveryFrameDispatcher;
         private readonly BlockableDispatcher _onPerformancePanelDispatcher;
         private BlockableDispatcher OnEveryFrameDispatcher => _onEveryFrameDispatcher;
+        internal BlockableDispatcher ApiCalledDispatcher => _apiCalledDispatcher;
 
         private readonly List<BaseGraphDataProvider> _performancePanelProviders = new();
         internal IReadOnlyList<BaseGraphDataProvider> PerformancePanelProviders => _performancePanelProviders;
@@ -131,21 +128,21 @@ namespace Ff.DevSuite
 
         private CommandCategory _categoryPinned;
         private CommandGroup _groupPinned;
-        private Dictionary<CategoryKey, CommandCategory> Categories { get; } = new();
-        private Dictionary<GroupKey, CommandGroup> Groups { get; } = new();
-        private Dictionary<CommandKey, Command> Commands { get; } = new();
+        internal Dictionary<CategoryKey, CommandCategory> Categories { get; } = new();
+        internal Dictionary<GroupKey, CommandGroup> Groups { get; } = new();
+        internal Dictionary<CommandKey, Command> Commands { get; } = new();
 
-        private readonly List<CommandValueAdapter> _commandValueAdapters = new();
-        private readonly Dictionary<Type, CommandValuesProvider> _valuesProviders = new();
+        internal List<CommandValueAdapter> CommandValueAdapters { get; } = new();
+        internal Dictionary<Type, CommandValuesProvider> ValuesProviders { get; } = new();
 
-        private readonly Dictionary<Type, CommandFunctionsSourceProvider> _targetsForFunctionsProviders = new();
+        internal Dictionary<Type, CommandFunctionsSourceProvider> TargetsForFunctionsProviders { get; } = new();
 
         private readonly Dictionary<Type, Func<double?>> _performanceGraphReferenceValues = new();
 
         public Func<string> BuildVersionToDisplay { get; set; } = () => "v" + Application.version;
 
         private readonly CommandCategory _defaultCategory = new(DefaultGroupId, -1f, null);
-        private int _registrationOrderCounter;
+        internal int RegistrationOrderCounter { get; set; }
 
         private ISavedPrefs _savedPrefs;
 
@@ -208,17 +205,18 @@ namespace Ff.DevSuite
 
             using var _ = Block.SetAndTrack(true, 1, this);
 
+            AttributesParser = new CommandAttributesParser(this);
+            CommandsApi = new DevSuiteCommandsApi(this);
+
             foreach (var defaultAdapter in DefaultCommandValueAdapters.Get())
             {
-                RegisterAdapter(defaultAdapter, true);
+                CommandsApi.RegisterAdapter(defaultAdapter, true);
             }
 
             foreach (var valueProvider in DefaultCommandValuesProviders.Get())
             {
-                RegisterValuesProvider(valueProvider, true);
+                CommandsApi.RegisterValuesProvider(valueProvider, true);
             }
-
-            AttributesParser = new CommandAttributesParser(this);
 
             RegisterPerformancePanelGraph(new FrameTimeGraphDataProvider());
             RegisterPerformancePanelGraph(new SystemRamGraphDataProvider());
@@ -238,19 +236,21 @@ namespace Ff.DevSuite
         {
             _initialized = false;
 
+            AttributesParser = null;
+            CommandsApi = null;
+
             ClearLogs();
             Tree?.AsEditable().Clear();
             Tree = null;
             Categories.Clear();
             Groups.Clear();
             Commands.Clear();
-
-            _commandValueAdapters.Clear();
-            _valuesProviders.Clear();
-            _targetsForFunctionsProviders.Clear();
+            CommandValueAdapters.Clear();
+            ValuesProviders.Clear();
+            TargetsForFunctionsProviders.Clear();
+            RegistrationOrderCounter = 0;
 
             _getGroupByCategory?.Clear();
-            _registrationOrderCounter = 0;
             _cachedRegexForSearch = null;
 
             _apiCalledDispatcher.Reset();
@@ -317,118 +317,7 @@ namespace Ff.DevSuite
             _onChangedDispatcher.Dispatch();
         }
 
-        internal void AddCategory(CommandCategory category, bool silent = false)
-        {
-            var key = new CategoryKey(category.Id);
-            if (Categories.ContainsKey(key) && !silent)
-                Debug.LogWarning($"Category with id {category.Id} was already added. It will be replaced with the new one.");
-            Categories[key] = category;
-            //category.RegistrationOrder = _registrationOrderCounter++;
-            _apiCalledDispatcher.Dispatch();
-        }
 
-        internal void RemoveCategory(string categoryId)
-        {
-            if (Categories.Remove(new CategoryKey(categoryId)))
-                _apiCalledDispatcher.Dispatch();
-        }
-
-        internal void AddGroup(CommandGroup group, bool silent = false)
-        {
-            var key = new GroupKey(group.Id, group.CategoryId);
-            if (Groups.ContainsKey(key) && !silent)
-                Debug.LogWarning($"Group with id {group.Id} was already added. It will be replaced with the new one.");
-            Groups[key] = group;
-            group.RegistrationOrder = _registrationOrderCounter++;
-            _apiCalledDispatcher.Dispatch();
-        }
-
-        internal void RemoveGroup(string id, string catagoryId)
-        {
-            var key = new GroupKey(id, catagoryId);
-            if (Groups.Remove(key))
-                _apiCalledDispatcher.Dispatch();
-        }
-
-        internal void AddCommand(Command command, bool silent = false)
-        {
-            var key = new CommandKey(command.Id, command.GroupId, command.CategoryId, command.TargetInstance);
-            if (Commands.ContainsKey(key) && !silent)
-                Debug.LogWarning($"Command with id '{command.Id}' was already added. It will be replaced with the new one.");
-            Commands[key] = command;
-            command.RegistrationOrder = _registrationOrderCounter++;
-            _apiCalledDispatcher.Dispatch();
-        }
-
-        internal void RemoveCommand(string id, string groupId, string categoryId, object instance)
-        {
-            var key = new CommandKey(id, groupId, categoryId, instance);
-            if (Commands.Remove(key))
-                _apiCalledDispatcher.Dispatch();
-        }
-
-        internal void AttachCommandUnit(CommandKey commandKey, BaseCommandUnit unit, bool silent = false)
-        {
-            if (!Commands.ContainsKey(commandKey) && !silent)
-            {
-                Debug.LogWarning($"Command with id '{commandKey.Id}' was not registered");
-                return;
-            }
-
-            var command = Commands[commandKey];
-            unit.RegistrationOrder = command.Units.Count;
-            unit.AssignedToCommand = command;
-
-            command.Units.Add(unit);
-            ValidateCommandUnit(unit);
-            _apiCalledDispatcher.Dispatch();
-        }
-
-        public void RegisterAdapter(CommandValueAdapter valueAdapter, bool silent = false)
-        {
-            var index = _commandValueAdapters.BinaryLastIndex(a => a.Priority >= valueAdapter.Priority);
-            _commandValueAdapters.Insert(index + 1, valueAdapter);
-            InvalidateCache();
-            _apiCalledDispatcher.Dispatch();
-        }
-
-        public void UnregisterAdapter(CommandValueAdapter valueAdapter)
-        {
-            _commandValueAdapters.Remove(valueAdapter);
-            InvalidateCache();
-        }
-
-        public void RegisterValuesProvider(CommandValuesProvider valuesProvider, bool silent = false)
-        {
-            if (_valuesProviders.ContainsKey(valuesProvider.Type) && !silent)
-                Debug.LogWarning($"Value provider for type '{valuesProvider.Type}' has been already added. Will override.");
-            _valuesProviders[valuesProvider.Type] = valuesProvider;
-            InvalidateCache();
-            _apiCalledDispatcher.Dispatch();
-        }
-
-        public void UnregisterValuesProvider(CommandValuesProvider valuesProvider)
-        {
-            _valuesProviders.Remove(valuesProvider.Type);
-            InvalidateCache();
-            _apiCalledDispatcher.Dispatch();
-        }
-
-        public void RegisterTargetForFunctionsProvider(CommandFunctionsSourceProvider provider, bool silent = false)
-        {
-            if (_targetsForFunctionsProviders.ContainsKey(provider.Type) && !silent)
-                Debug.LogWarning($"Value provider for type '{provider.Type}' has been already added. Will override.");
-            _targetsForFunctionsProviders[provider.Type] = provider;
-            InvalidateCache();
-            _apiCalledDispatcher.Dispatch();
-        }
-
-        public void UnregisterTargetForFunctionsProvider(CommandFunctionsSourceProvider provider)
-        {
-            _targetsForFunctionsProviders.Remove(provider.Type);
-            InvalidateCache();
-            _apiCalledDispatcher.Dispatch();
-        }
 
         private LazyCache<Type, string, bool, Func<object, object>> _getTryGetValueFromTargetsCache;
 
@@ -442,7 +331,7 @@ namespace Ff.DevSuite
                                        ?? GetReadableMemberFromType(classType, memberName, false);
                     if (directMember == null)
                     {
-                        foreach (var provider in _targetsForFunctionsProviders.Values)
+                        foreach (var provider in TargetsForFunctionsProviders.Values)
                         {
                             var contains = true;
                             if (provider.FunctionsNames != null)
@@ -1308,7 +1197,7 @@ namespace Ff.DevSuite
             return GetAdaptersChain(a, b, true).Error == null;
         }
 
-        private void InvalidateCache()
+        internal void InvalidateCache()
         {
             _getAdapterFromCache?.Clear();
             _adapterChainsCache?.Clear();
@@ -1364,7 +1253,7 @@ namespace Ff.DevSuite
                     var inheritedTypes = type.GetAllInheritedTypes();
                     foreach (var inheritedType in inheritedTypes)
                     {
-                        _valuesProviders.TryGetValue(inheritedType, out var valuesProvider);
+                        ValuesProviders.TryGetValue(inheritedType, out var valuesProvider);
                         if (valuesProvider != null)
                             return valuesProvider;
                     }
@@ -1499,7 +1388,7 @@ namespace Ff.DevSuite
                         {
                             var current = queue.Dequeue();
 
-                            foreach (var adapter in _commandValueAdapters)
+                            foreach (var adapter in CommandValueAdapters)
                             {
                                 var destinations = adapter.GetPossibleDestinations(current, hints);
                                 if (destinations == null)
@@ -1605,7 +1494,7 @@ namespace Ff.DevSuite
             return true;
         }
 
-        private void ValidateCommandUnit(BaseCommandUnit unit)
+        internal void ValidateCommandUnit(BaseCommandUnit unit)
         {
             switch (unit)
             {
