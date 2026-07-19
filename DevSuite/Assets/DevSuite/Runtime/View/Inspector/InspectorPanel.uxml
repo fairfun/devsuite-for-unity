@@ -6,6 +6,7 @@
                 <ui:Label name="selectedObjectLabel" text="None selected" class="inspector-selected-object"/>
                 <ui:Label name="selectedObjectPathLabel" text="" class="inspector-selected-object-path"/>
             </ui:VisualElement>
+            <ui:Button name="copyBtn" class="inspector-icon-btn" tooltip="Copy inspected components and property values to clipboard"/>
         </ui:VisualElement>
 
         <!-- Scrollable Property List -->

@@ -12,6 +12,7 @@ namespace Ff.DevSuite.View
         private readonly Label _selectedObjectLabel;
         private readonly Label _selectedObjectPathLabel;
         private readonly ScrollView _scrollView;
+        private readonly Button _copyBtn;
 
         private struct TrackedProperty
         {
@@ -36,6 +37,23 @@ namespace Ff.DevSuite.View
             _selectedObjectPathLabel = root.Q<Label>("selectedObjectPathLabel");
             _scrollView = root.Q<ScrollView>("inspectorScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+
+            _copyBtn = root.Q<Button>("copyBtn");
+            if (_copyBtn != null)
+            {
+                _copyBtn.text = "\uf0c5"; // copy icon
+                _copyBtn.clicked += () =>
+                {
+                    var selected = GetSelectedGameObject();
+                    if (selected != null)
+                    {
+                        var inspectorText = GetInspectorText(selected);
+                        DevSuiteUtils.CopyToClipboard(inspectorText);
+                        DevSuiteUtils.ShowIconButtonClickedFeedback(_copyBtn);
+                    }
+                };
+            }
+
             DevSuiteUtils.SetupTooltips(this);
         }
 
@@ -44,7 +62,7 @@ namespace Ff.DevSuite.View
             if (_context != null)
             {
                 _context.OnChanged -= HandleContextChanged;
-                _context.OnEveryFrame -= UpdateFrame;
+                _context.OnEveryFrame -= HandleOnEveryFrame;
             }
 
             _context = context;
@@ -52,7 +70,7 @@ namespace Ff.DevSuite.View
             if (_context != null)
             {
                 _context.OnChanged += HandleContextChanged;
-                _context.OnEveryFrame += UpdateFrame;
+                _context.OnEveryFrame += HandleOnEveryFrame;
                 UpdateInspector();
             }
         }
@@ -62,7 +80,7 @@ namespace Ff.DevSuite.View
             if (_context != null)
             {
                 _context.OnChanged -= HandleContextChanged;
-                _context.OnEveryFrame -= UpdateFrame;
+                _context.OnEveryFrame -= HandleOnEveryFrame;
                 _context = null;
             }
         }
@@ -106,7 +124,7 @@ namespace Ff.DevSuite.View
             }
 
             _selectedObjectLabel.text = go.name;
-            _selectedObjectPathLabel.text = GetGameObjectPath(go);
+            _selectedObjectPathLabel.text = DevSuiteUtils.GetGameObjectPath(go);
 
             var components = go.GetComponents<Component>();
             foreach (var comp in components)
@@ -254,7 +272,7 @@ namespace Ff.DevSuite.View
                 {
                     FieldInfo fi => fi.GetValue(comp),
                     PropertyInfo pi => pi.GetValue(comp),
-                    _ => null
+                    _ => null,
                 };
                 valueLabel.text = FormatValue(initialVal);
             }
@@ -304,14 +322,14 @@ namespace Ff.DevSuite.View
             if (value is UnityEngine.Object obj)
             {
                 return obj == null
-                    ? "null" :
-                    $"[{obj.GetType().Name}] {obj.name}";
+                    ? "null"
+                    : $"[{obj.GetType().Name}] {obj.name}";
             }
 
             return value.ToString();
         }
 
-        private void UpdateFrame()
+        private void HandleOnEveryFrame()
         {
             if (_context == null || _lastSelectedGameObject == null)
             {
@@ -337,7 +355,7 @@ namespace Ff.DevSuite.View
                     {
                         FieldInfo fi => fi.GetValue(prop.Target),
                         PropertyInfo pi => pi.GetValue(prop.Target),
-                        _ => null
+                        _ => null,
                     };
 
                     prop.ValueLabel.text = FormatValue(val);
@@ -349,20 +367,124 @@ namespace Ff.DevSuite.View
             }
         }
 
-        private string GetGameObjectPath(GameObject go)
+        private GameObject GetSelectedGameObject()
+        {
+            if (_context != null && _context.SelectedGameObject != null)
+            {
+                return _context.SelectedGameObject;
+            }
+#if UNITY_EDITOR
+            if (UnityEditor.Selection.activeGameObject != null)
+            {
+                return UnityEditor.Selection.activeGameObject;
+            }
+#endif
+            return null;
+        }
+
+        private string GetInspectorText(GameObject go)
         {
             if (go == null)
             {
                 return "";
             }
-            var path = go.name;
-            var parent = go.transform.parent;
-            while (parent != null)
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"GameObject: {go.name}");
+            sb.AppendLine($"Path: {DevSuiteUtils.GetGameObjectPath(go)}");
+            sb.AppendLine();
+
+            var components = go.GetComponents<Component>();
+            foreach (var comp in components)
             {
-                path = parent.name + "/" + path;
-                parent = parent.parent;
+                if (comp == null) continue;
+
+                var compType = comp.GetType();
+                sb.AppendLine($"{compType.Name} ({compType.Namespace ?? "UnityEngine"})");
+
+                var allFields = compType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                var allProps = compType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+                var serializableFields = new List<FieldInfo>();
+                var otherMembers = new List<MemberInfo>();
+
+                foreach (var field in allFields)
+                {
+                    if (field.Name.StartsWith("<")) continue;
+                    if (field.GetCustomAttribute<ObsoleteAttribute>() != null) continue;
+
+                    if (IsSerializable(field))
+                    {
+                        serializableFields.Add(field);
+                    }
+                    else
+                    {
+                        otherMembers.Add(field);
+                    }
+                }
+
+                foreach (var prop in allProps)
+                {
+                    if (!prop.CanRead) continue;
+                    if (prop.GetIndexParameters().Length > 0) continue;
+                    if (prop.GetCustomAttribute<ObsoleteAttribute>() != null) continue;
+
+                    if (prop.DeclaringType == typeof(Component) ||
+                        prop.DeclaringType == typeof(MonoBehaviour) ||
+                        prop.DeclaringType == typeof(Behaviour) ||
+                        prop.DeclaringType == typeof(UnityEngine.Object))
+                    {
+                        continue;
+                    }
+
+                    otherMembers.Add(prop);
+                }
+
+                foreach (var field in serializableFields)
+                {
+                    AppendPropertyText(comp, field, sb);
+                }
+
+                foreach (var member in otherMembers)
+                {
+                    AppendPropertyText(comp, member, sb);
+                }
+
+                sb.AppendLine();
             }
-            return go.scene.name + "/" + path;
+
+            return sb.ToString();
+        }
+
+        private void AppendPropertyText(Component comp, MemberInfo member, System.Text.StringBuilder sb)
+        {
+            try
+            {
+                var val = member switch
+                {
+                    FieldInfo fi => fi.GetValue(comp),
+                    PropertyInfo pi => pi.GetValue(comp),
+                    _ => null,
+                };
+                var formattedVal = FormatValue(val);
+                if (formattedVal != null && (formattedVal.Contains("\n") || formattedVal.Contains("\r")))
+                {
+                    sb.AppendLine($"  {member.Name}:");
+                    var lines = formattedVal.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                    foreach (var line in lines)
+                    {
+                        sb.AppendLine($"    {line}");
+                    }
+                }
+                else
+                {
+                    sb.AppendLine($"  {member.Name}: {formattedVal}");
+                }
+            }
+            catch
+            {
+                sb.AppendLine($"  {member.Name}: <error>");
+            }
         }
     }
 }

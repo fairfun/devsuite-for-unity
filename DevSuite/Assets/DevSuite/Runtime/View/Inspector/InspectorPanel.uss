@@ -124,3 +124,21 @@
     color: rgb(140, 140, 140);
     -unity-font-style: italic;
 }
+
+.inspector-icon-btn {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    font-size: 14px;
+    width: 28px;
+    height: 24px;
+    margin-left: 2px;
+    padding: 0;
+    color: var(--text-label-color);
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    border-radius: 4px;
+}
+
+.inspector-icon-btn:hover {
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.03);
+}
