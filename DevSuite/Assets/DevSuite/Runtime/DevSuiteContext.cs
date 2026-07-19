@@ -1531,6 +1531,15 @@ namespace Ff.DevSuite
 
         private bool IsPrimitive(Type type) => type.IsPrimitive || type.IsEnum || type == typeof(string);
 
+        private static readonly GeneralizedLogSeverity[] LogTypeToGeneralLogSeverity = new GeneralizedLogSeverity[(int)LogType.Exception + 1].With(l =>
+        {
+            l[(int)LogType.Error] = GeneralizedLogSeverity.Error;
+            l[(int)LogType.Assert] = GeneralizedLogSeverity.Error;
+            l[(int)LogType.Warning] = GeneralizedLogSeverity.Warning;
+            l[(int)LogType.Log] = GeneralizedLogSeverity.Ordinary;
+            l[(int)LogType.Exception] = GeneralizedLogSeverity.Error;
+        });
+
         private void HandleUnityLog(string message, string stackTrace, LogType type)
         {
             if (!Application.isPlaying)
@@ -1538,16 +1547,7 @@ namespace Ff.DevSuite
                 return;
             }
 
-            var severity = type switch
-            {
-                LogType.Log => GeneralizedLogSeverity.Ordinary,
-                LogType.Warning => GeneralizedLogSeverity.Warning,
-                LogType.Error => GeneralizedLogSeverity.Error,
-                LogType.Assert => GeneralizedLogSeverity.Error,
-                LogType.Exception => GeneralizedLogSeverity.Error,
-                _ => GeneralizedLogSeverity.Ordinary
-            };
-
+            var severity = LogTypeToGeneralLogSeverity[(int)type];
             var msg = new LogMessageData(severity, message.Trim(), null, stackTrace.Trim(), DateTime.Now);
             lock (_allLogMessages)
             {
@@ -1704,7 +1704,7 @@ namespace Ff.DevSuite
                         }
 
                         ExecuteButton(button);
-                        nextUnit:;
+                    nextUnit:;
                     }
                 }
             }
@@ -1809,7 +1809,8 @@ namespace Ff.DevSuite
     {
         public string Id;
 
-        public CategoryKey(string id) {
+        public CategoryKey(string id)
+        {
             Id = id;
         }
 

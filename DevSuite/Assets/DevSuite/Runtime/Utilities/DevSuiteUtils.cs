@@ -21,6 +21,17 @@ namespace Ff.DevSuite
 
         public static Regex NewLineRegex { get; } = new Regex(@"[\r\n]+", RegexOptions.Compiled);
 
+        public static TResult As<TSource, TResult>(this TSource source, Func<TSource, TResult> action)
+        {
+            return action(source);
+        }
+
+        public static T With<T>(this T source, Action<T> action) where T : class
+        {
+            action(source);
+            return source;
+        }
+
         public static IList<T> AsEditable<T>(this IReadOnlyList<T> list)
         {
             if (list is List<T> listT)
