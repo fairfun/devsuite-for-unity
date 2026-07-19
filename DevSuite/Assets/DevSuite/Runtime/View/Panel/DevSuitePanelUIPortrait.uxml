@@ -6,6 +6,8 @@
             <ui:VisualElement name="performance-panel-container" class="basic-container-element" picking-mode="Ignore" />
             <ui:VisualElement name="commands-full-container" class="basic-container-element" picking-mode="Ignore" />
             <ui:VisualElement name="logs-container" class="basic-container-element" picking-mode="Ignore" />
+            <ui:VisualElement name="hierarchy-container" class="basic-container-element" picking-mode="Ignore" />
+            <ui:VisualElement name="inspector-container" class="basic-container-element" picking-mode="Ignore" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

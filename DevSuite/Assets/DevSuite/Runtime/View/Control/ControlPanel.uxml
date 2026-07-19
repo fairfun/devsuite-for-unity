@@ -6,8 +6,10 @@
             <ui:Label name="version-lbl" class="ff-control-panel-version"/>
         </ui:VisualElement>
         <ui:Button name="logs-btn" text="" class="ff-control-panel-btn"/>
-        <ui:Button name="commands-btn" text="" class="ff-control-panel-btn"/>
+        <ui:Button name="hierarchy-btn" text="" class="ff-control-panel-btn"/>
+        <ui:Button name="inspector-btn" text="" class="ff-control-panel-btn"/>
         <ui:Button name="metrics-btn" text="" class="ff-control-panel-btn"/>
+        <ui:Button name="commands-btn" text="" class="ff-control-panel-btn"/>
         <ui:Button name="pinned-commands-btn" text="" class="ff-control-panel-btn"/>
         <ui:Button name="expand-btn" text="" class="ff-control-panel-btn"/>
     </ui:VisualElement>

@@ -1,5 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <ui:VisualElement name="root" class="devsuite-panel-root" picking-mode="Ignore">
+        <ui:VisualElement name="inspector-container" picking-mode="Ignore" />
+        <ui:VisualElement name="hierarchy-container" picking-mode="Ignore" />
         <ui:VisualElement name="logs-container" picking-mode="Ignore" />
         <ui:VisualElement name="commands-full-container" picking-mode="Ignore" />
         <ui:VisualElement name="basic-container" picking-mode="Ignore">

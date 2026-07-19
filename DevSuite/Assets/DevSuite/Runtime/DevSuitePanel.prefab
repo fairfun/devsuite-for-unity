@@ -83,3 +83,7 @@ MonoBehaviour:
   _performanceUss: {fileID: 7433441132597879392, guid: 8950058c38edd0e0aad44eea47879f64, type: 3}
   _logsUxml: {fileID: 9197481963319205126, guid: f3014af3f8c999aab896e40704ee239b, type: 3}
   _logsUss: {fileID: 7433441132597879392, guid: a01a825176b137d0abd36ebee3cc4df6, type: 3}
+  _hierarchyUxml: {fileID: 9197481963319205126, guid: d31a8ca9b28a49c693a7eb2db0d21051, type: 3}
+  _hierarchyUss: {fileID: 7433441132597879392, guid: f713c49e29a94e8093a7eb2db0d21052, type: 3}
+  _inspectorUxml: {fileID: 9197481963319205126, guid: a4603957be84451093a7eb2db0d21053, type: 3}
+  _inspectorUss: {fileID: 7433441132597879392, guid: d9426f8aae8a491893a7eb2db0d21054, type: 3}

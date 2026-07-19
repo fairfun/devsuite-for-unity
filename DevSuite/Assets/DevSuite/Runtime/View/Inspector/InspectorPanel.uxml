@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="inspector-panel-root" class="inspector-panel-container">
+        <!-- Title and top info -->
+        <ui:VisualElement class="inspector-header-row">
+            <ui:VisualElement style="flex-direction: column; flex-grow: 1;">
+                <ui:Label name="selectedObjectLabel" text="None selected" class="inspector-selected-object"/>
+                <ui:Label name="selectedObjectPathLabel" text="" class="inspector-selected-object-path"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Scrollable Property List -->
+        <ui:ScrollView name="inspectorScrollView" class="inspector-list-view"/>
+    </ui:VisualElement>
+</ui:UXML>

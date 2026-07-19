@@ -13,6 +13,8 @@ namespace Ff.DevSuite.View
         private readonly Button _commandsButton;
         private readonly Button _pinnedCommandsButton;
         private readonly Button _metricsButton;
+        private readonly Button _hierarchyButton;
+        private readonly Button _inspectorButton;
         private readonly Button _expandButton;
         private readonly VisualElement _divider;
         private readonly Label _versionLabel;
@@ -33,6 +35,8 @@ namespace Ff.DevSuite.View
         private const string IconCommands = "\uf04e";
         private const string IconPinnedCommands = "\uf08d";
         private const string IconMetrics = "\uf681";
+        private const string IconHierarchy = "\uf0e8";
+        private const string IconInspector = "\uf05a";
         private const string IconExpand = "\uf0fe";
         private const string IconCollapse = "\uf146";
         private const int BlinkIntervalMs = 300;
@@ -50,6 +54,8 @@ namespace Ff.DevSuite.View
             _commandsButton = this.Q<Button>("commands-btn");
             _pinnedCommandsButton = this.Q<Button>("pinned-commands-btn");
             _metricsButton = this.Q<Button>("metrics-btn");
+            _hierarchyButton = this.Q<Button>("hierarchy-btn");
+            _inspectorButton = this.Q<Button>("inspector-btn");
             _expandButton = this.Q<Button>("expand-btn");
             _divider = this.Q<VisualElement>("divider");
             _versionLabel = this.Q<Label>("version-lbl");
@@ -59,6 +65,8 @@ namespace Ff.DevSuite.View
             _commandsButton.text = IconCommands;
             _pinnedCommandsButton.text = IconPinnedCommands;
             _metricsButton.text = IconMetrics;
+            _hierarchyButton.text = IconHierarchy;
+            _inspectorButton.text = IconInspector;
             _expandButton.text = IconExpand;
 
             var root = this.Q<VisualElement>("ff-control-panel-root");
@@ -81,6 +89,8 @@ namespace Ff.DevSuite.View
             _commandsButton.clicked += () => ToggleContextValue(ctx => ctx.CommandsVisible = !ctx.CommandsVisible);
             _pinnedCommandsButton.clicked += () => ToggleContextValue(ctx => ctx.PinnedCommandsVisible = !ctx.PinnedCommandsVisible);
             _metricsButton.clicked += () => ToggleContextValue(ctx => ctx.MetricsVisible = !ctx.MetricsVisible);
+            _hierarchyButton.clicked += () => ToggleContextValue(ctx => ctx.HierarchyVisible = !ctx.HierarchyVisible);
+            _inspectorButton.clicked += () => ToggleContextValue(ctx => ctx.InspectorVisible = !ctx.InspectorVisible);
 
             _expandButton.RegisterCallback<PointerDownEvent>(HandleExpandPointerDown, TrickleDown.TrickleDown);
             _expandButton.RegisterCallback<PointerUpEvent>(HandleExpandPointerUp, TrickleDown.TrickleDown);
@@ -297,7 +307,7 @@ namespace Ff.DevSuite.View
 
             _resetButton.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             _divider.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
-            
+
             var extraVersion = _context.BuildVersionToDisplay?.Invoke();
             if (string.IsNullOrEmpty(extraVersion))
             {
@@ -308,11 +318,13 @@ namespace Ff.DevSuite.View
                 _versionLabel.text = extraVersion;
                 _versionLabel.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             }
-            
+
             _logsButton.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             _commandsButton.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             _pinnedCommandsButton.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             _metricsButton.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
+            _hierarchyButton.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
+            _inspectorButton.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
 
             _expandButton.text = expanded ? IconCollapse : IconExpand;
             _expandButton.EnableInClassList("active", expanded);
@@ -321,6 +333,8 @@ namespace Ff.DevSuite.View
             _commandsButton.EnableInClassList("active", _context.CommandsVisible);
             _pinnedCommandsButton.EnableInClassList("active", _context.PinnedCommandsVisible);
             _metricsButton.EnableInClassList("active", _context.MetricsVisible);
+            _hierarchyButton.EnableInClassList("active", _context.HierarchyVisible);
+            _inspectorButton.EnableInClassList("active", _context.InspectorVisible);
             _resetButton.EnableInClassList("normal", true);
 
             UpdateErrorBlink();

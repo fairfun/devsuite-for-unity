@@ -42,6 +42,7 @@ namespace Ff.DevSuite
         void RegisterPerformancePanelGraph(BaseGraphDataProvider provider);
         void SetPerformanceReferenceValue<T>(Func<double?> referenceValueProvider) where T : BaseGraphDataProvider;
         Func<string> BuildVersionToDisplay { get; set; }
+        GameObject SelectedGameObject { get; set; }
         string GetAllLogsText();
         void ClearLogs();
         void ClearSettings();
@@ -140,6 +141,19 @@ namespace Ff.DevSuite
         private readonly Dictionary<Type, Func<double?>> _performanceGraphReferenceValues = new();
 
         public Func<string> BuildVersionToDisplay { get; set; } = () => "v" + Application.version;
+
+        private GameObject _selectedGameObject;
+        public GameObject SelectedGameObject
+        {
+            get => _selectedGameObject;
+            set
+            {
+                if (_selectedGameObject == value)
+                    return;
+                _selectedGameObject = value;
+                _onChangedDispatcher.Dispatch();
+            }
+        }
 
         private readonly CommandCategory _defaultCategory = new(DefaultGroupId, -1f, null);
         internal int RegistrationOrderCounter { get; set; }
@@ -653,6 +667,18 @@ namespace Ff.DevSuite
         {
             get => (Settings?.Ready ?? false) && Settings.Value.PanelExpanded;
             set => SetSettingsValue(() => Settings.Value.PanelExpanded, v => Settings.Value.PanelExpanded = v, value);
+        }
+
+        internal bool HierarchyVisible
+        {
+            get => (Settings?.Ready ?? false) && Settings.Value.HierarchyVisible;
+            set => SetSettingsValue(() => Settings.Value.HierarchyVisible, v => Settings.Value.HierarchyVisible = v, value);
+        }
+
+        internal bool InspectorVisible
+        {
+            get => (Settings?.Ready ?? false) && Settings.Value.InspectorVisible;
+            set => SetSettingsValue(() => Settings.Value.InspectorVisible, v => Settings.Value.InspectorVisible = v, value);
         }
 
         private void SetSettingsValue<T>(Func<T> getter, Action<T> setter, T value)
@@ -1748,6 +1774,8 @@ namespace Ff.DevSuite
         [DataMember, MemoryPackOrder(9), Key(9)] public string SelectedCategory { get; set; }
         [DataMember, MemoryPackOrder(10), Key(10)] public HashSet<GeneralizedLogSeverity> HiddenLogSeverity { get; set; } = new();
         [DataMember, MemoryPackOrder(11), Key(11)] public List<CollapsedGroupItem> CollapsedGroups { get; set; } = new();
+        [DataMember, MemoryPackOrder(12), Key(12)] public bool HierarchyVisible { get; set; }
+        [DataMember, MemoryPackOrder(13), Key(13)] public bool InspectorVisible { get; set; }
     }
 
     [MemoryPackable(GenerateType.VersionTolerant)]
