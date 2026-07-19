@@ -91,6 +91,10 @@ namespace Ff.DevSuite.View
             _regexBtn.clicked += () =>
             {
                 _searchByRegex = !_searchByRegex;
+                if (_context != null)
+                {
+                    _context.HierarchySearchRegex = _searchByRegex;
+                }
                 UpdateButtonStates();
                 HandleSearchOptionsChanged();
             };
@@ -100,6 +104,10 @@ namespace Ff.DevSuite.View
             _nameBtn.clicked += () =>
             {
                 _searchByName = !_searchByName;
+                if (_context != null)
+                {
+                    _context.HierarchySearchByName = _searchByName;
+                }
                 UpdateButtonStates();
                 HandleSearchOptionsChanged();
             };
@@ -109,6 +117,10 @@ namespace Ff.DevSuite.View
             _typeBtn.clicked += () =>
             {
                 _searchByType = !_searchByType;
+                if (_context != null)
+                {
+                    _context.HierarchySearchByType = _searchByType;
+                }
                 UpdateButtonStates();
                 HandleSearchOptionsChanged();
             };
@@ -118,6 +130,10 @@ namespace Ff.DevSuite.View
             _dimBtn.clicked += () =>
             {
                 _keepDimmed = !_keepDimmed;
+                if (_context != null)
+                {
+                    _context.HierarchyKeepDimmed = _keepDimmed;
+                }
                 UpdateButtonStates();
                 HandleSearchOptionsChanged();
             };
@@ -166,6 +182,13 @@ namespace Ff.DevSuite.View
             {
                 _context.OnChanged += HandleContextChanged;
                 _context.OnEveryFrame += HandleOnEveryFrame;
+
+                _searchByRegex = _context.HierarchySearchRegex;
+                _searchByName = _context.HierarchySearchByName;
+                _searchByType = _context.HierarchySearchByType;
+                _keepDimmed = _context.HierarchyKeepDimmed;
+                UpdateButtonStates();
+
                 RebuildTree();
             }
         }
@@ -263,10 +286,9 @@ namespace Ff.DevSuite.View
             var searchByName = _searchByName;
             var searchByType = _searchByType;
 
-            // If neither is checked, default to name search
             if (!searchByName && !searchByType)
             {
-                searchByName = true;
+                return;
             }
 
             for (var i = 0; i < SceneManager.sceneCount; i++)

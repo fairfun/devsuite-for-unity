@@ -768,6 +768,30 @@ namespace Ff.DevSuite
             set => SetSettingsValue(() => Settings.Value.InspectorVisible, v => Settings.Value.InspectorVisible = v, value);
         }
 
+        internal bool HierarchySearchRegex
+        {
+            get => (Settings?.Ready ?? false) && Settings.Value.HierarchySearchRegex;
+            set => SetSettingsValue(() => Settings.Value.HierarchySearchRegex, v => Settings.Value.HierarchySearchRegex = v, value);
+        }
+
+        internal bool HierarchySearchByName
+        {
+            get => !(Settings?.Ready ?? false) || Settings.Value.HierarchySearchByName;
+            set => SetSettingsValue(() => Settings.Value.HierarchySearchByName, v => Settings.Value.HierarchySearchByName = v, value);
+        }
+
+        internal bool HierarchySearchByType
+        {
+            get => !(Settings?.Ready ?? false) || Settings.Value.HierarchySearchByType;
+            set => SetSettingsValue(() => Settings.Value.HierarchySearchByType, v => Settings.Value.HierarchySearchByType = v, value);
+        }
+
+        internal bool HierarchyKeepDimmed
+        {
+            get => !(Settings?.Ready ?? false) || Settings.Value.HierarchyKeepDimmed;
+            set => SetSettingsValue(() => Settings.Value.HierarchyKeepDimmed, v => Settings.Value.HierarchyKeepDimmed = v, value);
+        }
+
         private void SetSettingsValue<T>(Func<T> getter, Action<T> setter, T value)
         {
             if (!CheckSettingsInitialized())
@@ -1927,6 +1951,10 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(11)][Key(11)] public List<CollapsedGroupItem> CollapsedGroups { get; set; } = new();
         [DataMember][MemoryPackOrder(12)][Key(12)] public bool HierarchyVisible { get; set; }
         [DataMember][MemoryPackOrder(13)][Key(13)] public bool InspectorVisible { get; set; }
+        [DataMember][MemoryPackOrder(14)][Key(14)] public bool HierarchySearchRegex { get; set; }
+        [DataMember][MemoryPackOrder(15)][Key(15)] public bool HierarchySearchByName { get; set; } = true;
+        [DataMember][MemoryPackOrder(16)][Key(16)] public bool HierarchySearchByType { get; set; } = true;
+        [DataMember][MemoryPackOrder(17)][Key(17)] public bool HierarchyKeepDimmed { get; set; } = true;
     }
 
     [MemoryPackable(GenerateType.VersionTolerant)]

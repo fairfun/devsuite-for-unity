@@ -19,7 +19,7 @@
             <ui:Button name="refreshBtn" class="hierarchy-icon-btn" tooltip="Refresh scene objects"/>
             <ui:VisualElement style="flex-grow: 1;"/>
             <ui:Button name="copyBtn" class="hierarchy-icon-btn" tooltip="Copy entire hierarchy tree to clipboard"/>
-            <ui:Button name="pickBtn" class="hierarchy-icon-btn" tooltip="PICK mode: Click an object in the Game View to select it"/>
+            <ui:Button name="pickBtn" class="hierarchy-icon-btn" tooltip="Pick mode: Click an object in the Game View to select it"/>
         </ui:VisualElement>
 
         <!-- Scrollable Scene Tree -->
