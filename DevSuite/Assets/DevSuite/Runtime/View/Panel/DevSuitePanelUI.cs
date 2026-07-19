@@ -61,6 +61,7 @@ namespace Ff.DevSuite.View
         private HierarchyPanelView _hierarchyPanelView;
         private InspectorPanelView _inspectorPanelView;
 
+
         private VisualElement _logsContainer;
         private VisualElement _commandsFullContainer;
         private VisualElement _basicContainer;

@@ -17,10 +17,15 @@ namespace Ff.DevSuite.View
         private readonly TextField _filterField;
         private readonly Button _prevBtn;
         private readonly Button _nextBtn;
-        private readonly Toggle _regexToggle;
-        private readonly Toggle _nameToggle;
-        private readonly Toggle _typeToggle;
-        private readonly Toggle _dimToggle;
+        private readonly Button _regexBtn;
+        private readonly Button _nameBtn;
+        private readonly Button _typeBtn;
+        private readonly Button _dimBtn;
+
+        private bool _searchByRegex = false;
+        private bool _searchByName = true;
+        private bool _searchByType = true;
+        private bool _keepDimmed = true;
         private readonly ScrollView _scrollView;
 
         private readonly HashSet<string> _collapsedSceneNames = new();
@@ -66,28 +71,27 @@ namespace Ff.DevSuite.View
             _nextBtn.text = "\uf105"; // angle-right
             _nextBtn.clicked += HandleNextResult;
 
-            _regexToggle = root.Q<Toggle>("regexToggle");
-            _regexToggle.value = false;
-            _regexToggle.RegisterValueChangedCallback(_ => HandleSearchOptionsChanged());
-            SetupCheckbox(_regexToggle);
+            _regexBtn = root.Q<Button>("regexBtn");
+            _regexBtn.text = ".*";
+            _regexBtn.clicked += () => { _searchByRegex = !_searchByRegex; UpdateButtonStates(); HandleSearchOptionsChanged(); };
 
-            _nameToggle = root.Q<Toggle>("nameToggle");
-            _nameToggle.value = true;
-            _nameToggle.RegisterValueChangedCallback(_ => HandleSearchOptionsChanged());
-            SetupCheckbox(_nameToggle);
+            _nameBtn = root.Q<Button>("nameBtn");
+            _nameBtn.text = "\uf02b"; // tag
+            _nameBtn.clicked += () => { _searchByName = !_searchByName; UpdateButtonStates(); HandleSearchOptionsChanged(); };
 
-            _typeToggle = root.Q<Toggle>("typeToggle");
-            _typeToggle.value = true;
-            _typeToggle.RegisterValueChangedCallback(_ => HandleSearchOptionsChanged());
-            SetupCheckbox(_typeToggle);
+            _typeBtn = root.Q<Button>("typeBtn");
+            _typeBtn.text = "\uf1b2"; // cube
+            _typeBtn.clicked += () => { _searchByType = !_searchByType; UpdateButtonStates(); HandleSearchOptionsChanged(); };
 
-            _dimToggle = root.Q<Toggle>("dimToggle");
-            _dimToggle.value = true;
-            _dimToggle.RegisterValueChangedCallback(_ => HandleSearchOptionsChanged());
-            SetupCheckbox(_dimToggle);
+            _dimBtn = root.Q<Button>("dimBtn");
+            _dimBtn.text = "\uf042"; // adjust
+            _dimBtn.clicked += () => { _keepDimmed = !_keepDimmed; UpdateButtonStates(); HandleSearchOptionsChanged(); };
+
+            UpdateButtonStates();
 
             _scrollView = root.Q<ScrollView>("hierarchyScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            DevSuiteUtils.SetupTooltips(this);
         }
 
         public void Initialize(DevSuiteContext context)
@@ -159,7 +163,7 @@ namespace Ff.DevSuite.View
                 return;
             }
 
-            if (_regexToggle.value)
+            if (_searchByRegex)
             {
                 try
                 {
@@ -186,8 +190,8 @@ namespace Ff.DevSuite.View
                 return;
             }
 
-            var searchByName = _nameToggle.value;
-            var searchByType = _typeToggle.value;
+            var searchByName = _searchByName;
+            var searchByType = _searchByType;
 
             // If neither is checked, default to name search
             if (!searchByName && !searchByType)
@@ -359,7 +363,7 @@ namespace Ff.DevSuite.View
             var hasMatchingDescendant = _searchRegex == null || _descendantMatchingInstanceIds.Contains(instanceId);
 
             // Hide mode: If search active, hide if it doesn't match and has no matching descendants
-            if (_searchRegex != null && !_dimToggle.value && !isMatching && !hasMatchingDescendant)
+            if (_searchRegex != null && !_keepDimmed && !isMatching && !hasMatchingDescendant)
             {
                 return;
             }
@@ -379,7 +383,7 @@ namespace Ff.DevSuite.View
             }
             row.style.paddingLeft = 6 + (depth * 16);
 
-            if (_searchRegex != null && _dimToggle.value)
+            if (_searchRegex != null && _keepDimmed)
             {
                 if (isMatching || hasMatchingDescendant)
                 {
@@ -657,6 +661,14 @@ namespace Ff.DevSuite.View
             }
         }
 
+        private void UpdateButtonStates()
+        {
+            _regexBtn.EnableInClassList("active", _searchByRegex);
+            _nameBtn.EnableInClassList("active", _searchByName);
+            _typeBtn.EnableInClassList("active", _searchByType);
+            _dimBtn.EnableInClassList("active", _keepDimmed);
+        }
+
         private bool IsElementInDevSuite(VisualElement element)
         {
             var cur = element;
@@ -669,21 +681,6 @@ namespace Ff.DevSuite.View
                 cur = cur.parent;
             }
             return false;
-        }
-
-        private void SetupCheckbox(Toggle toggle)
-        {
-            toggle.AddToClassList("hierarchy-toggle");
-            var checkmark = toggle.Q<VisualElement>("unity-checkmark");
-            if (checkmark != null)
-            {
-                var icon = new Label
-                {
-                    text = "\uf00c",
-                };
-                icon.AddToClassList("hierarchy-toggle-icon");
-                checkmark.Add(icon);
-            }
         }
     }
 }

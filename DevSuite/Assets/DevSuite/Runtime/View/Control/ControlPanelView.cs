@@ -99,6 +99,7 @@ namespace Ff.DevSuite.View
             _expandButton.RegisterCallback<MouseUpEvent>(HandleExpandMouseUp, TrickleDown.TrickleDown);
             _expandButton.RegisterCallback<MouseLeaveEvent>(HandleExpandMouseUp, TrickleDown.TrickleDown);
             _expandButton.clicked += HandleExpandClicked;
+            DevSuiteUtils.SetupTooltips(this);
         }
 
         private void HandleExpandClicked()

@@ -588,5 +588,147 @@ namespace Ff.DevSuite
 #else
             false;
 #endif
+
+        public static void SetupTooltips(VisualElement root)
+        {
+            var tooltipLabel = new Label();
+            tooltipLabel.AddToClassList("ff-tooltip");
+            tooltipLabel.style.position = Position.Absolute;
+            tooltipLabel.pickingMode = PickingMode.Ignore;
+            tooltipLabel.style.display = DisplayStyle.None;
+
+            // Apply theme styling programmatically to ensure it works across all panels
+            tooltipLabel.style.backgroundColor = new Color(42 / 255f, 42 / 255f, 42 / 255f, 0.95f);
+            tooltipLabel.style.color = new Color(238 / 255f, 238 / 255f, 238 / 255f, 1f);
+            tooltipLabel.style.paddingLeft = 10;
+            tooltipLabel.style.paddingRight = 10;
+            tooltipLabel.style.paddingTop = 6;
+            tooltipLabel.style.paddingBottom = 6;
+            tooltipLabel.style.borderBottomLeftRadius = 4;
+            tooltipLabel.style.borderBottomRightRadius = 4;
+            tooltipLabel.style.borderTopLeftRadius = 4;
+            tooltipLabel.style.borderTopRightRadius = 4;
+            tooltipLabel.style.borderLeftWidth = 1;
+            tooltipLabel.style.borderRightWidth = 1;
+            tooltipLabel.style.borderTopWidth = 1;
+            tooltipLabel.style.borderBottomWidth = 1;
+            tooltipLabel.style.borderLeftColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
+            tooltipLabel.style.borderRightColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
+            tooltipLabel.style.borderTopColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
+            tooltipLabel.style.borderBottomColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
+            tooltipLabel.style.fontSize = 12;
+            tooltipLabel.style.whiteSpace = WhiteSpace.Normal;
+
+            root.Add(tooltipLabel);
+
+            VisualElement currentTooltipElement = null;
+            string currentTooltipText = null;
+            IVisualElementScheduledItem tooltipTask = null;
+            Vector2 lastMousePosition = Vector2.zero;
+
+            root.RegisterCallback<MouseOverEvent>(evt =>
+            {
+                lastMousePosition = evt.mousePosition;
+                var target = evt.target as VisualElement;
+                VisualElement tooltipElement = null;
+                while (target != null && target != root)
+                {
+                    if (!string.IsNullOrEmpty(target.tooltip))
+                    {
+                        tooltipElement = target;
+                        break;
+                    }
+                    target = target.parent;
+                }
+
+                if (tooltipElement != null)
+                {
+                    if (currentTooltipElement != tooltipElement)
+                    {
+                        currentTooltipElement = tooltipElement;
+                        currentTooltipText = tooltipElement.tooltip;
+
+                        tooltipTask?.Pause();
+                        tooltipTask = tooltipLabel.schedule.Execute(() =>
+                        {
+                            tooltipLabel.text = currentTooltipText;
+                            tooltipLabel.style.display = DisplayStyle.Flex;
+                            tooltipLabel.BringToFront();
+                            UpdateTooltipPosition(tooltipLabel, lastMousePosition);
+                        }).StartingIn(400);
+                    }
+                }
+                else
+                {
+                    HideTooltip(ref currentTooltipElement, ref currentTooltipText, tooltipTask, tooltipLabel);
+                }
+            }, TrickleDown.TrickleDown);
+
+            root.RegisterCallback<MouseMoveEvent>(evt =>
+            {
+                lastMousePosition = evt.mousePosition;
+                if (currentTooltipElement != null)
+                {
+                    UpdateTooltipPosition(tooltipLabel, lastMousePosition);
+                }
+            }, TrickleDown.TrickleDown);
+
+            root.RegisterCallback<MouseOutEvent>(evt =>
+            {
+                if (currentTooltipElement != null)
+                {
+                    var target = evt.target as VisualElement;
+                    if (target == currentTooltipElement)
+                    {
+                        HideTooltip(ref currentTooltipElement, ref currentTooltipText, tooltipTask, tooltipLabel);
+                    }
+                }
+            }, TrickleDown.TrickleDown);
+        }
+
+        private static void UpdateTooltipPosition(Label tooltipLabel, Vector2 mousePosition)
+        {
+            if (tooltipLabel == null || tooltipLabel.style.display == DisplayStyle.None)
+                return;
+
+            var parent = tooltipLabel.parent;
+            if (parent == null)
+                return;
+
+            var localPos = parent.WorldToLocal(mousePosition);
+            var parentWidth = parent.layout.width;
+            
+            var tooltipWidth = tooltipLabel.layout.width;
+            if (float.IsNaN(tooltipWidth) || tooltipWidth <= 0)
+            {
+                tooltipWidth = tooltipLabel.resolvedStyle.width;
+                if (float.IsNaN(tooltipWidth) || tooltipWidth <= 0)
+                {
+                    tooltipWidth = 150f;
+                }
+            }
+
+            var targetX = localPos.x + 12;
+            if (targetX + tooltipWidth > parentWidth)
+            {
+                targetX = localPos.x - tooltipWidth - 12;
+            }
+
+            targetX = Mathf.Clamp(targetX, 4f, Mathf.Max(4f, parentWidth - tooltipWidth - 4f));
+
+            tooltipLabel.style.left = targetX;
+            tooltipLabel.style.top = localPos.y + 12;
+        }
+
+        private static void HideTooltip(ref VisualElement currentTooltipElement, ref string currentTooltipText, IVisualElementScheduledItem tooltipTask, Label tooltipLabel)
+        {
+            currentTooltipElement = null;
+            currentTooltipText = null;
+            tooltipTask?.Pause();
+            if (tooltipLabel != null)
+            {
+                tooltipLabel.style.display = DisplayStyle.None;
+            }
+        }
     }
 }

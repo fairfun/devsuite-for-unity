@@ -5,14 +5,14 @@
                 <ui:Label text="&#xf0b0;" class="logs-filter-icon"/>
                 <ui:TextField name="filterField" class="logs-filter-field" tabindex="-1" focusable="false"/>
             </ui:VisualElement>
-            <ui:Button name="regexButton" text=".*" class="logs-severity-btn logs-regex-btn"/>
-            <ui:Button name="ordinaryButton" class="logs-severity-btn ordinary"/>
-            <ui:Button name="warningButton" class="logs-severity-btn warning"/>
-            <ui:Button name="errorButton" class="logs-severity-btn error"/>
-            <ui:Button name="copyButton" class="logs-icon-btn"/>
-            <ui:Button name="saveButton" class="logs-icon-btn"/>
-            <ui:Button name="folderButton" class="logs-icon-btn"/>
-            <ui:Button name="clearButton" class="logs-icon-btn clear-btn"/>
+            <ui:Button name="regexButton" text=".*" class="logs-severity-btn logs-regex-btn" tooltip="Toggle Regex filter mode"/>
+            <ui:Button name="ordinaryButton" class="logs-severity-btn ordinary" tooltip="Toggle Info logs visibility"/>
+            <ui:Button name="warningButton" class="logs-severity-btn warning" tooltip="Toggle Warning logs visibility"/>
+            <ui:Button name="errorButton" class="logs-severity-btn error" tooltip="Toggle Error logs visibility"/>
+            <ui:Button name="copyButton" class="logs-icon-btn" tooltip="Copy logs to clipboard"/>
+            <ui:Button name="saveButton" class="logs-icon-btn" tooltip="Save logs to text file"/>
+            <ui:Button name="folderButton" class="logs-icon-btn" tooltip="Open log save folder"/>
+            <ui:Button name="clearButton" class="logs-icon-btn clear-btn" tooltip="Clear all logs"/>
         </ui:VisualElement>
         <ui:ScrollView name="logsScrollView" class="logs-list-view"/>
     </ui:VisualElement>

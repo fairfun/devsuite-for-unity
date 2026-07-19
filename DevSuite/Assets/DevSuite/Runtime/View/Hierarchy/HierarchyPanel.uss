@@ -21,7 +21,6 @@
     flex-direction: row;
     align-items: center;
     padding: 6px 8px;
-    background-color: rgba(30, 30, 30, 0.7);
     border-bottom-width: 1px;
     border-bottom-color: var(--divider-color);
 }
@@ -75,62 +74,7 @@
     font-size: 12px;
 }
 
-.hierarchy-options-toolbar {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    padding: 4px 8px;
-    background-color: rgba(34, 34, 34, 0.4);
-    border-bottom-width: 1px;
-    border-bottom-color: var(--divider-color);
-}
 
-.hierarchy-toggle {
-    margin-right: 12px;
-    font-size: 11px;
-    flex-direction: row-reverse;
-}
-
-.hierarchy-toggle .unity-toggle__label {
-    margin-left: 4px;
-    color: var(--text-label-color);
-}
-
-.hierarchy-toggle .unity-toggle__input {
-    margin: 0;
-    padding: 0;
-}
-
-.hierarchy-toggle .unity-toggle__checkmark {
-    background-image: none;
-    border-radius: 6px;
-    background-color: rgba(255, 255, 255, 0.08); /* Persistent background */
-    border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.15);
-    justify-content: center;
-    align-items: center;
-    display: flex; /* Ensure it stays visible */
-    width: 18px;
-    height: 18px;
-    margin: 0;
-}
-
-.hierarchy-toggle:checked .unity-toggle__checkmark {
-    background-image: none;
-}
-
-.hierarchy-toggle-icon {
-    color: var(--accent-color);
-    font-size: 12px;
-    -unity-font-style: bold;
-    padding: 0;
-    margin: 0;
-    display: none;
-}
-
-.hierarchy-toggle:checked .hierarchy-toggle-icon {
-    display: flex;
-}
 
 .hierarchy-icon-btn {
     font-size: 14px;
@@ -145,13 +89,13 @@
 }
 
 .hierarchy-icon-btn:hover {
-    color: rgb(255, 255, 255);
-    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.03);
 }
 
 .hierarchy-icon-btn.active {
-    color: var(--accent-color);
-    background-color: rgba(128, 200, 255, 0.15);
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 .hierarchy-list-view {
@@ -182,8 +126,6 @@
 
 .hierarchy-item-row.selected {
     background-color: var(--selected-bg);
-    border-left-width: 2px;
-    border-left-color: var(--accent-color);
 }
 
 .hierarchy-item-row.dimmed {
@@ -199,7 +141,6 @@
     border-width: 0;
     color: var(--text-label-color);
     font-size: 9px;
-    cursor: link;
 }
 
 .hierarchy-foldout-btn:hover {
