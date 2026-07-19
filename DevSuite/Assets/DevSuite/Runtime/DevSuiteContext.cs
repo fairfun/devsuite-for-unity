@@ -59,7 +59,9 @@ namespace Ff.DevSuite
             UnityEditor.EditorApplication.playModeStateChanged += m =>
             {
                 if (m is UnityEditor.PlayModeStateChange.ExitingEditMode or UnityEditor.PlayModeStateChange.ExitingPlayMode)
+                {
                     ResetStatic();
+                }
             };
         }
 #endif
@@ -72,22 +74,30 @@ namespace Ff.DevSuite
         }
 
         private static DevSuiteContext _default;
+
         public static IDevSuiteContext Default
         {
             get => _default ??= new DevSuiteContext();
             internal set
             {
                 if (_default == value)
+                {
                     return;
+                }
                 ResetStatic();
                 _default = value as DevSuiteContext;
             }
         }
+
         internal static DevSuiteContext DefaultInternal => Default as DevSuiteContext;
 
         public CommandAttributesParser AttributesParser { get; private set; }
         public DevSuiteCommandsApi CommandsApi { get; private set; }
-        public IDisposable SuspendEvents(object requestor) => Block.SetAndTrack(true, 1, requestor);
+
+        public IDisposable SuspendEvents(object requestor)
+        {
+            return Block.SetAndTrack(true, 1, requestor);
+        }
 
         internal static string PinnedMockId { get; set; } = "<Default$Pinned>";
         internal static string DefaultGroupId { get; set; } = "Default";
@@ -117,12 +127,15 @@ namespace Ff.DevSuite
         internal IReadOnlyList<LogMessageData> AllLogMessages => _allLogMessages;
 
         private Regex _logsFilterRegex;
+
         internal Regex LogsFilterRegex
         {
             get
             {
                 if (_logsFilterRegex == null)
+                {
                     UpdateLogsFilterRegex();
+                }
                 return _logsFilterRegex;
             }
         }
@@ -142,15 +155,58 @@ namespace Ff.DevSuite
 
         public Func<string> BuildVersionToDisplay { get; set; } = () => "v" + Application.version;
 
-        private GameObject _selectedGameObject;
+        private readonly List<GameObject> _selectedGameObjects = new();
+        public IReadOnlyList<GameObject> SelectedGameObjects => _selectedGameObjects;
+
+        public void SetSelectedGameObjects(IEnumerable<GameObject> gameObjects)
+        {
+            _selectedGameObjects.Clear();
+            if (gameObjects != null)
+            {
+                _selectedGameObjects.AddRange(gameObjects);
+            }
+            _onChangedDispatcher.Dispatch();
+        }
+
+        public void ToggleSelectedGameObject(GameObject go)
+        {
+            if (go == null)
+            {
+                return;
+            }
+            if (_selectedGameObjects.Contains(go))
+            {
+                _selectedGameObjects.Remove(go);
+            }
+            else
+            {
+                _selectedGameObjects.Add(go);
+            }
+            _onChangedDispatcher.Dispatch();
+        }
+
         public GameObject SelectedGameObject
         {
-            get => _selectedGameObject;
+            get => _selectedGameObjects.Count > 0 ? _selectedGameObjects[0] : null;
             set
             {
-                if (_selectedGameObject == value)
-                    return;
-                _selectedGameObject = value;
+                if (value == null)
+                {
+                    if (_selectedGameObjects.Count == 0)
+                    {
+                        return;
+                    }
+                    _selectedGameObjects.Clear();
+                }
+                else
+                {
+                    if (_selectedGameObjects.Count == 1 && _selectedGameObjects[0] == value)
+                    {
+                        return;
+                    }
+                    _selectedGameObjects.Clear();
+                    _selectedGameObjects.Add(value);
+                }
                 _onChangedDispatcher.Dispatch();
             }
         }
@@ -177,17 +233,18 @@ namespace Ff.DevSuite
 
         public DevSuiteContext()
         {
-            _apiCalledDispatcher = new(Block, () => OnApiCalled?.Invoke());
-            _onChangedDispatcher = new(Block, () => OnChanged?.Invoke());
-            _onEveryFrameDispatcher = new(Block, () => OnEveryFrame?.Invoke());
-            _onPerformancePanelDispatcher = new(Block, () => OnPerformancePanelChanged?.Invoke());
+            _apiCalledDispatcher = new BlockableDispatcher(Block, () => OnApiCalled?.Invoke());
+            _onChangedDispatcher = new BlockableDispatcher(Block, () => OnChanged?.Invoke());
+            _onEveryFrameDispatcher = new BlockableDispatcher(Block, () => OnEveryFrame?.Invoke());
+            _onPerformancePanelDispatcher = new BlockableDispatcher(Block, () => OnPerformancePanelChanged?.Invoke());
 
             Reset();
 
-            Application.logMessageReceivedThreaded += HandleUnityLog;   // start collecting messages already, even though everything else awaits to be initialized yet
+            Application.logMessageReceivedThreaded += HandleUnityLog; // start collecting messages already, even though everything else awaits to be initialized yet
         }
 
         public bool Disposed { get; private set; }
+
         public void Dispose()
         {
             OnApiCalled = null;
@@ -214,7 +271,7 @@ namespace Ff.DevSuite
             _initialized = true;
             _coroutineStarter = coroutineStarter;
             _savedPrefs = savedPrefs ?? SavedPrefs.Factory.Invoke("DevSuiteContext.Default");
-            Settings = new("DevSuiteContext_Settings", new PersistentSettings(), true, _savedPrefs);
+            Settings = new SavedPrefsProperty<PersistentSettings>("DevSuiteContext_Settings", new PersistentSettings(), true, _savedPrefs);
             _savedPrefs?.EnsureReady().Wait();
 
             using var _ = Block.SetAndTrack(true, 1, this);
@@ -333,12 +390,11 @@ namespace Ff.DevSuite
         }
 
 
-
         private LazyCache<Type, string, bool, Func<object, object>> _getTryGetValueFromTargetsCache;
 
         internal bool TryGetValueFromTargets<T>(Type classType, string memberName, object @object, out T value, out string error)
         {
-            _getTryGetValueFromTargetsCache ??= new(
+            _getTryGetValueFromTargetsCache ??= new LazyCache<Type, string, bool, Func<object, object>>(
                 (classType, memberName, @static) =>
                 {
                     var getInstance = new Func<object, object>(o => o);
@@ -362,7 +418,9 @@ namespace Ff.DevSuite
                                 }
                             }
                             if (!contains)
+                            {
                                 continue;
+                            }
 
                             if (provider.TargetInstance != null)
                             {
@@ -372,7 +430,9 @@ namespace Ff.DevSuite
 
                             directMember ??= GetReadableMemberFromType(provider.Type, memberName, true);
                             if (directMember != null)
+                            {
                                 break;
+                            }
                         }
                     }
 
@@ -420,28 +480,38 @@ namespace Ff.DevSuite
 
         private MemberInfo GetReadableMemberFromType(Type type, string memberName, bool @static)
         {
-            _getReadableMemberFromTypeCache ??= new(
+            _getReadableMemberFromTypeCache ??= new LazyCache<Type, string, bool, MemberInfo>(
                 (type, memberName, @static) =>
                 {
                     var flags = BindingFlags.Public | BindingFlags.NonPublic;
                     if (@static)
+                    {
                         flags |= BindingFlags.Static;
+                    }
                     else
+                    {
                         flags |= BindingFlags.Instance;
+                    }
 
                     var field = type.GetField(memberName, flags);
                     if (field != null)
+                    {
                         return field;
+                    }
 
                     var property = type.GetProperty(memberName, flags);
                     if (property != null && property.CanRead)
+                    {
                         return property;
+                    }
 
                     var methods = type.GetMethods(flags);
                     foreach (var method in methods)
                     {
                         if (method.Name == memberName && method.GetParameters().Length <= 0)
+                        {
                             return method;
+                        }
                     }
 
                     return null;
@@ -486,7 +556,9 @@ namespace Ff.DevSuite
         internal AllowedValuesResult GetAllowedValues(CommandUnitValue unit)
         {
             if (!CheckUnitAvailability(unit))
+            {
                 return null;
+            }
 
             var type = unit.Type;
             var values = unit.AllowedValues?.Invoke();
@@ -503,27 +575,36 @@ namespace Ff.DevSuite
             }
 
             if (values == null)
+            {
                 return null;
+            }
 
             var valuesObj = new List<object>();
             var hasNull = false;
             foreach (var val in values)
             {
                 valuesObj.Add(val);
-                if (val == null) hasNull = true;
+                if (val == null)
+                {
+                    hasNull = true;
+                }
             }
 
             if (hasNull)
-                return new(valuesObj, type, currentValue);
+            {
+                return new AllowedValuesResult(valuesObj, type, currentValue);
+            }
 
             valuesObj.Insert(0, null);
-            return new(valuesObj, type, currentValue);
+            return new AllowedValuesResult(valuesObj, type, currentValue);
         }
 
         internal void TogglePinItem(Command command, bool value)
         {
             if (!CheckSettingsInitialized())
+            {
                 return;
+            }
 
             var pinnedItem = new PinnedItem(command);
             PinnedItem existingPin = null;
@@ -562,7 +643,9 @@ namespace Ff.DevSuite
         internal bool IsGroupCollapsed(string groupId, string categoryId, bool defaultCollapsed)
         {
             if (!CheckSettingsInitialized())
+            {
                 return defaultCollapsed;
+            }
 
             foreach (var item in Settings.Value.CollapsedGroups)
             {
@@ -577,7 +660,9 @@ namespace Ff.DevSuite
         internal void ToggleGroupCollapse(string groupId, string categoryId, bool collapsed)
         {
             if (!CheckSettingsInitialized())
+            {
                 return;
+            }
 
             CollapsedGroupItem existing = null;
             foreach (var item in Settings.Value.CollapsedGroups)
@@ -605,7 +690,9 @@ namespace Ff.DevSuite
         internal OrderedSet<Command> GetPinnedCommands(bool forceRefresh)
         {
             if (!CheckSettingsInitialized())
+            {
                 return DevSuiteUtils.EmptyOrderedSet<Command>();
+            }
 
             if (_pinnedCommands == null || forceRefresh)
             {
@@ -684,11 +771,15 @@ namespace Ff.DevSuite
         private void SetSettingsValue<T>(Func<T> getter, Action<T> setter, T value)
         {
             if (!CheckSettingsInitialized())
+            {
                 return;
+            }
 
-            var isStruct = (value?.GetType().IsValueType ?? false);
+            var isStruct = value?.GetType().IsValueType ?? false;
             if (isStruct && value.Equals(getter()))
+            {
                 return;
+            }
 
             setter(value);
             Settings.ForceSave();
@@ -698,14 +789,16 @@ namespace Ff.DevSuite
 
         internal string FilterPattern
         {
-            get => (Settings?.Ready ?? false) ? Settings.Value.FilterPattern : "";
+            get => Settings?.Ready ?? false ? Settings.Value.FilterPattern : "";
             set =>
                 SetSettingsValue(
                     () => Settings.Value.FilterPattern,
                     v =>
                     {
                         if (Settings.Value.FilterPattern == v)
+                        {
                             return;
+                        }
 
                         Settings.Value.FilterPattern = v;
                         RebuildTree();
@@ -716,7 +809,7 @@ namespace Ff.DevSuite
 
         internal string LogsPattern
         {
-            get => (Settings?.Ready ?? false) ? Settings.Value.LogsPattern : "";
+            get => Settings?.Ready ?? false ? Settings.Value.LogsPattern : "";
             set
             {
                 SetSettingsValue(
@@ -724,7 +817,9 @@ namespace Ff.DevSuite
                     v =>
                     {
                         if (Settings.Value.LogsPattern == v)
+                        {
                             return;
+                        }
 
                         Settings.Value.LogsPattern = v;
                         _onChangedDispatcher.Dispatch();
@@ -753,11 +848,11 @@ namespace Ff.DevSuite
 
         internal HashSet<GeneralizedLogSeverity> HiddenLogSeverity
         {
-            get => ((Settings?.Ready ?? false) ? Settings.Value.HiddenLogSeverity : null) ?? new();
+            get => (Settings?.Ready ?? false ? Settings.Value.HiddenLogSeverity : null) ?? new HashSet<GeneralizedLogSeverity>();
             set
             {
                 SetSettingsValue(
-                    () => Settings.Value.HiddenLogSeverity ?? new(),
+                    () => Settings.Value.HiddenLogSeverity ?? new HashSet<GeneralizedLogSeverity>(),
                     v =>
                     {
                         Settings.Value.HiddenLogSeverity = v;
@@ -777,14 +872,12 @@ namespace Ff.DevSuite
                 var v = Settings?.Ready ?? false;
                 return v ? Settings.Value.SelectedCategory : null;
             }
-            set
-            {
+            set =>
                 SetSettingsValue(
                     () => Settings.Value.SelectedCategory,
                     v => Settings.Value.SelectedCategory = v,
                     value
                 );
-            }
         }
 
         private void UpdateLogsFilterRegex()
@@ -805,7 +898,9 @@ namespace Ff.DevSuite
         private bool CheckSettingsInitialized()
         {
             if (Settings != null)
+            {
                 return true;
+            }
             Debug.LogWarning("Settings are not initialized");
             return false;
         }
@@ -838,7 +933,9 @@ namespace Ff.DevSuite
                 if (category == null)
                 {
                     if (group != null)
+                    {
                         Categories.TryGetValue(categoryKey, out category);
+                    }
                     category ??= _defaultCategory;
                 }
                 group ??= _getGroupByCategory.Get(category.Id);
@@ -867,7 +964,9 @@ namespace Ff.DevSuite
 
             var categoryList = new List<CommandCategory>();
             foreach (var kvp in categoriesDict)
+            {
                 categoryList.Add(kvp.Key);
+            }
             categoryList.Sort();
 
             var resultList = new List<TreeCategory>(categoryList.Count);
@@ -876,7 +975,9 @@ namespace Ff.DevSuite
                 var groupsDict = categoriesDict[category];
                 var groupList = new List<CommandGroup>();
                 foreach (var kvp in groupsDict)
+                {
                     groupList.Add(kvp.Key);
+                }
                 groupList.Sort();
 
                 var treeGroups = new List<TreeGroup>(groupList.Count);
@@ -885,7 +986,9 @@ namespace Ff.DevSuite
                     var instancesDict = groupsDict[group];
                     var instanceList = new List<object>();
                     foreach (var kvp in instancesDict)
+                    {
                         instanceList.Add(kvp.Key);
+                    }
 
                     var treeCommands = new List<TreeCommandByInstance>(instanceList.Count);
                     foreach (var instance in instanceList)
@@ -1030,25 +1133,35 @@ namespace Ff.DevSuite
             {
                 Debug.LogWarning($"Exception while executing the button: {e}");
                 if (!button.SuppressExceptions)
+                {
                     throw;
+                }
             }
         }
 
         internal bool CheckVisibilityByVisibilityFunction(BaseCommandItem item, TimeSpan? time, bool ignoreTime = false)
         {
             if (item == _groupPinned || item == _categoryPinned || item.Id == PinnedMockId)
+            {
                 return true;
+            }
 
             time ??= TimeSpan.FromSeconds(Time.unscaledTime);
 
             if (item is CommandGroup group && !CheckVisibilityByVisibilityFunction(group.AssignedToCategory, time, ignoreTime))
+            {
                 return false;
+            }
 
             if (item is Command command && !CheckVisibilityByVisibilityFunction(command.AssignedToGroup, time, ignoreTime))
+            {
                 return false;
+            }
 
             if (!ignoreTime && item.NextVisibilityCheckTime != null && time < item.NextVisibilityCheckTime.Value)
+            {
                 return item.LastVisibility ?? false;
+            }
 
             try
             {
@@ -1071,7 +1184,9 @@ namespace Ff.DevSuite
             {
                 var id = item is CommandGroup group ? group.GetFullName(targetInstance) : item.DisplayName;
                 if (!CheckSearchPattern(id, Settings.Value.FilterPattern))
+                {
                     result = false;
+                }
 
                 //if (!result && item is Command command && Settings.Value.PinnedItems.Any(i => i.Match(command)))
                 //    result = true;
@@ -1084,7 +1199,9 @@ namespace Ff.DevSuite
         private bool CheckSearchPattern(string id, string pattern)
         {
             if (string.IsNullOrEmpty(pattern))
+            {
                 return true;
+            }
 
             if (_cachedRegexForSearch == null || _cachedRegexForSearch.Value.pattern != pattern)
             {
@@ -1143,11 +1260,15 @@ namespace Ff.DevSuite
             catch (Exception e)
             {
                 if (!silent)
+                {
                     Debug.LogWarning($"Exception when getting the string representation for the type '{valueFrom.GetType().Name}': {e}");
+                }
 
                 error = ErrorException;
                 if (!suppressException)
+                {
                     throw;
+                }
 
                 return null;
             }
@@ -1197,11 +1318,15 @@ namespace Ff.DevSuite
             catch (Exception e)
             {
                 if (!silent)
+                {
                     Debug.LogWarning($"Exception when setting a value for the type '{unit.Type}': {e}");
+                }
 
                 error = ErrorException;
                 if (!unit.SuppressExceptions)
+                {
                     throw;
+                }
             }
         }
 
@@ -1240,7 +1365,7 @@ namespace Ff.DevSuite
 
         private ValuesProviderFromChain GetValuesProviderFromChain(Type type)
         {
-            _resolvedValuesProviders ??= new(
+            _resolvedValuesProviders ??= new LazyCache<Type, ValuesProviderFromChain>(
                 t =>
                 {
                     var provider = GetValuesProviderDirect(t);
@@ -1271,18 +1396,22 @@ namespace Ff.DevSuite
 
         private CommandValuesProvider GetValuesProviderDirect(Type type)
         {
-            _getValuesProviderCache ??= new(
+            _getValuesProviderCache ??= new LazyCache<Type, CommandValuesProvider>(
                 type =>
                 {
                     if (type == null)
+                    {
                         return null;
+                    }
 
                     var inheritedTypes = type.GetAllInheritedTypes();
                     foreach (var inheritedType in inheritedTypes)
                     {
                         ValuesProviders.TryGetValue(inheritedType, out var valuesProvider);
                         if (valuesProvider != null)
+                        {
                             return valuesProvider;
+                        }
                     }
 
                     return null;
@@ -1382,14 +1511,14 @@ namespace Ff.DevSuite
 
         private AdapterChainResult GetAdaptersChain(Type typeFrom, Type typeTo, bool silent)
         {
-            _adapterChainsCache ??= new(
+            _adapterChainsCache ??= new LazyCache<AdapterChainStepTransition, AdapterChainResult>(
                 t =>
                 {
                     var from = t.From;
                     var to = t.To;
                     if (from == to)
                     {
-                        return new(
+                        return new AdapterChainResult(
                             new List<AdapterChainStep>(),
                             null,
                             null
@@ -1455,11 +1584,11 @@ namespace Ff.DevSuite
                         return new AdapterChainResult(null, ErrorException, $"Exception when getting the string representation for the type '{from}'. {e}");
                     }
 
-                    return new(null, ErrorNoAdapter, $"No adapter chain found from type '{from.Name}' to '{to.Name}'");
+                    return new AdapterChainResult(null, ErrorNoAdapter, $"No adapter chain found from type '{from.Name}' to '{to.Name}'");
                 }
             );
 
-            var res = _adapterChainsCache.Get(new(typeFrom, typeTo));
+            var res = _adapterChainsCache.Get(new AdapterChainStepTransition(typeFrom, typeTo));
             if (!silent && res.ErrorDetails != null)
             {
                 Debug.LogWarning(res.ErrorDetails);
@@ -1482,17 +1611,23 @@ namespace Ff.DevSuite
         internal UnderlyingTypeInfo? GetUnderlyingPrimitiveType(CommandUnitValue unit, bool silent)
         {
             if (IsPrimitive(unit.Type))
-                return new(unit.Type, unit.Type.IsNullable());
+            {
+                return new UnderlyingTypeInfo(unit.Type, unit.Type.IsNullable());
+            }
 
             var chainResult = GetAdaptersChain(unit.Type, typeof(string), silent);
             if (!string.IsNullOrEmpty(chainResult.Error))
+            {
                 return null;
+            }
 
             var isNullablePrevious = unit.Type.IsNullable();
             foreach (var step in chainResult.Steps)
             {
                 if (IsPrimitive(step.Transition.To))
-                    return new(step.Transition.To, isNullablePrevious || step.Transition.To.IsNullable());
+                {
+                    return new UnderlyingTypeInfo(step.Transition.To, isNullablePrevious || step.Transition.To.IsNullable());
+                }
 
                 isNullablePrevious |= step.Transition.To.IsNullable();
             }
@@ -1503,19 +1638,27 @@ namespace Ff.DevSuite
         internal bool HasUnderlyingNullableType(CommandUnitValue unit)
         {
             if (unit.Type.IsNullable())
+            {
                 return true;
+            }
 
             var chainResult = GetAdaptersChain(unit.Type, typeof(string), true);
             if (!string.IsNullOrEmpty(chainResult.Error))
+            {
                 return false;
+            }
 
             foreach (var adapter in chainResult.Steps)
             {
                 if (adapter.Transition.From.IsNullable())
+                {
                     return true;
+                }
 
                 if (adapter.Transition.From.IsValueType)
+                {
                     return false;
+                }
             }
 
             return true;
@@ -1555,16 +1698,21 @@ namespace Ff.DevSuite
             return command == null || CheckVisibilityByVisibilityFunction(command, null);
         }
 
-        private bool IsPrimitive(Type type) => type.IsPrimitive || type.IsEnum || type == typeof(string);
-
-        private static readonly GeneralizedLogSeverity[] LogTypeToGeneralLogSeverity = new GeneralizedLogSeverity[(int)LogType.Exception + 1].With(l =>
+        private bool IsPrimitive(Type type)
         {
-            l[(int)LogType.Error] = GeneralizedLogSeverity.Error;
-            l[(int)LogType.Assert] = GeneralizedLogSeverity.Error;
-            l[(int)LogType.Warning] = GeneralizedLogSeverity.Warning;
-            l[(int)LogType.Log] = GeneralizedLogSeverity.Ordinary;
-            l[(int)LogType.Exception] = GeneralizedLogSeverity.Error;
-        });
+            return type.IsPrimitive || type.IsEnum || type == typeof(string);
+        }
+
+        private static readonly GeneralizedLogSeverity[] LogTypeToGeneralLogSeverity = new GeneralizedLogSeverity[(int)LogType.Exception + 1].With(
+            l =>
+            {
+                l[(int)LogType.Error] = GeneralizedLogSeverity.Error;
+                l[(int)LogType.Assert] = GeneralizedLogSeverity.Error;
+                l[(int)LogType.Warning] = GeneralizedLogSeverity.Warning;
+                l[(int)LogType.Log] = GeneralizedLogSeverity.Ordinary;
+                l[(int)LogType.Exception] = GeneralizedLogSeverity.Error;
+            }
+        );
 
         private void HandleUnityLog(string message, string stackTrace, LogType type)
         {
@@ -1634,7 +1782,9 @@ namespace Ff.DevSuite
             InputSystem.onEvent -= HandleNewInputSystemEvent;
 #endif
             if (_coroutineStarter != null)
+            {
                 _coroutineStarter.StopCoroutine(_updateCoroutine);
+            }
             _updateCoroutine = null;
         }
 
@@ -1730,7 +1880,7 @@ namespace Ff.DevSuite
                         }
 
                         ExecuteButton(button);
-                    nextUnit:;
+                        nextUnit: ;
                     }
                 }
             }
@@ -1740,17 +1890,17 @@ namespace Ff.DevSuite
         {
             return new List<TreeCategory>
             {
-                new TreeCategory(
+                new(
                     new CommandCategory(PinnedMockId, 0, null),
                     new List<TreeGroup>
                     {
-                        new TreeGroup(
+                        new(
                             new CommandGroup(PinnedMockId, PinnedMockId, 0, null),
                             new List<TreeCommandByInstance>
                             {
-                                new TreeCommandByInstance(null, null),
+                                new(null, null),
                             }
-                        )
+                        ),
                     }
                 ),
             };
@@ -1759,33 +1909,35 @@ namespace Ff.DevSuite
 
     [MemoryPackable(GenerateType.VersionTolerant)]
     [MessagePackObject(AllowPrivate = true)]
-    [Serializable][DataContract]
+    [Serializable]
+    [DataContract]
     internal partial class PersistentSettings
     {
-        [DataMember, MemoryPackOrder(0), Key(0)] public List<PinnedItem> PinnedItems { get; set; } = new();
-        [DataMember, MemoryPackOrder(1), Key(1)] public string FilterPattern { get; set; }
-        [DataMember, MemoryPackOrder(2), Key(2)] public string LogsPattern { get; set; }
-        [DataMember, MemoryPackOrder(3), Key(3)] public bool MetricsVisible { get; set; }
-        [DataMember, MemoryPackOrder(4), Key(4)] public bool CommandsVisible { get; set; }
-        [DataMember, MemoryPackOrder(5), Key(5)] public bool PinnedCommandsVisible { get; set; }
-        [DataMember, MemoryPackOrder(6), Key(6)] public bool LogsVisible { get; set; }
-        [DataMember, MemoryPackOrder(7), Key(7)] public bool PanelExpanded { get; set; }
-        [DataMember, MemoryPackOrder(8), Key(8)] public bool LogsRegex { get; set; }
-        [DataMember, MemoryPackOrder(9), Key(9)] public string SelectedCategory { get; set; }
-        [DataMember, MemoryPackOrder(10), Key(10)] public HashSet<GeneralizedLogSeverity> HiddenLogSeverity { get; set; } = new();
-        [DataMember, MemoryPackOrder(11), Key(11)] public List<CollapsedGroupItem> CollapsedGroups { get; set; } = new();
-        [DataMember, MemoryPackOrder(12), Key(12)] public bool HierarchyVisible { get; set; }
-        [DataMember, MemoryPackOrder(13), Key(13)] public bool InspectorVisible { get; set; }
+        [DataMember][MemoryPackOrder(0)][Key(0)] public List<PinnedItem> PinnedItems { get; set; } = new();
+        [DataMember][MemoryPackOrder(1)][Key(1)] public string FilterPattern { get; set; }
+        [DataMember][MemoryPackOrder(2)][Key(2)] public string LogsPattern { get; set; }
+        [DataMember][MemoryPackOrder(3)][Key(3)] public bool MetricsVisible { get; set; }
+        [DataMember][MemoryPackOrder(4)][Key(4)] public bool CommandsVisible { get; set; }
+        [DataMember][MemoryPackOrder(5)][Key(5)] public bool PinnedCommandsVisible { get; set; }
+        [DataMember][MemoryPackOrder(6)][Key(6)] public bool LogsVisible { get; set; }
+        [DataMember][MemoryPackOrder(7)][Key(7)] public bool PanelExpanded { get; set; }
+        [DataMember][MemoryPackOrder(8)][Key(8)] public bool LogsRegex { get; set; }
+        [DataMember][MemoryPackOrder(9)][Key(9)] public string SelectedCategory { get; set; }
+        [DataMember][MemoryPackOrder(10)][Key(10)] public HashSet<GeneralizedLogSeverity> HiddenLogSeverity { get; set; } = new();
+        [DataMember][MemoryPackOrder(11)][Key(11)] public List<CollapsedGroupItem> CollapsedGroups { get; set; } = new();
+        [DataMember][MemoryPackOrder(12)][Key(12)] public bool HierarchyVisible { get; set; }
+        [DataMember][MemoryPackOrder(13)][Key(13)] public bool InspectorVisible { get; set; }
     }
 
     [MemoryPackable(GenerateType.VersionTolerant)]
     [MessagePackObject(AllowPrivate = true)]
-    [Serializable][DataContract]
+    [Serializable]
+    [DataContract]
     internal partial class CollapsedGroupItem
     {
-        [DataMember, MemoryPackOrder(0), Key(0)] public string GroupId { get; set; }
-        [DataMember, MemoryPackOrder(1), Key(1)] public string CategoryId { get; set; }
-        [DataMember, MemoryPackOrder(2), Key(2)] public bool Collapsed { get; set; }
+        [DataMember][MemoryPackOrder(0)][Key(0)] public string GroupId { get; set; }
+        [DataMember][MemoryPackOrder(1)][Key(1)] public string CategoryId { get; set; }
+        [DataMember][MemoryPackOrder(2)][Key(2)] public bool Collapsed { get; set; }
 
         public CollapsedGroupItem(string groupId, string categoryId, bool collapsed) : this()
         {
@@ -1804,12 +1956,13 @@ namespace Ff.DevSuite
 
     [MemoryPackable(GenerateType.VersionTolerant)]
     [MessagePackObject(AllowPrivate = true)]
-    [Serializable][DataContract]
+    [Serializable]
+    [DataContract]
     internal partial class PinnedItem
     {
-        [DataMember, MemoryPackOrder(0), Key(0)] public string CommandId { get; set; }
-        [DataMember, MemoryPackOrder(1), Key(1)] public string GroupId { get; set; }
-        [DataMember, MemoryPackOrder(2), Key(2)] public string CategoryId { get; set; }
+        [DataMember][MemoryPackOrder(0)][Key(0)] public string CommandId { get; set; }
+        [DataMember][MemoryPackOrder(1)][Key(1)] public string GroupId { get; set; }
+        [DataMember][MemoryPackOrder(2)][Key(2)] public string CategoryId { get; set; }
 
         public PinnedItem(Command command) : this()
         {
@@ -1854,7 +2007,7 @@ namespace Ff.DevSuite
 
         public override int GetHashCode()
         {
-            return (Id != null ? Id.GetHashCode() : 0);
+            return Id != null ? Id.GetHashCode() : 0;
         }
     }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -126,24 +127,28 @@ namespace Ff.DevSuite.View
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             DevSuiteUtils.SetupTooltips(this);
 
-            RegisterCallback<AttachToPanelEvent>(evt =>
-            {
-#if UNITY_EDITOR
-                UnityEditor.Selection.selectionChanged += HandleEditorSelectionChanged;
-                // Sync initial selection
-                if (_context != null)
+            RegisterCallback<AttachToPanelEvent>(
+                evt =>
                 {
-                    _context.SelectedGameObject = UnityEditor.Selection.activeGameObject;
-                }
-#endif
-            });
-
-            RegisterCallback<DetachFromPanelEvent>(evt =>
-            {
 #if UNITY_EDITOR
-                UnityEditor.Selection.selectionChanged -= HandleEditorSelectionChanged;
+                    UnityEditor.Selection.selectionChanged += HandleEditorSelectionChanged;
+                    // Sync initial selection
+                    if (_context != null)
+                    {
+                        _context.SelectedGameObject = UnityEditor.Selection.activeGameObject;
+                    }
 #endif
-            });
+                }
+            );
+
+            RegisterCallback<DetachFromPanelEvent>(
+                evt =>
+                {
+#if UNITY_EDITOR
+                    UnityEditor.Selection.selectionChanged -= HandleEditorSelectionChanged;
+#endif
+                }
+            );
         }
 
         public void Initialize(DevSuiteContext context)
@@ -385,22 +390,24 @@ namespace Ff.DevSuite.View
 
             container.Add(row);
 
-            row.RegisterCallback<ClickEvent>(evt =>
-            {
-                if (evt.clickCount == 2)
+            row.RegisterCallback<ClickEvent>(
+                evt =>
                 {
-                    if (!_collapsedSceneNames.Contains(sceneName))
+                    if (evt.clickCount == 2)
                     {
-                        _collapsedSceneNames.Add(sceneName);
+                        if (!_collapsedSceneNames.Contains(sceneName))
+                        {
+                            _collapsedSceneNames.Add(sceneName);
+                        }
+                        else
+                        {
+                            _collapsedSceneNames.Remove(sceneName);
+                        }
+                        RebuildTree();
+                        evt.StopPropagation();
                     }
-                    else
-                    {
-                        _collapsedSceneNames.Remove(sceneName);
-                    }
-                    RebuildTree();
-                    evt.StopPropagation();
                 }
-            });
+            );
 
             var childrenContainer = new VisualElement
             {
@@ -551,7 +558,34 @@ namespace Ff.DevSuite.View
                     {
                         if (_context != null)
                         {
-                            _context.SelectedGameObject = go;
+                            var isCtrlHeld = evt.ctrlKey || evt.commandKey;
+                            if (isCtrlHeld)
+                            {
+                                _context.ToggleSelectedGameObject(go);
+                            }
+                            else
+                            {
+                                _context.SelectedGameObject = go;
+                            }
+#if UNITY_EDITOR
+                            if (isCtrlHeld)
+                            {
+                                var currentSelection = new List<Object>(UnityEditor.Selection.objects);
+                                if (currentSelection.Contains(go))
+                                {
+                                    currentSelection.Remove(go);
+                                }
+                                else
+                                {
+                                    currentSelection.Add(go);
+                                }
+                                UnityEditor.Selection.objects = currentSelection.ToArray();
+                            }
+                            else
+                            {
+                                UnityEditor.Selection.activeGameObject = go;
+                            }
+#endif
                         }
                     }
                 }
@@ -573,12 +607,19 @@ namespace Ff.DevSuite.View
                 kvp.Value.RemoveFromClassList("selected");
             }
 
-            if (_context != null && _context.SelectedGameObject != null)
+            if (_context != null)
             {
-                var selId = _context.SelectedGameObject.GetInstanceID();
-                if (_gameObjectRows.TryGetValue(selId, out var row))
+                foreach (var go in _context.SelectedGameObjects)
                 {
-                    row.AddToClassList("selected");
+                    if (go == null)
+                    {
+                        continue;
+                    }
+                    var selId = go.GetInstanceID();
+                    if (_gameObjectRows.TryGetValue(selId, out var row))
+                    {
+                        row.AddToClassList("selected");
+                    }
                 }
             }
         }
@@ -784,10 +825,13 @@ namespace Ff.DevSuite.View
         private string GetFullHierarchyAsText()
         {
             var sb = new System.Text.StringBuilder();
-            for (int i = 0; i < SceneManager.sceneCount; i++)
+            for (var i = 0; i < SceneManager.sceneCount; i++)
             {
                 var scene = SceneManager.GetSceneAt(i);
-                if (!scene.isLoaded) continue;
+                if (!scene.isLoaded)
+                {
+                    continue;
+                }
 
                 sb.AppendLine($"{scene.name} (scene)");
                 var rootGameObjects = scene.GetRootGameObjects();
@@ -801,14 +845,20 @@ namespace Ff.DevSuite.View
 
         private void FormatGameObjectNodeRecursive(GameObject go, int depth, System.Text.StringBuilder sb)
         {
-            if (go == null) return;
+            if (go == null)
+            {
+                return;
+            }
 
             var indent = new string(' ', depth * 2);
             var components = go.GetComponents<Component>();
             var typeNames = new List<string>();
             foreach (var comp in components)
             {
-                if (comp == null) continue;
+                if (comp == null)
+                {
+                    continue;
+                }
                 var typeName = comp.GetType().Name;
                 if (!typeNames.Contains(typeName))
                 {
@@ -819,7 +869,7 @@ namespace Ff.DevSuite.View
             var typesStr = typeNames.Count > 0 ? $" ({string.Join(", ", typeNames)})" : "";
             sb.AppendLine($"{indent}{go.name}{typesStr}");
 
-            for (int i = 0; i < go.transform.childCount; i++)
+            for (var i = 0; i < go.transform.childCount; i++)
             {
                 FormatGameObjectNodeRecursive(go.transform.GetChild(i).gameObject, depth + 1, sb);
             }
@@ -830,10 +880,27 @@ namespace Ff.DevSuite.View
         {
             if (_context != null)
             {
-                var newSelection = UnityEditor.Selection.activeGameObject;
-                if (_context.SelectedGameObject != newSelection)
+                var newSelection = UnityEditor.Selection.gameObjects;
+                var selectionChanged = false;
+                if (_context.SelectedGameObjects.Count != newSelection.Length)
                 {
-                    _context.SelectedGameObject = newSelection;
+                    selectionChanged = true;
+                }
+                else
+                {
+                    foreach (var selection in newSelection)
+                    {
+                        if (!_context.SelectedGameObjects.Contains(selection))
+                        {
+                            selectionChanged = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (selectionChanged)
+                {
+                    _context.SetSelectedGameObjects(newSelection);
                 }
             }
         }

@@ -22,7 +22,7 @@ namespace Ff.DevSuite.View
         }
 
         private readonly List<TrackedProperty> _trackedProperties = new();
-        private GameObject _lastSelectedGameObject;
+        private readonly List<GameObject> _lastSelectedGameObjects = new();
 
         public InspectorPanelView(VisualTreeAsset uxml, StyleSheet uss)
         {
@@ -44,10 +44,9 @@ namespace Ff.DevSuite.View
                 _copyBtn.text = "\uf0c5"; // copy icon
                 _copyBtn.clicked += () =>
                 {
-                    var selected = GetSelectedGameObject();
-                    if (selected != null)
+                    if (_context != null && _context.SelectedGameObjects.Count > 0)
                     {
-                        var inspectorText = GetInspectorText(selected);
+                        var inspectorText = GetInspectorText(_context.SelectedGameObjects);
                         DevSuiteUtils.CopyToClipboard(inspectorText);
                         DevSuiteUtils.ShowIconButtonClickedFeedback(_copyBtn);
                     }
@@ -97,48 +96,104 @@ namespace Ff.DevSuite.View
                 return;
             }
 
-            var currentSelect = _context.SelectedGameObject;
-            if (currentSelect == _lastSelectedGameObject)
+            var currentSelection = _context.SelectedGameObjects;
+            var changed = false;
+            if (currentSelection.Count != _lastSelectedGameObjects.Count)
             {
-                if (currentSelect == null && _lastSelectedGameObject != null)
+                changed = true;
+            }
+            else
+            {
+                for (var i = 0; i < currentSelection.Count; i++)
                 {
-                    RebuildInspector(null);
+                    if (currentSelection[i] != _lastSelectedGameObjects[i])
+                    {
+                        changed = true;
+                        break;
+                    }
                 }
-                return;
             }
 
-            RebuildInspector(currentSelect);
+            if (changed)
+            {
+                RebuildInspector(currentSelection);
+            }
         }
 
-        private void RebuildInspector(GameObject go)
+        private void RebuildInspector(IReadOnlyList<GameObject> gameObjects)
         {
-            _lastSelectedGameObject = go;
+            _lastSelectedGameObjects.Clear();
+            if (gameObjects != null)
+            {
+                _lastSelectedGameObjects.AddRange(gameObjects);
+            }
             _scrollView.Clear();
             _trackedProperties.Clear();
 
-            if (go == null)
+            if (gameObjects == null || gameObjects.Count == 0)
             {
                 _selectedObjectLabel.text = "None selected";
                 _selectedObjectPathLabel.text = "";
                 return;
             }
 
-            _selectedObjectLabel.text = go.name;
-            _selectedObjectPathLabel.text = DevSuiteUtils.GetGameObjectPath(go);
-
-            var components = go.GetComponents<Component>();
-            foreach (var comp in components)
+            if (gameObjects.Count == 1)
             {
-                if (comp == null)
-                {
-                    continue; // missing scripts
-                }
+                var go = gameObjects[0];
+                _selectedObjectLabel.text = go.name;
+                _selectedObjectPathLabel.text = DevSuiteUtils.GetGameObjectPath(go);
 
-                RenderComponent(comp);
+                var components = go.GetComponents<Component>();
+                foreach (var comp in components)
+                {
+                    if (comp == null)
+                    {
+                        continue; // missing scripts
+                    }
+
+                    RenderComponent(comp, _scrollView);
+                }
+            }
+            else
+            {
+                _selectedObjectLabel.text = "Multiple Selected";
+                _selectedObjectPathLabel.text = $"{gameObjects.Count} objects selected";
+
+                foreach (var go in gameObjects)
+                {
+                    if (go == null)
+                    {
+                        continue;
+                    }
+
+                    var goHeader = new VisualElement();
+                    goHeader.AddToClassList("inspector-go-header");
+
+                    var goNameLabel = new Label(go.name);
+                    goNameLabel.AddToClassList("inspector-go-name");
+                    goHeader.Add(goNameLabel);
+
+                    var goPathLabel = new Label(DevSuiteUtils.GetGameObjectPath(go));
+                    goPathLabel.AddToClassList("inspector-go-path");
+                    goHeader.Add(goPathLabel);
+
+                    _scrollView.Add(goHeader);
+
+                    var components = go.GetComponents<Component>();
+                    foreach (var comp in components)
+                    {
+                        if (comp == null)
+                        {
+                            continue; // missing scripts
+                        }
+
+                        RenderComponent(comp, _scrollView);
+                    }
+                }
             }
         }
 
-        private void RenderComponent(Component comp)
+        private void RenderComponent(Component comp, VisualElement container)
         {
             var compType = comp.GetType();
 
@@ -147,7 +202,7 @@ namespace Ff.DevSuite.View
                 name = "compBox",
             };
             compBox.AddToClassList("inspector-component-box");
-            _scrollView.Add(compBox);
+            container.Add(compBox);
 
             var header = new VisualElement
             {
@@ -331,15 +386,19 @@ namespace Ff.DevSuite.View
 
         private void HandleOnEveryFrame()
         {
-            if (_context == null || _lastSelectedGameObject == null)
+            if (_context == null || _lastSelectedGameObjects.Count == 0)
             {
                 return;
             }
 
-            if (_lastSelectedGameObject == null || _lastSelectedGameObject.Equals(null))
+            for (var i = 0; i < _lastSelectedGameObjects.Count; i++)
             {
-                RebuildInspector(null);
-                return;
+                var go = _lastSelectedGameObjects[i];
+                if (go == null || go.Equals(null))
+                {
+                    RebuildInspector(null);
+                    return;
+                }
             }
 
             foreach (var prop in _trackedProperties)
@@ -382,74 +441,103 @@ namespace Ff.DevSuite.View
             return null;
         }
 
-        private string GetInspectorText(GameObject go)
+        private string GetInspectorText(IReadOnlyList<GameObject> gameObjects)
         {
-            if (go == null)
+            if (gameObjects == null || gameObjects.Count == 0)
             {
                 return "";
             }
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"GameObject: {go.name}");
-            sb.AppendLine($"Path: {DevSuiteUtils.GetGameObjectPath(go)}");
-            sb.AppendLine();
-
-            var components = go.GetComponents<Component>();
-            foreach (var comp in components)
+            foreach (var go in gameObjects)
             {
-                if (comp == null) continue;
-
-                var compType = comp.GetType();
-                sb.AppendLine($"{compType.Name} ({compType.Namespace ?? "UnityEngine"})");
-
-                var allFields = compType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                var allProps = compType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-
-                var serializableFields = new List<FieldInfo>();
-                var otherMembers = new List<MemberInfo>();
-
-                foreach (var field in allFields)
+                if (go == null)
                 {
-                    if (field.Name.StartsWith("<")) continue;
-                    if (field.GetCustomAttribute<ObsoleteAttribute>() != null) continue;
-
-                    if (IsSerializable(field))
-                    {
-                        serializableFields.Add(field);
-                    }
-                    else
-                    {
-                        otherMembers.Add(field);
-                    }
+                    continue;
                 }
 
-                foreach (var prop in allProps)
-                {
-                    if (!prop.CanRead) continue;
-                    if (prop.GetIndexParameters().Length > 0) continue;
-                    if (prop.GetCustomAttribute<ObsoleteAttribute>() != null) continue;
+                sb.AppendLine($"GameObject: {go.name}");
+                sb.AppendLine($"Path: {DevSuiteUtils.GetGameObjectPath(go)}");
+                sb.AppendLine();
 
-                    if (prop.DeclaringType == typeof(Component) ||
-                        prop.DeclaringType == typeof(MonoBehaviour) ||
-                        prop.DeclaringType == typeof(Behaviour) ||
-                        prop.DeclaringType == typeof(UnityEngine.Object))
+                var components = go.GetComponents<Component>();
+                foreach (var comp in components)
+                {
+                    if (comp == null)
                     {
                         continue;
                     }
 
-                    otherMembers.Add(prop);
+                    var compType = comp.GetType();
+                    sb.AppendLine($"{compType.Name} ({compType.Namespace ?? "UnityEngine"})");
+
+                    var allFields = compType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    var allProps = compType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+                    var serializableFields = new List<FieldInfo>();
+                    var otherMembers = new List<MemberInfo>();
+
+                    foreach (var field in allFields)
+                    {
+                        if (field.Name.StartsWith("<"))
+                        {
+                            continue;
+                        }
+                        if (field.GetCustomAttribute<ObsoleteAttribute>() != null)
+                        {
+                            continue;
+                        }
+
+                        if (IsSerializable(field))
+                        {
+                            serializableFields.Add(field);
+                        }
+                        else
+                        {
+                            otherMembers.Add(field);
+                        }
+                    }
+
+                    foreach (var prop in allProps)
+                    {
+                        if (!prop.CanRead)
+                        {
+                            continue;
+                        }
+                        if (prop.GetIndexParameters().Length > 0)
+                        {
+                            continue;
+                        }
+                        if (prop.GetCustomAttribute<ObsoleteAttribute>() != null)
+                        {
+                            continue;
+                        }
+
+                        if (prop.DeclaringType == typeof(Component) ||
+                            prop.DeclaringType == typeof(MonoBehaviour) ||
+                            prop.DeclaringType == typeof(Behaviour) ||
+                            prop.DeclaringType == typeof(UnityEngine.Object))
+                        {
+                            continue;
+                        }
+
+                        otherMembers.Add(prop);
+                    }
+
+                    foreach (var field in serializableFields)
+                    {
+                        AppendPropertyText(comp, field, sb);
+                    }
+
+                    foreach (var member in otherMembers)
+                    {
+                        AppendPropertyText(comp, member, sb);
+                    }
+
+                    sb.AppendLine();
                 }
 
-                foreach (var field in serializableFields)
-                {
-                    AppendPropertyText(comp, field, sb);
-                }
-
-                foreach (var member in otherMembers)
-                {
-                    AppendPropertyText(comp, member, sb);
-                }
-
+                sb.AppendLine(new string('-', 30));
                 sb.AppendLine();
             }
 
@@ -470,7 +558,7 @@ namespace Ff.DevSuite.View
                 if (formattedVal != null && (formattedVal.Contains("\n") || formattedVal.Contains("\r")))
                 {
                     sb.AppendLine($"  {member.Name}:");
-                    var lines = formattedVal.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                    var lines = DevSuiteUtils.NewLineRegex.Split(formattedVal);
                     foreach (var line in lines)
                     {
                         sb.AppendLine($"    {line}");

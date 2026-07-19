@@ -142,3 +142,26 @@
     color: var(--text-color);
     background-color: rgba(255, 255, 255, 0.03);
 }
+
+.inspector-go-header {
+    background-color: rgba(60, 60, 60, 0.85);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--accent-color);
+    padding: 6px 8px;
+    margin-top: 10px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+}
+
+.inspector-go-name {
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: var(--accent-color);
+}
+
+.inspector-go-path {
+    font-size: 9px;
+    color: var(--text-label-color);
+    -unity-font-style: italic;
+    margin-top: 1px;
+}
