@@ -36,6 +36,7 @@ namespace Ff.DevSuite.View
         private readonly HashSet<int> _matchingInstanceIds = new();
         private readonly HashSet<int> _descendantMatchingInstanceIds = new();
         private readonly Dictionary<int, VisualElement> _gameObjectRows = new();
+        private readonly List<VisualElement> _currentlySelectedRows = new();
 
         private bool _pickModeActive;
         private Regex _searchRegex;
@@ -342,6 +343,7 @@ namespace Ff.DevSuite.View
         {
             _scrollView.Clear();
             _gameObjectRows.Clear();
+            _currentlySelectedRows.Clear();
 
             for (var i = 0; i < SceneManager.sceneCount; i++)
             {
@@ -602,23 +604,25 @@ namespace Ff.DevSuite.View
 
         private void UpdateSelectionHighlight()
         {
-            foreach (var kvp in _gameObjectRows)
+            foreach (var row in _currentlySelectedRows)
             {
-                kvp.Value.RemoveFromClassList("selected");
+                if (row != null)
+                {
+                    row.RemoveFromClassList("selected");
+                }
             }
+            _currentlySelectedRows.Clear();
 
             if (_context != null)
             {
                 foreach (var go in _context.SelectedGameObjects)
                 {
-                    if (go == null)
-                    {
-                        continue;
-                    }
+                    if (go == null) continue;
                     var selId = go.GetInstanceID();
                     if (_gameObjectRows.TryGetValue(selId, out var row))
                     {
                         row.AddToClassList("selected");
+                        _currentlySelectedRows.Add(row);
                     }
                 }
             }

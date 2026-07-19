@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Ff.DevSuite;
 
 namespace Ff.DevSuite.View
 {
@@ -23,6 +24,66 @@ namespace Ff.DevSuite.View
 
         private readonly List<TrackedProperty> _trackedProperties = new();
         private readonly List<GameObject> _lastSelectedGameObjects = new();
+
+        private struct CachedTypeData
+        {
+            public List<FieldInfo> SerializableFields;
+            public List<MemberInfo> OtherMembers;
+        }
+
+        private static readonly Dictionary<Type, CachedTypeData> _typeCache = new();
+
+        private CachedTypeData GetOrCreateCachedTypeData(Type type)
+        {
+            if (_typeCache.TryGetValue(type, out var cachedData))
+            {
+                return cachedData;
+            }
+
+            var members = type.GetFieldsAndProperties();
+
+            var serializableFields = new List<FieldInfo>();
+            var otherMembers = new List<MemberInfo>();
+
+            foreach (var member in members)
+            {
+                if (member.Name.StartsWith("<")) continue;
+                if (member.GetCustomAttribute<ObsoleteAttribute>() != null) continue;
+
+                if (member is FieldInfo field)
+                {
+                    if (IsSerializable(field))
+                    {
+                        serializableFields.Add(field);
+                    }
+                    else
+                    {
+                        otherMembers.Add(field);
+                    }
+                }
+                else if (member is PropertyInfo prop)
+                {
+                    if (prop.DeclaringType == typeof(Component) ||
+                        prop.DeclaringType == typeof(MonoBehaviour) ||
+                        prop.DeclaringType == typeof(Behaviour) ||
+                        prop.DeclaringType == typeof(UnityEngine.Object))
+                    {
+                        continue;
+                    }
+
+                    otherMembers.Add(prop);
+                }
+            }
+
+            cachedData = new CachedTypeData
+            {
+                SerializableFields = serializableFields,
+                OtherMembers = otherMembers
+            };
+
+            _typeCache[type] = cachedData;
+            return cachedData;
+        }
 
         public InspectorPanelView(VisualTreeAsset uxml, StyleSheet uss)
         {
@@ -234,65 +295,14 @@ namespace Ff.DevSuite.View
             body.AddToClassList("inspector-component-body");
             compBox.Add(body);
 
-            var allFields = compType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            var allProps = compType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var cachedData = GetOrCreateCachedTypeData(compType);
 
-            var serializableFields = new List<FieldInfo>();
-            var otherMembers = new List<MemberInfo>();
-
-            foreach (var field in allFields)
-            {
-                if (field.Name.StartsWith("<"))
-                {
-                    continue;
-                }
-                if (field.GetCustomAttribute<ObsoleteAttribute>() != null)
-                {
-                    continue;
-                }
-
-                if (IsSerializable(field))
-                {
-                    serializableFields.Add(field);
-                }
-                else
-                {
-                    otherMembers.Add(field);
-                }
-            }
-
-            foreach (var prop in allProps)
-            {
-                if (!prop.CanRead)
-                {
-                    continue;
-                }
-                if (prop.GetIndexParameters().Length > 0)
-                {
-                    continue;
-                }
-                if (prop.GetCustomAttribute<ObsoleteAttribute>() != null)
-                {
-                    continue;
-                }
-
-                if (prop.DeclaringType == typeof(Component) ||
-                    prop.DeclaringType == typeof(MonoBehaviour) ||
-                    prop.DeclaringType == typeof(Behaviour) ||
-                    prop.DeclaringType == typeof(UnityEngine.Object))
-                {
-                    continue;
-                }
-
-                otherMembers.Add(prop);
-            }
-
-            foreach (var field in serializableFields)
+            foreach (var field in cachedData.SerializableFields)
             {
                 RenderPropertyRow(comp, field, true, body);
             }
 
-            foreach (var member in otherMembers)
+            foreach (var member in cachedData.OtherMembers)
             {
                 RenderPropertyRow(comp, member, false, body);
             }
@@ -471,65 +481,14 @@ namespace Ff.DevSuite.View
                     var compType = comp.GetType();
                     sb.AppendLine($"{compType.Name} ({compType.Namespace ?? "UnityEngine"})");
 
-                    var allFields = compType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                    var allProps = compType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    var cachedData = GetOrCreateCachedTypeData(compType);
 
-                    var serializableFields = new List<FieldInfo>();
-                    var otherMembers = new List<MemberInfo>();
-
-                    foreach (var field in allFields)
-                    {
-                        if (field.Name.StartsWith("<"))
-                        {
-                            continue;
-                        }
-                        if (field.GetCustomAttribute<ObsoleteAttribute>() != null)
-                        {
-                            continue;
-                        }
-
-                        if (IsSerializable(field))
-                        {
-                            serializableFields.Add(field);
-                        }
-                        else
-                        {
-                            otherMembers.Add(field);
-                        }
-                    }
-
-                    foreach (var prop in allProps)
-                    {
-                        if (!prop.CanRead)
-                        {
-                            continue;
-                        }
-                        if (prop.GetIndexParameters().Length > 0)
-                        {
-                            continue;
-                        }
-                        if (prop.GetCustomAttribute<ObsoleteAttribute>() != null)
-                        {
-                            continue;
-                        }
-
-                        if (prop.DeclaringType == typeof(Component) ||
-                            prop.DeclaringType == typeof(MonoBehaviour) ||
-                            prop.DeclaringType == typeof(Behaviour) ||
-                            prop.DeclaringType == typeof(UnityEngine.Object))
-                        {
-                            continue;
-                        }
-
-                        otherMembers.Add(prop);
-                    }
-
-                    foreach (var field in serializableFields)
+                    foreach (var field in cachedData.SerializableFields)
                     {
                         AppendPropertyText(comp, field, sb);
                     }
 
-                    foreach (var member in otherMembers)
+                    foreach (var member in cachedData.OtherMembers)
                     {
                         AppendPropertyText(comp, member, sb);
                     }
