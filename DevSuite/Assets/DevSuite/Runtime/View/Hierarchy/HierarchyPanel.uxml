@@ -11,7 +11,7 @@
             <ui:Button name="regexBtn" class="hierarchy-icon-btn" tooltip="Toggle Regex Search"/>
             <ui:Button name="nameBtn" class="hierarchy-icon-btn" tooltip="Toggle Search by Name"/>
             <ui:Button name="typeBtn" class="hierarchy-icon-btn" tooltip="Toggle Search by Type"/>
-            <ui:Button name="dimBtn" class="hierarchy-icon-btn" tooltip="Toggle Dim Mode"/>
+            <ui:Button name="dimBtn" class="hierarchy-icon-btn" tooltip="Toggle Filter Mode"/>
         </ui:VisualElement>
 
         <!-- Title and top actions -->

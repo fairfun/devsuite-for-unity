@@ -5,7 +5,7 @@
     --text-color: rgb(210, 210, 210);
     --divider-color: rgba(51, 51, 51, 0.8);
     --item-hover-bg: rgba(255, 255, 255, 0.04);
-    --selected-bg: rgba(128, 200, 255, 0.24);
+    --selected-bg: rgba(255, 255, 255, 0.12);
 }
 
 .hierarchy-panel-container {
@@ -24,7 +24,6 @@
     border-bottom-width: 1px;
     border-bottom-color: var(--divider-color);
 }
-
 
 .hierarchy-toolbar {
     flex-direction: row;
@@ -134,9 +133,9 @@
 }
 
 .hierarchy-foldout-btn {
-    width: 16px;
+    width: 12px;
     height: 16px;
-    margin-right: 2px;
+    margin-right: 0;
     padding: 0;
     background-color: transparent;
     border-width: 0;
@@ -151,12 +150,12 @@
 .hierarchy-item-label {
     flex-grow: 1;
     -unity-text-align: middle-left;
-    padding-left: 2px;
+    padding-left: 0;
 }
 
 .hierarchy-scene-row .hierarchy-item-label {
     -unity-font-style: bold;
-    color: rgb(240, 200, 120);
+    color: rgb(255, 204, 0);
 }
 
 .hierarchy-object-row .hierarchy-item-label {
