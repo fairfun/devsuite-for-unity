@@ -867,48 +867,84 @@ namespace Ff.DevSuite.View
                 var panelPos = RuntimePanelUtils.ScreenToPanel(panel, mousePos);
                 var pickedUi = panel.Pick(panelPos);
 
-                if (pickedUi != null && IsElementInDevSuite(pickedUi))
+                if (pickedUi != null && IsElementInteractiveInDevSuite(pickedUi))
                 {
                     return;
                 }
 
-                var cam = Camera.main;
-                if (cam == null)
+                GameObject pickedObj = null;
+
+                // 1. Try UI Toolkit UIDocuments first
+                var uiDocs = Object.FindObjectsOfType<UIDocument>();
+                foreach (var doc in uiDocs)
                 {
-                    cam = Object.FindObjectOfType<Camera>();
+                    if (doc == null || !doc.gameObject.activeInHierarchy)
+                    {
+                        continue;
+                    }
+                    if (IsGameObjectInDevSuite(doc.gameObject))
+                    {
+                        continue;
+                    }
+
+                    var root = doc.rootVisualElement;
+                    if (root != null)
+                    {
+                        var localPos = RuntimePanelUtils.ScreenToPanel(root.panel, mousePos);
+                        var picked = root.panel.Pick(localPos);
+                        if (picked != null)
+                        {
+                            pickedObj = doc.gameObject;
+                            break;
+                        }
+                    }
                 }
 
-                if (cam != null)
+                // 2. Try RectTransform geometric picking next (Canvas UI objects)
+                if (pickedObj == null)
                 {
-                    var ray = cam.ScreenPointToRay(mousePos);
-                    GameObject pickedObj = null;
+                    pickedObj = PickUIObject(mousePos);
+                }
 
-                    if (Physics.Raycast(ray, out var hit))
+                // 3. Fallback to Physics Raycasts if no UI object was hit
+                if (pickedObj == null)
+                {
+                    var cam = Camera.main;
+                    if (cam == null)
                     {
-                        pickedObj = hit.collider.gameObject;
+                        cam = Object.FindObjectOfType<Camera>();
                     }
-                    else
+
+                    if (cam != null)
                     {
-                        var hit2d = Physics2D.GetRayIntersection(ray);
-                        if (hit2d.collider != null)
+                        var ray = cam.ScreenPointToRay(mousePos);
+                        if (Physics.Raycast(ray, out var hit))
                         {
-                            pickedObj = hit2d.collider.gameObject;
+                            pickedObj = hit.collider.gameObject;
+                        }
+                        else
+                        {
+                            var hit2d = Physics2D.GetRayIntersection(ray);
+                            if (hit2d.collider != null)
+                            {
+                                pickedObj = hit2d.collider.gameObject;
+                            }
                         }
                     }
+                }
 
-                    if (pickedObj != null)
+                if (pickedObj != null)
+                {
+                    _context.SelectedGameObject = pickedObj;
+                    ExpandParents(pickedObj);
+                    RebuildTree();
+
+                    if (_gameObjectRows.TryGetValue(pickedObj.GetInstanceID(), out var row))
                     {
-                        _context.SelectedGameObject = pickedObj;
-                        ExpandParents(pickedObj);
-                        RebuildTree();
-
-                        if (_gameObjectRows.TryGetValue(pickedObj.GetInstanceID(), out var row))
-                        {
-                            _scrollView.ScrollTo(row);
-                        }
-
-                        SetPickMode(false);
+                        _scrollView.ScrollTo(row);
                     }
+
+                    SetPickMode(false);
                 }
             }
         }
@@ -1032,6 +1068,124 @@ namespace Ff.DevSuite.View
                 cur = cur.parent;
             }
             return false;
+        }
+
+        private bool IsElementInteractiveInDevSuite(VisualElement element)
+        {
+            if (element == null)
+            {
+                return false;
+            }
+            if (!IsElementInDevSuite(element))
+            {
+                return false;
+            }
+
+            var cur = element;
+            while (cur != null)
+            {
+                if (cur is Button || cur is TextField || cur is Toggle || cur is Scroller || cur is Slider)
+                {
+                    return true;
+                }
+
+                var type = cur.GetType();
+                while (type != null && type != typeof(VisualElement))
+                {
+                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(BaseField<>))
+                    {
+                        return true;
+                    }
+                    type = type.BaseType;
+                }
+
+                cur = cur.parent;
+            }
+            return false;
+        }
+
+        private bool IsGameObjectInDevSuite(GameObject go)
+        {
+            if (go == null)
+            {
+                return false;
+            }
+            var cur = go.transform;
+            while (cur != null)
+            {
+                if (cur.name.Contains("DevSuitePanel") || cur.GetComponent<DevSuitePanelUI>() != null)
+                {
+                    return true;
+                }
+                cur = cur.parent;
+            }
+            return false;
+        }
+
+        private GameObject PickUIObject(Vector2 mousePos)
+        {
+            var rectTransforms = Object.FindObjectsOfType<RectTransform>();
+            RectTransform bestMatch = null;
+            var minArea = float.MaxValue;
+            var maxDepth = -1;
+
+            foreach (var rect in rectTransforms)
+            {
+                if (rect == null || !rect.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+                if (IsGameObjectInDevSuite(rect.gameObject))
+                {
+                    continue;
+                }
+
+                var graphic = rect.GetComponent<UnityEngine.UI.Graphic>();
+                if (graphic == null || !graphic.raycastTarget)
+                {
+                    continue;
+                }
+
+                var canvas = rect.GetComponentInParent<Canvas>();
+                Camera eventCamera = null;
+                if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                {
+                    eventCamera = canvas.worldCamera;
+                    if (eventCamera == null)
+                    {
+                        eventCamera = Camera.main;
+                    }
+                }
+
+                if (RectTransformUtility.RectangleContainsScreenPoint(rect, mousePos, eventCamera))
+                {
+                    var depth = 0;
+                    var t = rect.parent;
+                    while (t != null)
+                    {
+                        depth++;
+                        t = t.parent;
+                    }
+
+                    var corners = new Vector3[4];
+                    rect.GetWorldCorners(corners);
+                    var area = Vector3.Distance(corners[0], corners[1]) * Vector3.Distance(corners[1], corners[2]);
+
+                    if (depth > maxDepth)
+                    {
+                        maxDepth = depth;
+                        minArea = area;
+                        bestMatch = rect;
+                    }
+                    else if (depth == maxDepth && area < minArea)
+                    {
+                        minArea = area;
+                        bestMatch = rect;
+                    }
+                }
+            }
+
+            return bestMatch != null ? bestMatch.gameObject : null;
         }
     }
 }
