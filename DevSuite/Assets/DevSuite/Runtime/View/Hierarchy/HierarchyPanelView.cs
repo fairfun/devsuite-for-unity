@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -37,6 +36,7 @@ namespace Ff.DevSuite.View
         private readonly HashSet<int> _descendantMatchingInstanceIds = new();
         private readonly Dictionary<int, VisualElement> _gameObjectRows = new();
         private readonly List<VisualElement> _currentlySelectedRows = new();
+        private GameObject _selectionAnchor;
 
         private bool _pickModeActive;
         private Regex _searchRegex;
@@ -561,33 +561,61 @@ namespace Ff.DevSuite.View
                         if (_context != null)
                         {
                             var isCtrlHeld = evt.ctrlKey || evt.commandKey;
-                            if (isCtrlHeld)
+                            var isShiftHeld = evt.shiftKey;
+
+                            if (isShiftHeld && _selectionAnchor != null)
                             {
-                                _context.ToggleSelectedGameObject(go);
+                                var visibleList = GetVisibleGameObjectsInOrder();
+                                if (visibleList.Contains(_selectionAnchor) && visibleList.Contains(go))
+                                {
+                                    var anchorIndex = visibleList.IndexOf(_selectionAnchor);
+                                    var targetIndex = visibleList.IndexOf(go);
+                                    var start = Mathf.Min(anchorIndex, targetIndex);
+                                    var end = Mathf.Max(anchorIndex, targetIndex);
+
+                                    var range = new List<GameObject>();
+                                    for (var i = start; i <= end; i++)
+                                    {
+                                        range.Add(visibleList[i]);
+                                    }
+
+                                    _context.SetSelectedGameObjects(range);
+#if UNITY_EDITOR
+                                    UnityEditor.Selection.objects = range.ToArray();
+#endif
+                                }
                             }
                             else
                             {
-                                _context.SelectedGameObject = go;
-                            }
-#if UNITY_EDITOR
-                            if (isCtrlHeld)
-                            {
-                                var currentSelection = new List<Object>(UnityEditor.Selection.objects);
-                                if (currentSelection.Contains(go))
+                                _selectionAnchor = go;
+                                if (isCtrlHeld)
                                 {
-                                    currentSelection.Remove(go);
+                                    _context.ToggleSelectedGameObject(go);
                                 }
                                 else
                                 {
-                                    currentSelection.Add(go);
+                                    _context.SelectedGameObject = go;
                                 }
-                                UnityEditor.Selection.objects = currentSelection.ToArray();
-                            }
-                            else
-                            {
-                                UnityEditor.Selection.activeGameObject = go;
-                            }
+#if UNITY_EDITOR
+                                if (isCtrlHeld)
+                                {
+                                    var currentSelection = new List<Object>(UnityEditor.Selection.objects);
+                                    if (currentSelection.Contains(go))
+                                    {
+                                        currentSelection.Remove(go);
+                                    }
+                                    else
+                                    {
+                                        currentSelection.Add(go);
+                                    }
+                                    UnityEditor.Selection.objects = currentSelection.ToArray();
+                                }
+                                else
+                                {
+                                    UnityEditor.Selection.activeGameObject = go;
+                                }
 #endif
+                            }
                         }
                     }
                 }
@@ -617,13 +645,73 @@ namespace Ff.DevSuite.View
             {
                 foreach (var go in _context.SelectedGameObjects)
                 {
-                    if (go == null) continue;
+                    if (go == null)
+                    {
+                        continue;
+                    }
                     var selId = go.GetInstanceID();
                     if (_gameObjectRows.TryGetValue(selId, out var row))
                     {
                         row.AddToClassList("selected");
                         _currentlySelectedRows.Add(row);
                     }
+                }
+
+                if (_selectionAnchor == null || !_context.SelectedGameObjects.Contains(_selectionAnchor))
+                {
+                    _selectionAnchor = _context.SelectedGameObject;
+                }
+            }
+        }
+
+        private List<GameObject> GetVisibleGameObjectsInOrder()
+        {
+            var visibleList = new List<GameObject>();
+            for (var i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded)
+                {
+                    continue;
+                }
+                if (_collapsedSceneNames.Contains(scene.name))
+                {
+                    continue;
+                }
+
+                var rootObjects = scene.GetRootGameObjects();
+                foreach (var go in rootObjects)
+                {
+                    GetVisibleChildrenRecursive(go, visibleList);
+                }
+            }
+            return visibleList;
+        }
+
+        private void GetVisibleChildrenRecursive(GameObject go, List<GameObject> visibleList)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            var matches = true;
+            if (_searchRegex != null)
+            {
+                matches = _matchingInstanceIds.Contains(go.GetInstanceID()) || _descendantMatchingInstanceIds.Contains(go.GetInstanceID());
+            }
+
+            if (matches)
+            {
+                visibleList.Add(go);
+            }
+
+            var instanceId = go.GetInstanceID();
+            if (_expandedGameObjectInstanceIds.Contains(instanceId))
+            {
+                for (var i = 0; i < go.transform.childCount; i++)
+                {
+                    GetVisibleChildrenRecursive(go.transform.GetChild(i).gameObject, visibleList);
                 }
             }
         }
