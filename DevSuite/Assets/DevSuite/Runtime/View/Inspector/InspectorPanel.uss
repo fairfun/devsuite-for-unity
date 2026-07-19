@@ -145,8 +145,7 @@
 
 .inspector-go-header {
     background-color: rgba(60, 60, 60, 0.85);
-    border-bottom-width: 1px;
-    border-bottom-color: var(--accent-color);
+    border-bottom-width: 0;
     padding: 6px 8px;
     margin-top: 10px;
     margin-bottom: 6px;
