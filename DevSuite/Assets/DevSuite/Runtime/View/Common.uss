@@ -88,3 +88,47 @@
 .unity-base-slider__dragger:active {
     background-color: rgba(255, 255, 255, 0.3);
 }
+
+/* Shared checkbox toggle — used by Hierarchy, Inspector, Commands, etc. */
+.ff-toggle {
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+}
+
+.ff-toggle .unity-toggle__input {
+    margin: 0;
+    padding: 0;
+}
+
+.ff-toggle .unity-toggle__checkmark {
+    background-image: none;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+}
+
+.ff-toggle:checked .unity-toggle__checkmark {
+    background-image: none;
+}
+
+.ff-toggle-icon {
+    color: var(--text-color);
+    font-size: 11px;
+    -unity-font-style: bold;
+    padding: 0;
+    margin: 0;
+    display: none;
+    text-overflow: clip;
+}
+
+.ff-toggle:checked .ff-toggle-icon {
+    display: flex;
+}

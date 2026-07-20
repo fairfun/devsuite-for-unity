@@ -166,3 +166,13 @@
     color: rgb(130, 130, 130);
     -unity-font-style: italic;
 }
+
+/* Positional override — base style comes from Common.uss .ff-toggle */
+.hierarchy-activity-toggle {
+    margin-left: auto;
+}
+
+.hierarchy-object-row.inactive .hierarchy-activity-toggle .ff-toggle-icon {
+    color: rgb(100, 100, 100);
+}
+

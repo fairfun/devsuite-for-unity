@@ -35,6 +35,7 @@ namespace Ff.DevSuite.View
         private readonly HashSet<int> _matchingInstanceIds = new();
         private readonly HashSet<int> _descendantMatchingInstanceIds = new();
         private readonly Dictionary<int, VisualElement> _gameObjectRows = new();
+        private readonly Dictionary<int, (GameObject Go, Toggle Toggle)> _gameObjectActivityToggles = new();
         private readonly List<VisualElement> _currentlySelectedRows = new();
         private GameObject _selectionAnchor;
 
@@ -365,6 +366,7 @@ namespace Ff.DevSuite.View
         {
             _scrollView.Clear();
             _gameObjectRows.Clear();
+            _gameObjectActivityToggles.Clear();
             _currentlySelectedRows.Clear();
 
             for (var i = 0; i < SceneManager.sceneCount; i++)
@@ -529,6 +531,36 @@ namespace Ff.DevSuite.View
             }
             row.Add(foldoutBtn);
 
+            var activityToggle = new Toggle
+            {
+                name = "activityToggle",
+                value = go.activeSelf,
+                tooltip = "Toggle active state"
+            };
+            activityToggle.AddToClassList("ff-toggle");
+            activityToggle.AddToClassList("hierarchy-activity-toggle");
+            var activityCheckmark = activityToggle.Q<VisualElement>("unity-checkmark");
+            if (activityCheckmark != null)
+            {
+                var icon = new Label("\uf00c");
+                icon.AddToClassList("ff-toggle-icon");
+                activityCheckmark.Add(icon);
+            }
+            activityToggle.RegisterValueChangedCallback(evt =>
+            {
+                if (go != null)
+                {
+                    go.SetActive(evt.newValue);
+                    if (evt.newValue)
+                    {
+                        row.RemoveFromClassList("inactive");
+                    }
+                    else
+                    {
+                        row.AddToClassList("inactive");
+                    }
+                }
+            });
             var label = new Label
             {
                 name = "itemLabel",
@@ -536,6 +568,9 @@ namespace Ff.DevSuite.View
             };
             label.AddToClassList("hierarchy-item-label");
             row.Add(label);
+
+            row.Add(activityToggle);
+            _gameObjectActivityToggles[instanceId] = (go, activityToggle);
 
             nodeContainer.Add(row);
 
@@ -839,6 +874,27 @@ namespace Ff.DevSuite.View
         private void HandleOnEveryFrame()
         {
             UpdatePickMode();
+            SyncActivityStates();
+        }
+
+        private void SyncActivityStates()
+        {
+            foreach (var kvp in _gameObjectActivityToggles)
+            {
+                var (go, toggle) = kvp.Value;
+                if (go == null || toggle == null || toggle.panel == null) continue;
+
+                var row = _gameObjectRows.TryGetValue(kvp.Key, out var r) ? r : null;
+                if (row == null) continue;
+
+                bool isActive = go.activeSelf;
+                if (toggle.value != isActive)
+                {
+                    toggle.SetValueWithoutNotify(isActive);
+                    if (isActive) row.RemoveFromClassList("inactive");
+                    else row.AddToClassList("inactive");
+                }
+            }
         }
 
         private void UpdatePickMode()
@@ -1017,7 +1073,8 @@ namespace Ff.DevSuite.View
             }
 
             var typesStr = typeNames.Count > 0 ? $" ({string.Join(", ", typeNames)})" : "";
-            sb.AppendLine($"{indent}{go.name}{typesStr}");
+            var disabledStr = !go.activeSelf ? " (inactive)" : "";
+            sb.AppendLine($"{indent}{go.name}{typesStr}{disabledStr}");
 
             for (var i = 0; i < go.transform.childCount; i++)
             {

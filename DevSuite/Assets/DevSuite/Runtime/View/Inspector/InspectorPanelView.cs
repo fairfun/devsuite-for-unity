@@ -14,6 +14,8 @@ namespace Ff.DevSuite.View
         private readonly Label _selectedObjectPathLabel;
         private readonly ScrollView _scrollView;
         private readonly Button _copyBtn;
+        private readonly Toggle _goActivityToggle;
+        private EventCallback<ChangeEvent<bool>> _goActivityCallback;
 
         private struct TrackedProperty
         {
@@ -24,6 +26,24 @@ namespace Ff.DevSuite.View
 
         private readonly List<TrackedProperty> _trackedProperties = new();
         private readonly List<GameObject> _lastSelectedGameObjects = new();
+
+        private struct TrackedGoActivity
+        {
+            public GameObject Go;
+            public Toggle ToggleControl;
+            public VisualElement NameContainer; // container to apply 'inactive' dimming class on
+        }
+
+        private readonly List<TrackedGoActivity> _trackedGoActivities = new();
+
+        private struct TrackedMonoBehaviour
+        {
+            public MonoBehaviour Mono;
+            public Toggle ToggleControl;
+            public VisualElement CompBox;
+        }
+
+        private readonly List<TrackedMonoBehaviour> _trackedMonoBehaviours = new();
 
         private struct CachedTypeData
         {
@@ -98,6 +118,19 @@ namespace Ff.DevSuite.View
             _selectedObjectPathLabel = root.Q<Label>("selectedObjectPathLabel");
             _scrollView = root.Q<ScrollView>("inspectorScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+
+            // Header activity toggle — wired dynamically in RebuildInspector since it needs the current GO reference
+            _goActivityToggle = root.Q<Toggle>("goActivityToggle");
+            if (_goActivityToggle != null)
+            {
+                var checkmark = _goActivityToggle.Q<VisualElement>("unity-checkmark");
+                if (checkmark != null)
+                {
+                    var icon = new Label("\uf00c");
+                    icon.AddToClassList("ff-toggle-icon");
+                    checkmark.Add(icon);
+                }
+            }
 
             _copyBtn = root.Q<Button>("copyBtn");
             if (_copyBtn != null)
@@ -190,11 +223,24 @@ namespace Ff.DevSuite.View
             }
             _scrollView.Clear();
             _trackedProperties.Clear();
+            _trackedMonoBehaviours.Clear();
+            _trackedGoActivities.Clear();
+
+            // Reset the header toggle — callbacks are re-registered below
+            if (_goActivityToggle != null && _goActivityCallback != null)
+            {
+                _goActivityToggle.UnregisterValueChangedCallback(_goActivityCallback);
+                _goActivityCallback = null;
+            }
 
             if (gameObjects == null || gameObjects.Count == 0)
             {
                 _selectedObjectLabel.text = "None selected";
                 _selectedObjectPathLabel.text = "";
+                if (_goActivityToggle != null)
+                {
+                    _goActivityToggle.style.display = DisplayStyle.None;
+                }
                 return;
             }
 
@@ -203,6 +249,25 @@ namespace Ff.DevSuite.View
                 var go = gameObjects[0];
                 _selectedObjectLabel.text = go.name;
                 _selectedObjectPathLabel.text = DevSuiteUtils.GetGameObjectPath(go);
+
+                if (_goActivityToggle != null)
+                {
+                    _goActivityToggle.style.display = DisplayStyle.Flex;
+                    _goActivityToggle.SetValueWithoutNotify(go.activeSelf);
+                    if (!go.activeSelf) _selectedObjectLabel.AddToClassList("inactive");
+                    else _selectedObjectLabel.RemoveFromClassList("inactive");
+                    _goActivityCallback = evt =>
+                    {
+                        if (go != null)
+                        {
+                            go.SetActive(evt.newValue);
+                            if (evt.newValue) _selectedObjectLabel.RemoveFromClassList("inactive");
+                            else _selectedObjectLabel.AddToClassList("inactive");
+                        }
+                    };
+                    _goActivityToggle.RegisterValueChangedCallback(_goActivityCallback);
+                    _trackedGoActivities.Add(new TrackedGoActivity { Go = go, ToggleControl = _goActivityToggle, NameContainer = _selectedObjectLabel });
+                }
 
                 var components = go.GetComponents<Component>();
                 foreach (var comp in components)
@@ -220,6 +285,11 @@ namespace Ff.DevSuite.View
                 _selectedObjectLabel.text = "Multiple Selected";
                 _selectedObjectPathLabel.text = $"{gameObjects.Count} objects selected";
 
+                if (_goActivityToggle != null)
+                {
+                    _goActivityToggle.style.display = DisplayStyle.None;
+                }
+
                 foreach (var go in gameObjects)
                 {
                     if (go == null)
@@ -230,13 +300,47 @@ namespace Ff.DevSuite.View
                     var goHeader = new VisualElement();
                     goHeader.AddToClassList("inspector-go-header");
 
+                    // Per-GO activity toggle
+                    var goToggle = new Toggle
+                    {
+                        value = go.activeSelf,
+                        tooltip = "Toggle active state"
+                    };
+                    goToggle.AddToClassList("ff-toggle");
+                    goToggle.AddToClassList("inspector-go-activity-toggle");
+                    var checkmark = goToggle.Q<VisualElement>("unity-checkmark");
+                    if (checkmark != null)
+                    {
+                        var icon = new Label("\uf00c");
+                        icon.AddToClassList("ff-toggle-icon");
+                        checkmark.Add(icon);
+                    }
+                    goToggle.RegisterValueChangedCallback(evt =>
+                    {
+                        if (go != null)
+                        {
+                            go.SetActive(evt.newValue);
+                            if (evt.newValue) goHeader.RemoveFromClassList("inactive");
+                            else goHeader.AddToClassList("inactive");
+                        }
+                    });
+                    var textContainer = new VisualElement();
+                    textContainer.AddToClassList("inspector-go-header-text");
+
                     var goNameLabel = new Label(go.name);
                     goNameLabel.AddToClassList("inspector-go-name");
-                    goHeader.Add(goNameLabel);
+                    textContainer.Add(goNameLabel);
 
                     var goPathLabel = new Label(DevSuiteUtils.GetGameObjectPath(go));
                     goPathLabel.AddToClassList("inspector-go-path");
-                    goHeader.Add(goPathLabel);
+                    textContainer.Add(goPathLabel);
+
+                    goHeader.Add(textContainer);
+
+                    // Toggle added last so margin-left: auto pushes it to the right
+                    goHeader.Add(goToggle);
+                    if (!go.activeSelf) goHeader.AddToClassList("inactive");
+                    _trackedGoActivities.Add(new TrackedGoActivity { Go = go, ToggleControl = goToggle, NameContainer = goHeader });
 
                     _scrollView.Add(goHeader);
 
@@ -272,6 +376,46 @@ namespace Ff.DevSuite.View
             header.AddToClassList("inspector-component-header");
             compBox.Add(header);
 
+            Toggle enabledToggle = null;
+            if (comp is MonoBehaviour mono)
+            {
+                enabledToggle = new Toggle
+                {
+                    name = "monoEnabledToggle",
+                    value = mono.enabled,
+                    tooltip = "Toggle enabled state"
+                };
+                enabledToggle.AddToClassList("ff-toggle");
+                enabledToggle.AddToClassList("inspector-mono-toggle");
+                var monoCheckmark = enabledToggle.Q<VisualElement>("unity-checkmark");
+                if (monoCheckmark != null)
+                {
+                    var icon = new Label("\uf00c");
+                    icon.AddToClassList("ff-toggle-icon");
+                    monoCheckmark.Add(icon);
+                }
+                if (!mono.enabled)
+                {
+                    compBox.AddToClassList("disabled");
+                }
+                enabledToggle.RegisterValueChangedCallback(evt =>
+                {
+                    if (mono != null)
+                    {
+                        mono.enabled = evt.newValue;
+                        if (evt.newValue)
+                        {
+                            compBox.RemoveFromClassList("disabled");
+                        }
+                        else
+                        {
+                            compBox.AddToClassList("disabled");
+                        }
+                    }
+                });
+                _trackedMonoBehaviours.Add(new TrackedMonoBehaviour { Mono = mono, ToggleControl = enabledToggle, CompBox = compBox });
+            }
+
             var nameLabel = new Label
             {
                 name = "compName",
@@ -287,6 +431,11 @@ namespace Ff.DevSuite.View
             };
             typeLabel.AddToClassList("inspector-component-type");
             header.Add(typeLabel);
+
+            if (enabledToggle != null)
+            {
+                header.Add(enabledToggle);
+            }
 
             var body = new VisualElement
             {
@@ -434,6 +583,48 @@ namespace Ff.DevSuite.View
                     prop.ValueLabel.text = "<error>";
                 }
             }
+
+            for (var i = _trackedMonoBehaviours.Count - 1; i >= 0; i--)
+            {
+                var tracked = _trackedMonoBehaviours[i];
+                if (tracked.Mono == null || tracked.Mono.Equals(null))
+                {
+                    _trackedMonoBehaviours.RemoveAt(i);
+                    continue;
+                }
+
+                bool isEnabled = tracked.Mono.enabled;
+                if (tracked.ToggleControl.value != isEnabled)
+                {
+                    tracked.ToggleControl.SetValueWithoutNotify(isEnabled);
+                    if (isEnabled)
+                    {
+                        tracked.CompBox.RemoveFromClassList("disabled");
+                    }
+                    else
+                    {
+                        tracked.CompBox.AddToClassList("disabled");
+                    }
+                }
+            }
+
+            for (var i = _trackedGoActivities.Count - 1; i >= 0; i--)
+            {
+                var tracked = _trackedGoActivities[i];
+                if (tracked.Go == null || tracked.Go.Equals(null))
+                {
+                    _trackedGoActivities.RemoveAt(i);
+                    continue;
+                }
+
+                bool isActive = tracked.Go.activeSelf;
+                if (tracked.ToggleControl.value != isActive)
+                {
+                    tracked.ToggleControl.SetValueWithoutNotify(isActive);
+                    if (isActive) tracked.NameContainer?.RemoveFromClassList("inactive");
+                    else tracked.NameContainer?.AddToClassList("inactive");
+                }
+            }
         }
 
         private GameObject GetSelectedGameObject()
@@ -466,7 +657,8 @@ namespace Ff.DevSuite.View
                     continue;
                 }
 
-                sb.AppendLine($"GameObject: {go.name}");
+                var goDisabledStr = !go.activeSelf ? " (inactive)" : "";
+                sb.AppendLine($"GameObject: {go.name}{goDisabledStr}");
                 sb.AppendLine($"Path: {DevSuiteUtils.GetGameObjectPath(go)}");
                 sb.AppendLine();
 
@@ -479,7 +671,9 @@ namespace Ff.DevSuite.View
                     }
 
                     var compType = comp.GetType();
-                    sb.AppendLine($"{compType.Name} ({compType.Namespace ?? "UnityEngine"})");
+                    var mono = comp as MonoBehaviour;
+                    var compDisabledStr = (mono != null && !mono.enabled) ? " (disabled)" : "";
+                    sb.AppendLine($"{compType.Name} ({compType.Namespace ?? "UnityEngine"}){compDisabledStr}");
 
                     var cachedData = GetOrCreateCachedTypeData(compType);
 

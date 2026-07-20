@@ -150,6 +150,13 @@
     margin-top: 10px;
     margin-bottom: 6px;
     border-radius: 4px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.inspector-go-header-text {
+    flex-direction: column;
+    flex-grow: 1;
 }
 
 .inspector-go-name {
@@ -163,4 +170,31 @@
     color: var(--text-label-color);
     -unity-font-style: italic;
     margin-top: 1px;
+}
+
+/* Positional override — base style comes from Common.uss .ff-toggle */
+.inspector-mono-toggle {
+    margin-left: auto;
+}
+
+/* Positional override — base style comes from Common.uss .ff-toggle */
+.inspector-go-activity-toggle {
+    margin-left: auto;
+    align-self: center;
+}
+
+.inspector-component-box.disabled .inspector-component-name,
+.inspector-component-box.disabled .inspector-component-type {
+    opacity: 0.35;
+}
+
+/* GameObject inactive dimming — single selection header label */
+.inspector-selected-object.inactive {
+    opacity: 0.4;
+}
+
+/* GameObject inactive dimming — multi-selection per-go header */
+.inspector-go-header.inactive .inspector-go-name,
+.inspector-go-header.inactive .inspector-go-path {
+    opacity: 0.4;
 }
