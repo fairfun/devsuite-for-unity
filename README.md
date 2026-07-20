@@ -37,6 +37,8 @@
 - 📊 **Performance Monitor**: Integrated graphs and statistics for real-time performance tracking (FPS, memory, etc.), can add your own custom stats too.
 - 📜 **Logs Panel**: Full-featured in-game console for viewing and filtering system logs, saving logs to a file.
 - 📌 **Pinned Commands**: A dedicated panel for your most frequently used actions for quick access.
+- 🌳 **Hierarchy Panel**: Browse the live scene hierarchy at runtime — search, filter, select, toggle active state, and copy the full tree as text.
+- 🔍 **Inspector Panel**: Inspect selected GameObjects at runtime — view all components, toggle MonoBehaviour enabled state, and copy all property values to clipboard.
 - 🔄 **Data Handling**: Support for custom data adapters and providers.
 - ✨ **Quality of Life**:
   - 🗂️ **Organization**: Advanced filtering, pinning system, and category tabs.
