@@ -642,7 +642,7 @@ namespace Ff.DevSuite
 
         internal bool IsGroupCollapsed(string groupId, string categoryId, bool defaultCollapsed)
         {
-            if (!CheckSettingsInitialized())
+            if (!CheckSettingsInitialized(true))
             {
                 return defaultCollapsed;
             }
@@ -689,7 +689,7 @@ namespace Ff.DevSuite
 
         internal OrderedSet<Command> GetPinnedCommands(bool forceRefresh)
         {
-            if (!CheckSettingsInitialized())
+            if (!CheckSettingsInitialized(true))
             {
                 return DevSuiteUtils.EmptyOrderedSet<Command>();
             }
@@ -919,14 +919,13 @@ namespace Ff.DevSuite
             }
         }
 
-        private bool CheckSettingsInitialized()
+        private bool CheckSettingsInitialized(bool silent = false)
         {
-            if (Settings != null)
+            if (Settings == null && !silent)
             {
-                return true;
+                Debug.LogWarning("Settings are not initialized");
             }
-            Debug.LogWarning("Settings are not initialized");
-            return false;
+            return Settings != null;
         }
 
         private LazyCache<string, CommandGroup> _getGroupByCategory;
