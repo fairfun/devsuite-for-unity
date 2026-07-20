@@ -1,6 +1,6 @@
 {
   "name": "com.ff.devsuite",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "displayName": "DevSuite",
   "description": "A suite of custom editor and runtime windows for making troubleshooting easier",
   "unity": "2022.3",

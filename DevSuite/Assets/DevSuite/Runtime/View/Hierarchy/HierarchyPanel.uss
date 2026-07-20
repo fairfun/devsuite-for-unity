@@ -1,0 +1,178 @@
+@import "../Common.uss";
+
+:root {
+    --toolbar-bg: rgba(38, 38, 38, 0.5);
+    --text-color: rgb(210, 210, 210);
+    --divider-color: rgba(51, 51, 51, 0.8);
+    --item-hover-bg: rgba(255, 255, 255, 0.04);
+    --selected-bg: rgba(255, 255, 255, 0.12);
+}
+
+.hierarchy-panel-container {
+    flex-grow: 1;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--text-color);
+    font-size: 12px;
+    border-radius: var(--panel-border-radius);
+}
+
+.hierarchy-header-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 6px 8px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--divider-color);
+}
+
+.hierarchy-toolbar {
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 6px;
+    background-color: var(--toolbar-bg);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--divider-color);
+}
+
+.hierarchy-filter-container {
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(36, 36, 36, 0.6);
+    border-radius: 4px;
+    padding: 4px 5px;
+    margin: 2px 0;
+    margin-right: 4px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.05);
+    flex-grow: 1;
+}
+
+.hierarchy-filter-icon {
+    color: var(--text-label-color);
+    font-size: 10px;
+    padding: 0;
+    margin: 0;
+    margin-right: 2px;
+}
+
+.hierarchy-filter-field {
+    flex-grow: 1;
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    padding: 0;
+    margin: 0;
+    height: 16px;
+    --unity-cursor-color: rgb(180, 180, 180);
+}
+
+.hierarchy-filter-field .unity-base-text-field__input {
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    padding: 0;
+    color: rgb(255, 255, 255);
+    font-size: 12px;
+}
+
+
+
+.hierarchy-icon-btn {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    font-size: 14px;
+    width: 28px;
+    height: 24px;
+    margin-left: 2px;
+    padding: 0;
+    color: var(--text-label-color);
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    border-radius: 4px;
+}
+
+.hierarchy-icon-btn:hover {
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.hierarchy-icon-btn.active {
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.hierarchy-list-view {
+    flex-grow: 1;
+    min-height: 0px;
+}
+
+.hierarchy-list-view .unity-scroll-view__content-container {
+    justify-content: flex-start;
+    width: 100%;
+}
+
+/* Tree node rows */
+.hierarchy-item-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 2px 4px;
+    height: 22px;
+    border-radius: 3px;
+    margin-bottom: 1px;
+    transition-property: background-color;
+    transition-duration: 0.1s;
+}
+
+.hierarchy-item-row:hover {
+    background-color: var(--item-hover-bg);
+}
+
+.hierarchy-item-row.selected {
+    background-color: var(--selected-bg);
+}
+
+.hierarchy-item-row.dimmed {
+    opacity: 0.35;
+}
+
+.hierarchy-foldout-btn {
+    width: 12px;
+    height: 16px;
+    margin-right: 0;
+    padding: 0;
+    background-color: transparent;
+    border-width: 0;
+    color: var(--text-label-color);
+    font-size: 9px;
+}
+
+.hierarchy-foldout-btn:hover {
+    color: white;
+}
+
+.hierarchy-item-label {
+    flex-grow: 1;
+    -unity-text-align: middle-left;
+    padding-left: 0;
+}
+
+.hierarchy-scene-row .hierarchy-item-label {
+    -unity-font-style: bold;
+    color: rgb(255, 204, 0);
+}
+
+.hierarchy-object-row .hierarchy-item-label {
+    color: rgb(230, 230, 230);
+}
+
+.hierarchy-object-row.inactive .hierarchy-item-label {
+    color: rgb(130, 130, 130);
+    -unity-font-style: italic;
+}
+
+/* Positional override — base style comes from Common.uss .ff-toggle */
+.hierarchy-activity-toggle {
+    margin-left: auto;
+}
+
+.hierarchy-object-row.inactive .hierarchy-activity-toggle .ff-toggle-icon {
+    color: rgb(100, 100, 100);
+}
+

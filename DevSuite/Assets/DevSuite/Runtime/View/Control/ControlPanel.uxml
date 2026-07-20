@@ -1,14 +1,16 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" display-tooltip-when-elided="true" editor-extension-mode="False">
     <ui:VisualElement name="ff-control-panel-root" class="ff-control-panel-root">
-        <ui:Button name="reset-btn" text="" class="ff-control-panel-btn"/>
+        <ui:Button name="reset-btn" text="" class="ff-control-panel-btn" tooltip="Reset DevSuite settings"/>
         <ui:VisualElement name="divider" class="ff-control-panel-divider"/>
         <ui:VisualElement name="spacer" class="ff-control-panel-spacer">
             <ui:Label name="version-lbl" class="ff-control-panel-version"/>
         </ui:VisualElement>
-        <ui:Button name="logs-btn" text="" class="ff-control-panel-btn"/>
-        <ui:Button name="commands-btn" text="" class="ff-control-panel-btn"/>
-        <ui:Button name="metrics-btn" text="" class="ff-control-panel-btn"/>
-        <ui:Button name="pinned-commands-btn" text="" class="ff-control-panel-btn"/>
-        <ui:Button name="expand-btn" text="" class="ff-control-panel-btn"/>
+        <ui:Button name="logs-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Logs panel"/>
+        <ui:Button name="hierarchy-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Hierarchy panel"/>
+        <ui:Button name="inspector-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Inspector panel"/>
+        <ui:Button name="metrics-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Performance panel"/>
+        <ui:Button name="commands-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Commands panel"/>
+        <ui:Button name="pinned-commands-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Pinned Commands panel"/>
+        <ui:Button name="expand-btn" text="" class="ff-control-panel-btn" tooltip="Expand/Collapse DevSuite"/>
     </ui:VisualElement>
 </ui:UXML>

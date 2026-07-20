@@ -13,13 +13,13 @@ namespace Ff.DevSuite
     {
 #if UNITY_EDITOR
         [UnityEditor.InitializeOnEnterPlayMode]
-        static void OnEnterPlayMode()
+        private static void OnEnterPlayMode()
         {
             InvalidateCache();
         }
 #endif
 
-        public static Regex NewLineRegex { get; } = new Regex(@"[\r\n]+", RegexOptions.Compiled);
+        public static Regex NewLineRegex { get; } = new(@"[\r\n]+", RegexOptions.Compiled);
 
         public static TResult As<TSource, TResult>(this TSource source, Func<TSource, TResult> action)
         {
@@ -48,7 +48,9 @@ namespace Ff.DevSuite
         public static int BinaryLastIndex<T>(this IList<T> list, Func<T, bool> condition)
         {
             if (list.Count <= 0)
+            {
                 return -1;
+            }
 
             var leftIndex = 0;
             var rightIndex = list.Count - 1;
@@ -77,18 +79,28 @@ namespace Ff.DevSuite
         public static readonly HashSet<Type> IntegerTypes = new()
         {
             typeof(char),
-            typeof(sbyte), typeof(byte),
-            typeof(short), typeof(ushort),
-            typeof(int), typeof(uint),
-            typeof(long), typeof(ulong),
+            typeof(sbyte),
+            typeof(byte),
+            typeof(short),
+            typeof(ushort),
+            typeof(int),
+            typeof(uint),
+            typeof(long),
+            typeof(ulong),
         };
 
         public static HashSet<Type> NumericTypes = IntegerTypes.Concat(
-            new[] { typeof(float), typeof(double), typeof(decimal) }
+            new[]
+            {
+                typeof(float), typeof(double), typeof(decimal),
+            }
         ).ToHashSet();
 
         public static HashSet<Type> CommonPrimitiveTypes = NumericTypes.Concat(
-            new[] { typeof(bool), typeof(DateTime), typeof(TimeSpan) }
+            new[]
+            {
+                typeof(bool), typeof(DateTime), typeof(TimeSpan),
+            }
         ).ToHashSet();
 
         public static bool IsIntegerType(this Type type)
@@ -104,7 +116,7 @@ namespace Ff.DevSuite
                 () => AppDomain.CurrentDomain.GetAssemblies()
                     .SelectMany(a => a.DefinedTypes.Where(t => !t.IsAbstract && !t.IsInterface)).Cast<Type>().ToArray()
             );
-            _getTypeImplementationsCache ??= new(
+            _getTypeImplementationsCache ??= new LazyCache<Type, IReadOnlyList<Type>>(
                 v =>
                 {
                     var values = assemblies.Value.Where(v.IsAssignableFrom).ToList();
@@ -118,7 +130,7 @@ namespace Ff.DevSuite
 
         public static bool IsSubclassOfRawGeneric(this Type generic, Type toCheck)
         {
-            _isSubclassOfRawGeneric ??= new(
+            _isSubclassOfRawGeneric ??= new LazyCache<Type, Type, bool>(
                 (g, tc) =>
                 {
                     var result = false;
@@ -150,7 +162,7 @@ namespace Ff.DevSuite
                     foreach (var m in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
                     {
                         var genericArgsCount = m.GetGenericArguments().Length;
-                        if (m.Name == name && genericArgsCount == 0 || genericArgsCount == 1)
+                        if ((m.Name == name && genericArgsCount == 0) || genericArgsCount == 1)
                         {
                             first = m;
                             break;
@@ -190,7 +202,13 @@ namespace Ff.DevSuite
                     return;
 
                 case MethodInfo method:
-                    method.Invoke(obj, new[] { value });
+                    method.Invoke(
+                        obj,
+                        new[]
+                        {
+                            value,
+                        }
+                    );
                     return;
             }
             throw new Exception($"Unsupported member type '{member}'");
@@ -222,7 +240,7 @@ namespace Ff.DevSuite
 
         public static IReadOnlyList<MemberInfo> GetFieldsAndProperties(this Type type)
         {
-            _getFieldsAndPropertiesCache ??= new(
+            _getFieldsAndPropertiesCache ??= new LazyCache<Type, MemberInfo[]>(
                 t =>
                 {
                     var res = t.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy).Cast<MemberInfo>()
@@ -239,7 +257,7 @@ namespace Ff.DevSuite
 
         public static IReadOnlyList<Type> GetAllInheritedTypes(this Type type)
         {
-            _getAllInheritedClassesCache ??= new(
+            _getAllInheritedClassesCache ??= new LazyCache<Type, Type[]>(
                 t =>
                 {
                     var result = new HashSet<Type>();
@@ -259,11 +277,15 @@ namespace Ff.DevSuite
         private static HashSet<Type> AddBaseClass(Type type, HashSet<Type> result)
         {
             if (type == null || result.Contains(type))
+            {
                 return result;
+            }
 
             result.Add(type);
             if (type.IsGenericType)
+            {
                 result.Add(type.GetGenericTypeDefinition());
+            }
             return AddBaseClass(type?.BaseType, result);
         }
 
@@ -271,7 +293,7 @@ namespace Ff.DevSuite
 
         public static IReadOnlyList<(MemberInfo member, Attribute attribute)> GetCustomAttributes(this Type type, Type attributeType, BindingFlags flags)
         {
-            _getCustomAttributesCache ??= new(
+            _getCustomAttributesCache ??= new LazyCache<Type, Type, BindingFlags, List<(MemberInfo, Attribute)>>(
                 (type, attributeType, flags) =>
                 {
                     var classAttributes = type.GetCustomAttributes(attributeType).Select(a => (member: type as MemberInfo, attribute: a));
@@ -293,7 +315,7 @@ namespace Ff.DevSuite
 
         public static Type GetReturnType(this MemberInfo member)
         {
-            _getReturnTypeCache ??= new(
+            _getReturnTypeCache ??= new LazyCache<MemberInfo, Type>(
                 member =>
                 {
                     return member switch
@@ -309,11 +331,10 @@ namespace Ff.DevSuite
         }
 
         private static LazyCache<Type, string, PropertyInfo> _getTypePropertyCache;
+
         public static PropertyInfo GetTypeProperty(Type type, string name)
         {
-            _getTypePropertyCache ??= new(
-                (t, n) => t.GetProperty(n, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
-            );
+            _getTypePropertyCache ??= new LazyCache<Type, string, PropertyInfo>((t, n) => t.GetProperty(n, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
             return _getTypePropertyCache[type, name];
         }
 
@@ -383,22 +404,23 @@ namespace Ff.DevSuite
             return new List<T>(xs);
         }
 
-        internal static double TargetFps => Application.targetFrameRate > 0
-            ? Application.targetFrameRate
-            : DisplayFrameRate;
+        internal static double TargetFps =>
+            Application.targetFrameRate > 0
+                ? Application.targetFrameRate
+                : DisplayFrameRate;
 
         private static double? _refreshRate; // cached to avoid allocations in Screen.mainWindowDisplayInfo
-        internal static double DisplayFrameRate => _refreshRate ??=
+        internal static double DisplayFrameRate =>
+            _refreshRate ??=
 #if UNITY_EDITOR || UNITY_STANDALONE
-            Screen.mainWindowDisplayInfo.refreshRate.value;
+                Screen.mainWindowDisplayInfo.refreshRate.value;
 #else
             Screen.currentResolution.refreshRateRatio.value;
 #endif
 
         private static readonly char[] TrimChars =
         {
-            ' ',
-            '_',
+            ' ', '_',
         };
 
         private static readonly List<Regex> TrimNamePatterns = new()
@@ -412,14 +434,18 @@ namespace Ff.DevSuite
         public static string TrimName(string name)
         {
             if (string.IsNullOrEmpty(name))
+            {
                 return name;
+            }
 
             name = name.Trim(TrimChars);
             foreach (var pattern in TrimNamePatterns)
             {
                 var newName = pattern.Replace(name, "");
                 if (newName.Length > 0)
+                {
                     name = newName;
+                }
             }
             return name;
         }
@@ -427,28 +453,34 @@ namespace Ff.DevSuite
         public static void ShowIconButtonClickedFeedback(Button button)
         {
             if (button.userData is string)
+            {
                 return; // already showing feedback
+            }
 
             var originalIcon = button.text;
             button.userData = originalIcon;
             button.text = "\uf00c";
-            button.schedule.Execute(() =>
-            {
-                button.text = originalIcon;
-                button.userData = null;
-            }).StartingIn(500);
+            button.schedule.Execute(
+                () =>
+                {
+                    button.text = originalIcon;
+                    button.userData = null;
+                }
+            ).StartingIn(500);
         }
 
         private static readonly Regex AllUppercaseLetters = new(@"([A-Z]|[0-9]+)|( +)", RegexOptions.Compiled);
         private const string AllUppercaseLettersReplacement = @"[a-z_\- ]*$1";
 
-        public static readonly Regex AlwaysMatch = new Regex(@".*", RegexOptions.Compiled);
-        public static readonly Regex NeverMatch = new Regex(@"\A(?!x)x", RegexOptions.Compiled);
+        public static readonly Regex AlwaysMatch = new(@".*", RegexOptions.Compiled);
+        public static readonly Regex NeverMatch = new(@"\A(?!x)x", RegexOptions.Compiled);
 
         public static Regex GetSmartSearchRegex(string text)
         {
             if (string.IsNullOrEmpty(text))
+            {
                 return AlwaysMatch;
+            }
 
             text = Regex.Escape(text);
             var regexExpression = AllUppercaseLetters.Replace(text, AllUppercaseLettersReplacement);
@@ -530,6 +562,22 @@ namespace Ff.DevSuite
             }
         }
 
+        public static string GetGameObjectPath(GameObject go)
+        {
+            if (go == null)
+            {
+                return "";
+            }
+            var path = go.name;
+            var parent = go.transform.parent;
+            while (parent != null)
+            {
+                path = parent.name + "/" + path;
+                parent = parent.parent;
+            }
+            return go.scene.name + "/" + path;
+        }
+
         public static bool IsVisible(this VisualElement e)
         {
             return e.visible && e.style.display != DisplayStyle.None &&
@@ -557,30 +605,36 @@ namespace Ff.DevSuite
             }
             else
             {
-                textField.RegisterCallback<AttachToPanelEvent>(evt =>
-                {
-                    ConfigureTextInput(textField.Q("unity-text-input"));
-                });
+                textField.RegisterCallback<AttachToPanelEvent>(
+                    evt =>
+                    {
+                        ConfigureTextInput(textField.Q("unity-text-input"));
+                    }
+                );
             }
 
-            textField.RegisterCallback<PointerDownEvent>(evt =>
-            {
-                textField.focusable = true;
-                var input = textField.Q("unity-text-input");
-                input.focusable = true;
-            }, TrickleDown.TrickleDown);
+            textField.RegisterCallback<PointerDownEvent>(
+                evt =>
+                {
+                    textField.focusable = true;
+                    var input = textField.Q("unity-text-input");
+                    input.focusable = true;
+                },
+                TrickleDown.TrickleDown
+            );
 
-            textField.RegisterCallback<FocusOutEvent>(evt =>
-            {
-                textField.focusable = false;
-                var input = textField.Q("unity-text-input");
-                input.focusable = false;
-            });
+            textField.RegisterCallback<FocusOutEvent>(
+                evt =>
+                {
+                    textField.focusable = false;
+                    var input = textField.Q("unity-text-input");
+                    input.focusable = false;
+                }
+            );
         }
 
 
-        [System.Runtime.InteropServices.DllImport("__Internal")]
-        private static extern void CopyToClipboardWebGL(string text);
+        [System.Runtime.InteropServices.DllImport("__Internal")] private static extern void CopyToClipboardWebGL(string text);
 
         private static bool IsWebGl =>
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -588,5 +642,172 @@ namespace Ff.DevSuite
 #else
             false;
 #endif
+
+        public static void SetupTooltips(VisualElement root)
+        {
+            var tooltipLabel = new Label();
+            tooltipLabel.AddToClassList("ff-tooltip");
+            tooltipLabel.style.position = Position.Absolute;
+            tooltipLabel.pickingMode = PickingMode.Ignore;
+            tooltipLabel.style.display = DisplayStyle.None;
+
+            // Apply theme styling programmatically to ensure it works across all panels
+            tooltipLabel.style.backgroundColor = new Color(42 / 255f, 42 / 255f, 42 / 255f, 0.95f);
+            tooltipLabel.style.color = new Color(238 / 255f, 238 / 255f, 238 / 255f, 1f);
+            tooltipLabel.style.paddingLeft = 10;
+            tooltipLabel.style.paddingRight = 10;
+            tooltipLabel.style.paddingTop = 6;
+            tooltipLabel.style.paddingBottom = 6;
+            tooltipLabel.style.borderBottomLeftRadius = 4;
+            tooltipLabel.style.borderBottomRightRadius = 4;
+            tooltipLabel.style.borderTopLeftRadius = 4;
+            tooltipLabel.style.borderTopRightRadius = 4;
+            tooltipLabel.style.borderLeftWidth = 1;
+            tooltipLabel.style.borderRightWidth = 1;
+            tooltipLabel.style.borderTopWidth = 1;
+            tooltipLabel.style.borderBottomWidth = 1;
+            tooltipLabel.style.borderLeftColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
+            tooltipLabel.style.borderRightColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
+            tooltipLabel.style.borderTopColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
+            tooltipLabel.style.borderBottomColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
+            tooltipLabel.style.fontSize = 12;
+            tooltipLabel.style.whiteSpace = WhiteSpace.Normal;
+
+            root.Add(tooltipLabel);
+
+            VisualElement currentTooltipElement = null;
+            string currentTooltipText = null;
+            IVisualElementScheduledItem tooltipTask = null;
+            var lastMousePosition = Vector2.zero;
+
+            root.RegisterCallback<MouseOverEvent>(
+                evt =>
+                {
+                    lastMousePosition = evt.mousePosition;
+                    var target = evt.target as VisualElement;
+                    VisualElement tooltipElement = null;
+                    while (target != null && target != root)
+                    {
+                        if (!string.IsNullOrEmpty(target.tooltip))
+                        {
+                            tooltipElement = target;
+                            break;
+                        }
+                        target = target.parent;
+                    }
+
+                    if (tooltipElement != null)
+                    {
+                        if (currentTooltipElement != tooltipElement)
+                        {
+                            currentTooltipElement = tooltipElement;
+                            currentTooltipText = tooltipElement.tooltip;
+
+                            tooltipTask?.Pause();
+                            tooltipTask = tooltipLabel.schedule.Execute(
+                                () =>
+                                {
+                                    tooltipLabel.text = currentTooltipText;
+                                    tooltipLabel.style.display = DisplayStyle.Flex;
+                                    tooltipLabel.style.visibility = Visibility.Hidden;
+                                    tooltipLabel.BringToFront();
+
+                                    EventCallback<GeometryChangedEvent> onGeometryChanged = null;
+                                    onGeometryChanged = (evt) =>
+                                    {
+                                        tooltipLabel.UnregisterCallback<GeometryChangedEvent>(onGeometryChanged);
+                                        UpdateTooltipPosition(tooltipLabel, lastMousePosition);
+                                        tooltipLabel.style.visibility = Visibility.Visible;
+                                    };
+                                    tooltipLabel.RegisterCallback<GeometryChangedEvent>(onGeometryChanged);
+                                }
+                            ).StartingIn(400);
+                        }
+                    }
+                    else
+                    {
+                        HideTooltip(ref currentTooltipElement, ref currentTooltipText, tooltipTask, tooltipLabel);
+                    }
+                },
+                TrickleDown.TrickleDown
+            );
+
+            root.RegisterCallback<MouseMoveEvent>(
+                evt =>
+                {
+                    lastMousePosition = evt.mousePosition;
+                    if (currentTooltipElement != null)
+                    {
+                        UpdateTooltipPosition(tooltipLabel, lastMousePosition);
+                    }
+                },
+                TrickleDown.TrickleDown
+            );
+
+            root.RegisterCallback<MouseOutEvent>(
+                evt =>
+                {
+                    if (currentTooltipElement != null)
+                    {
+                        var target = evt.target as VisualElement;
+                        if (target == currentTooltipElement)
+                        {
+                            HideTooltip(ref currentTooltipElement, ref currentTooltipText, tooltipTask, tooltipLabel);
+                        }
+                    }
+                },
+                TrickleDown.TrickleDown
+            );
+        }
+
+        private static void UpdateTooltipPosition(Label tooltipLabel, Vector2 mousePosition)
+        {
+            if (tooltipLabel == null || tooltipLabel.style.display == DisplayStyle.None)
+            {
+                return;
+            }
+
+            var parent = tooltipLabel.parent;
+            if (parent == null)
+            {
+                return;
+            }
+
+            var localPos = parent.WorldToLocal(mousePosition);
+            var parentWidth = parent.layout.width;
+
+            var tooltipWidth = tooltipLabel.layout.width;
+            if (float.IsNaN(tooltipWidth) || tooltipWidth <= 0)
+            {
+                tooltipWidth = tooltipLabel.resolvedStyle.width;
+                if (float.IsNaN(tooltipWidth) || tooltipWidth <= 0)
+                {
+                    var text = tooltipLabel.text ?? "";
+                    tooltipWidth = Mathf.Clamp(text.Length * 6.5f + 24f, 60f, 300f);
+                }
+            }
+
+            var targetX = localPos.x + 12;
+            if (targetX + tooltipWidth > parentWidth)
+            {
+                targetX = localPos.x - tooltipWidth - 12;
+            }
+
+            targetX = Mathf.Clamp(targetX, 4f, Mathf.Max(4f, parentWidth - tooltipWidth - 4f));
+
+            tooltipLabel.style.left = targetX;
+            tooltipLabel.style.top = localPos.y + 12;
+        }
+
+        private static void HideTooltip(ref VisualElement currentTooltipElement, ref string currentTooltipText, IVisualElementScheduledItem tooltipTask, Label tooltipLabel)
+        {
+            currentTooltipElement = null;
+            currentTooltipText = null;
+            tooltipTask?.Pause();
+            if (tooltipLabel != null)
+            {
+                tooltipLabel.style.display = DisplayStyle.None;
+            }
+        }
     }
 }

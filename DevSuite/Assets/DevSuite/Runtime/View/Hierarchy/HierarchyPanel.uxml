@@ -1,0 +1,28 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="hierarchy-panel-root" class="hierarchy-panel-container">
+        <!-- Search bar with filter field and navigation -->
+        <ui:VisualElement class="hierarchy-toolbar">
+            <ui:VisualElement class="hierarchy-filter-container">
+                <ui:Label text="&#xf002;" class="hierarchy-filter-icon"/>
+                <ui:TextField name="filterField" class="hierarchy-filter-field" tabindex="-1" focusable="false"/>
+            </ui:VisualElement>
+            <ui:Button name="prevBtn" class="hierarchy-icon-btn" tooltip="Previous search result"/>
+            <ui:Button name="nextBtn" class="hierarchy-icon-btn" tooltip="Next search result"/>
+            <ui:Button name="regexBtn" class="hierarchy-icon-btn" tooltip="Toggle Regex Search"/>
+            <ui:Button name="nameBtn" class="hierarchy-icon-btn" tooltip="Toggle Search by Name"/>
+            <ui:Button name="typeBtn" class="hierarchy-icon-btn" tooltip="Toggle Search by Type"/>
+            <ui:Button name="dimBtn" class="hierarchy-icon-btn" tooltip="Toggle Filter Mode"/>
+        </ui:VisualElement>
+
+        <!-- Title and top actions -->
+        <ui:VisualElement class="hierarchy-header-row">
+            <ui:Button name="refreshBtn" class="hierarchy-icon-btn" tooltip="Refresh scene objects"/>
+            <ui:VisualElement style="flex-grow: 1;"/>
+            <ui:Button name="copyBtn" class="hierarchy-icon-btn" tooltip="Copy entire hierarchy tree to clipboard"/>
+            <ui:Button name="pickBtn" class="hierarchy-icon-btn" tooltip="Pick mode: Click an object in the Game View to select it"/>
+        </ui:VisualElement>
+
+        <!-- Scrollable Scene Tree -->
+        <ui:ScrollView name="hierarchyScrollView" class="hierarchy-list-view"/>
+    </ui:VisualElement>
+</ui:UXML>

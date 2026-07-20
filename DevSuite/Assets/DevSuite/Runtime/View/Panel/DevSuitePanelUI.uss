@@ -42,14 +42,26 @@
     margin-left: 0;
 }
 
-.devsuite-panel-root > #commands-full-container {
-    width: 550px;
+.devsuite-panel-root > #hierarchy-container {
+    width: 380px;
     flex-shrink: 0;
     flex-grow: 0;
     margin-right: var(--margin-size);
 }
 
-.devsuite-panel-root.panel-left > #commands-full-container {
+.devsuite-panel-root.panel-left > #hierarchy-container {
+    margin-right: var(--margin-size);
+    margin-left: 0;
+}
+
+.devsuite-panel-root > #inspector-container {
+    width: 420px;
+    flex-shrink: 0;
+    flex-grow: 0;
+    margin-right: var(--margin-size);
+}
+
+.devsuite-panel-root.panel-left > #inspector-container {
     margin-right: var(--margin-size);
     margin-left: 0;
 }

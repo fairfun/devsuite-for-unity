@@ -11,11 +11,6 @@ namespace Ff.DevSuite.View
     {
         private readonly VisualElement _categoriesContainer;
         private readonly VisualElement _commandsContent;
-        private readonly Label _tooltip;
-
-        private Vector2 _lastMousePosition;
-        private IVisualElementScheduledItem _tooltipTask;
-
         private DevSuiteContext _context;
         private ViewMode _mode;
         private string _selectedCategoryId;
@@ -43,57 +38,15 @@ namespace Ff.DevSuite.View
             var scrollView = this.Q<ScrollView>("commands-scroll-view");
             scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
 
-            _tooltip = new Label();
-            _tooltip.AddToClassList("ff-tooltip");
-            _tooltip.pickingMode = PickingMode.Ignore; // Don't block mouse events
-            Add(_tooltip);
+            DevSuiteUtils.SetupTooltips(this);
         }
 
         private void RegisterTooltip(VisualElement element, string text)
         {
-            if (string.IsNullOrEmpty(text))
+            if (element != null)
             {
-                return;
+                element.tooltip = text;
             }
-
-            element.RegisterCallback<MouseEnterEvent>(evt =>
-            {
-                _lastMousePosition = evt.mousePosition;
-                _tooltipTask?.Pause();
-                _tooltipTask = schedule.Execute(() =>
-                {
-                    _tooltip.text = text;
-                    _tooltip.style.display = DisplayStyle.Flex;
-                    _tooltip.BringToFront();
-                    UpdateTooltipPosition(_lastMousePosition);
-                }).StartingIn(400);
-            });
-
-            element.RegisterCallback<MouseMoveEvent>(evt =>
-            {
-                _lastMousePosition = evt.mousePosition;
-                UpdateTooltipPosition(_lastMousePosition);
-            });
-
-            element.RegisterCallback<MouseLeaveEvent>(evt => HideTooltip());
-        }
-
-        private void UpdateTooltipPosition(Vector2 position)
-        {
-            if (_tooltip.style.display == DisplayStyle.None)
-            {
-                return;
-            }
-
-            var localPos = this.WorldToLocal(position);
-            _tooltip.style.left = localPos.x + 12;
-            _tooltip.style.top = localPos.y + 12;
-        }
-
-        private void HideTooltip()
-        {
-            _tooltipTask?.Pause();
-            _tooltip.style.display = DisplayStyle.None;
         }
 
         internal void Initialize(DevSuiteContext context, ViewMode mode)

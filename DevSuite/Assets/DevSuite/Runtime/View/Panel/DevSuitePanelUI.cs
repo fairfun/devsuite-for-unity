@@ -45,11 +45,22 @@ namespace Ff.DevSuite.View
         [SerializeField] private VisualTreeAsset _logsUxml;
         [SerializeField] private StyleSheet _logsUss;
 
+        [Header("Hierarchy Panel")]
+        [SerializeField] private VisualTreeAsset _hierarchyUxml;
+        [SerializeField] private StyleSheet _hierarchyUss;
+
+        [Header("Inspector Panel")]
+        [SerializeField] private VisualTreeAsset _inspectorUxml;
+        [SerializeField] private StyleSheet _inspectorUss;
+
         private LogsPanelView _logsPanelView;
         private CommandsPanelView _commandsFullPanelView;
         private CommandsPanelView _commandsPinnedPanelView;
         private PerformancePanelView _performancePanelView;
         private ControlPanelView _controlView;
+        private HierarchyPanelView _hierarchyPanelView;
+        private InspectorPanelView _inspectorPanelView;
+
 
         private VisualElement _logsContainer;
         private VisualElement _commandsFullContainer;
@@ -57,6 +68,8 @@ namespace Ff.DevSuite.View
         private VisualElement _pinnedContainer;
         private VisualElement _performancePanelContainer;
         private VisualElement _controlContainer;
+        private VisualElement _hierarchyContainer;
+        private VisualElement _inspectorContainer;
 
         private bool? _isPortrait;
         private bool IsPortrait =>_isPortrait ??= _layoutMode switch
@@ -127,6 +140,18 @@ namespace Ff.DevSuite.View
             _performancePanelView.Initialize(_context);
             _performancePanelContainer.Add(_performancePanelView);
 
+            _hierarchyContainer = root.Q<VisualElement>("hierarchy-container");
+            _hierarchyPanelView = new HierarchyPanelView(_hierarchyUxml, _hierarchyUss);
+            _hierarchyPanelView.AddToClassList("fill-container");
+            _hierarchyContainer.Add(_hierarchyPanelView);
+            _hierarchyPanelView.Initialize(_context);
+
+            _inspectorContainer = root.Q<VisualElement>("inspector-container");
+            _inspectorPanelView = new InspectorPanelView(_inspectorUxml, _inspectorUss);
+            _inspectorPanelView.AddToClassList("fill-container");
+            _inspectorContainer.Add(_inspectorPanelView);
+            _inspectorPanelView.Initialize(_context);
+
             ApplyColors(root);
             UpdateVisibility();
         }
@@ -149,6 +174,8 @@ namespace Ff.DevSuite.View
             _commandsPinnedPanelView?.Reset();
             _performancePanelView?.Reset();
             _controlView?.Reset();
+            _hierarchyPanelView?.Reset();
+            _inspectorPanelView?.Reset();
         }
 
         private void ApplyColors(VisualElement root)
@@ -209,6 +236,8 @@ namespace Ff.DevSuite.View
             _commandsFullContainer.style.display = expanded && _context.CommandsVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _pinnedContainer.style.display = expanded && _context.PinnedCommandsVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _performancePanelContainer.style.display = expanded && _context.MetricsVisible ? DisplayStyle.Flex : DisplayStyle.None;
+            _hierarchyContainer.style.display = expanded && _context.HierarchyVisible ? DisplayStyle.Flex : DisplayStyle.None;
+            _inspectorContainer.style.display = expanded && _context.InspectorVisible ? DisplayStyle.Flex : DisplayStyle.None;
 
             if (IsPortrait)
             {
@@ -221,10 +250,22 @@ namespace Ff.DevSuite.View
                 _logsContainer.style.flexShrink = 1;
                 _logsContainer.style.flexBasis = 0;
 
+                _hierarchyContainer.style.flexGrow = 1;
+                _hierarchyContainer.style.flexShrink = 1;
+                _hierarchyContainer.style.flexBasis = 0;
+
+                _inspectorContainer.style.flexGrow = 1;
+                _inspectorContainer.style.flexShrink = 1;
+                _inspectorContainer.style.flexBasis = 0;
+
                 _commandsFullContainer.style.alignSelf = StyleKeyword.Null;
                 _commandsFullContainer.style.maxHeight = StyleKeyword.Null;
                 _logsContainer.style.alignSelf = StyleKeyword.Null;
                 _logsContainer.style.maxHeight = StyleKeyword.Null;
+                _hierarchyContainer.style.alignSelf = StyleKeyword.Null;
+                _hierarchyContainer.style.maxHeight = StyleKeyword.Null;
+                _inspectorContainer.style.alignSelf = StyleKeyword.Null;
+                _inspectorContainer.style.maxHeight = StyleKeyword.Null;
             }
             else
             {
@@ -238,10 +279,22 @@ namespace Ff.DevSuite.View
                 _logsContainer.style.flexShrink = StyleKeyword.Null;
                 _logsContainer.style.flexBasis = StyleKeyword.Null;
 
+                _hierarchyContainer.style.flexGrow = StyleKeyword.Null;
+                _hierarchyContainer.style.flexShrink = StyleKeyword.Null;
+                _hierarchyContainer.style.flexBasis = StyleKeyword.Null;
+
+                _inspectorContainer.style.flexGrow = StyleKeyword.Null;
+                _inspectorContainer.style.flexShrink = StyleKeyword.Null;
+                _inspectorContainer.style.flexBasis = StyleKeyword.Null;
+
                 _commandsFullContainer.style.alignSelf = Align.FlexStart;
                 _commandsFullContainer.style.maxHeight = Length.Percent(100);
                 _logsContainer.style.alignSelf = Align.FlexStart;
                 _logsContainer.style.maxHeight = Length.Percent(100);
+                _hierarchyContainer.style.alignSelf = Align.FlexStart;
+                _hierarchyContainer.style.maxHeight = Length.Percent(100);
+                _inspectorContainer.style.alignSelf = Align.FlexStart;
+                _inspectorContainer.style.maxHeight = Length.Percent(100);
             }
 
             foreach (var child in _basicContainer.Children())

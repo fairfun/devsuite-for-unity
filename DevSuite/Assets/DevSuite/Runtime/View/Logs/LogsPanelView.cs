@@ -75,6 +75,7 @@ namespace Ff.DevSuite.View
             _scrollView = root.Q<ScrollView>("logsScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             _scrollView.verticalScroller.valueChanged += _ => ClearHovers();
+            DevSuiteUtils.SetupTooltips(this);
         }
 
         private void ClearHovers()
