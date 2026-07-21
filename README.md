@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/fairfun/devsuite-for-unity?style=social)](https://github.com/fairfun/devsuite-for-unity/stargazers)
 
-**DevSuite** is a powerful collection of custom editor and runtime tools designed to streamline the debugging and troubleshooting process in Unity. It provides a flexible and extensible framework for managing commands, monitoring performance, and viewing logs directly within your application or the Unity Editor.
+**DevSuite** is a powerful collection of custom editor and runtime tools designed to streamline the debugging and troubleshooting process in Unity. It provides a flexible and extensible framework for managing commands, monitoring performance, viewing logs, browsing scene hierarchy, and inspecting GameObjects and components directly within your application or the Unity Editor.
 
 ## Screenshots
 
@@ -23,6 +23,33 @@
       <td style="padding: 10px; border: 1px solid #d0d7de;"><img src="Images/Landscape.png" alt="Landscape"></td>
       <td style="padding: 10px; border: 1px solid #d0d7de;"><img src="Images/Portrait.png" alt="Portrait"></td>
       <td style="padding: 10px; border: 1px solid #d0d7de;"><img src="Images/EditorWindows.png" alt="Editor Windows"></td>
+    </tr>
+  </tbody>
+</table>
+
+<br/>
+
+<table style="border-collapse: collapse; width: 100%;">
+  <thead>
+    <tr>
+      <th align="left" style="background-color: #88888855; color: #ffffff; padding: 10px; border: 1px solid #88888855;">🎛️ Control Bar</th>
+      <th align="left" style="background-color: #88888855; color: #ffffff; padding: 10px; border: 1px solid #88888855;">🛠️ Commands</th>
+      <th align="left" style="background-color: #88888855; color: #ffffff; padding: 10px; border: 1px solid #88888855;">📌 Pinned Commands</th>
+      <th align="left" style="background-color: #88888855; color: #ffffff; padding: 10px; border: 1px solid #88888855;">🌳 Hierarchy</th>
+      <th align="left" style="background-color: #88888855; color: #ffffff; padding: 10px; border: 1px solid #88888855;">🔍 Inspector</th>
+      <th align="left" style="background-color: #88888855; color: #ffffff; padding: 10px; border: 1px solid #88888855;">📜 Logs</th>
+      <th align="left" style="background-color: #88888855; color: #ffffff; padding: 10px; border: 1px solid #88888855;">📊 Performance</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr valign="top">
+      <td style="padding: 10px; border: 1px solid #d0d7de;"><img src="Images/Control.png" alt="Control Bar"></td>
+      <td style="padding: 10px; border: 1px solid #d0d7de;"><img src="Images/Commands.png" alt="Commands"></td>
+      <td style="padding: 10px; border: 1px solid #d0d7de;"><img src="Images/Pinned.png" alt="Pinned"></td>
+      <td style="padding: 10px; border: 1px solid #d0d7de;"><img src="Images/Hierarchy.png" alt="Hierarchy"></td>
+      <td style="padding: 10px; border: 1px solid #d0d7de;"><img src="Images/Inspector.png" alt="Inspector"></td>
+      <td style="padding: 10px; border: 1px solid #d0d7de;"><img src="Images/Logs.png" alt="Logs"></td>
+      <td style="padding: 10px; border: 1px solid #d0d7de;"><img src="Images/Performance.png" alt="Performance"></td>
     </tr>
   </tbody>
 </table>
