@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/fairfun/devsuite-for-unity?style=social)](https://github.com/fairfun/devsuite-for-unity/stargazers)
 
-**DevSuite** is a powerful collection of custom editor and runtime tools designed to streamline the debugging and troubleshooting process in Unity. It provides a flexible and extensible framework for managing commands, monitoring performance, viewing logs, browsing scene hierarchy, and inspecting GameObjects and components directly within your application or the Unity Editor.
+**DevSuite** is a lightweight and powerful collection of custom editor and runtime tools designed to streamline the debugging and troubleshooting process in Unity. It provides a flexible and extensible framework for managing commands, monitoring performance, viewing logs, browsing scene hierarchy, and inspecting GameObjects and components directly within your application or the Unity Editor.
 
 ## Screenshots
 
@@ -56,6 +56,7 @@
 
 ## Features
 - ⚡ **Simple but Powerful**: A robust toolkit that is easy to set up yet highly extensible.
+- 🪶 **Lightweight**: Minimum code and assets, optimized runtime, no dependencies.
 - 🆓 **Free & Open-Source**: 100% free and open-source, released under the MIT License for use in personal and commercial projects.
 - 🧩 **Flexible Integration**: Easy to set up and integrate into existing projects with minimal overhead.
 - 🌐 **Cross-Platform**: Supports running in the Editor, as well as Desktop, Mobile, and WebGL builds.
