@@ -11,6 +11,7 @@
     "commands",
     "inspector",
     "monitor",
+    "console",
     "utility",
     "tool",
     "custom"

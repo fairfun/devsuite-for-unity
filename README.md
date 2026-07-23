@@ -4,7 +4,11 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/fairfun/devsuite-for-unity?style=social)](https://github.com/fairfun/devsuite-for-unity/stargazers)
 
-**DevSuite** is a lightweight and powerful collection of custom editor and runtime tools designed to streamline the debugging and troubleshooting process in Unity. It provides a flexible and extensible framework for managing commands, monitoring performance, viewing logs, browsing scene hierarchy, and inspecting GameObjects and components directly within your application or the Unity Editor.
+**DevSuite** is a lightweight and powerful in-game and Editor debug console and troubleshooting suite for Unity. It provides a flexible and extensible framework for managing debug commands, monitoring performance, viewing logs in an in-game console, browsing scene hierarchy, and inspecting GameObjects and components directly within your application or the Unity Editor.
+
+## Why DevSuite?
+
+DevSuite serves as a modern, 100% free, and open-source alternative to popular Unity debug assets such as **SRDebugger**, **Lunar Mobile Console**, **In-game Debug Console**, **UnityRuntimeInspector** and others. By consolidating essential debugging features - including an in-game logs console, runtime hierarchy browser, GameObject inspector, performance monitor, and attribute-driven command system - into one lightweight and powerful package, DevSuite eliminates the need for fragmented, paid toolsets and provides a cohesive experience for efficient runtime troubleshooting.
 
 ## Screenshots
 
@@ -55,18 +59,18 @@
 </table>
 
 ## Features
-- ⚡ **Simple but Powerful**: A robust all-in-one toolkit that is easy to set up.
+- ⚡ **Simple but Powerful**: A robust all-in-one debug toolkit that is easy to set up.
 - 🪶 **Lightweight**: Minimum code and assets, optimized runtime, no dependencies.
 - 🆓 **Free & Open-Source**: 100% free and open-source, released under the MIT License for use in personal and commercial projects.
 - 🧩 **Flexible Integration**: Easy to set up and integrate into existing projects with minimal overhead.
 - 🌐 **Cross-Platform**: Supports running in the Editor, as well as Desktop, Mobile, and WebGL builds.
 - 📱 **Responsive Design**: Modern UI Toolkit-based interface that works seamlessly across different screen sizes.
-- 🏷️ **Commands with Extensive Attributes**: Highly customizable through attributes, allowing you to expose commands and data with minimal code.
+- 🏷️ **Commands with Extensive Attributes**: Highly customizable through attributes, allowing you to expose debug commands and data with minimal code.
 - 📊 **Performance Monitor**: Integrated graphs and statistics for real-time performance tracking (FPS, memory, etc.), can add your own custom stats too.
 - 📜 **Logs Panel**: Full-featured in-game console for viewing and filtering system logs, saving logs to a file.
-- 📌 **Pinned Commands**: A dedicated panel for your most frequently used actions for quick access.
-- 🌳 **Hierarchy Panel**: Browse the live scene hierarchy at runtime — search, filter, select, toggle active state, and copy the full tree as text.
-- 🔍 **Inspector Panel**: Inspect selected GameObjects at runtime — view all components, toggle MonoBehaviour enabled state, and copy all property values to clipboard.
+- 📌 **Pinned Commands**: A dedicated panel for your most frequently used debug actions for quick access.
+- 🌳 **Hierarchy Panel**: Browse the live scene hierarchy at runtime - search, filter, select, toggle active state, and copy the full tree as text.
+- 🔍 **Inspector Panel**: Inspect selected GameObjects at runtime - view all components, toggle MonoBehaviour enabled state, and copy all property values to clipboard.
 - 🔄 **Data Handling**: Support for custom data adapters and providers.
 - ✨ **Quality of Life**:
   - 🗂️ **Organization**: Advanced filtering, pinning system, and category tabs.
@@ -155,10 +159,10 @@ Refer to the documentation or sample scenes for more detailed configuration and 
         <p><strong>Manual</strong></p>
         <p>Call <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.Default.Initialize(monoBehaviour)</code></a> from your bootstrap code (e.g. <code>Awake</code>). Optional arguments:</p>
         <ul>
-          <li><code>staticCommandsAssemblies</code> — limit command scanning to specific assemblies</li>
-          <li><code>savedPrefs</code> — custom <a href="DevSuite/Assets/DevSuite/Runtime/Prefs/SavedPrefs.cs"><code>ISavedPrefs</code></a> for panel/settings persistence</li>
-          <li><code>registerCommonCommands: false</code> — skip built-in <a href="DevSuite/Assets/DevSuite/Runtime/Utilities/CommonCommands.cs"><code>CommonCommands</code></a></li>
-          <li><code>DevSuiteContext.Default</code> — override the version string shown in the UI (default: <code>"v" + Application.version</code>) — see <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.cs</code></a></li>
+          <li><code>staticCommandsAssemblies</code> - limit command scanning to specific assemblies</li>
+          <li><code>savedPrefs</code> - custom <a href="DevSuite/Assets/DevSuite/Runtime/Prefs/SavedPrefs.cs"><code>ISavedPrefs</code></a> for panel/settings persistence</li>
+          <li><code>registerCommonCommands: false</code> - skip built-in <a href="DevSuite/Assets/DevSuite/Runtime/Utilities/CommonCommands.cs"><code>CommonCommands</code></a></li>
+          <li><code>DevSuiteContext.Default</code> - override the version string shown in the UI (default: <code>"v" + Application.version</code>) - see <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.cs</code></a></li>
         </ul>
         <p>See example scene: <a href="DevSuite/Assets/DevSuite/Examples/ExampleManualInitialization.unity"><code>ExampleManualInitialization.unity</code></a></p>
         <p><strong>Editor</strong></p>
@@ -169,9 +173,9 @@ Refer to the documentation or sample scenes for more detailed configuration and 
       <td style="padding: 10px; border: 1px solid #88888855; width: 33%;">
         <p>DevSuite uses <a href="DevSuite/Assets/DevSuite/Runtime/Prefs/SavedPrefs.cs"><code>SavedPrefs</code></a> for persistent settings (<a href="DevSuite/Assets/DevSuite/Runtime/Prefs/SavedPrefsProperty.cs"><code>SavedPrefsProperty&lt;T&gt;</code></a>, panel state). The serializer is selected automatically based on installed packages (via <code>DevSuite.asmdef</code> <code>versionDefines</code>):</p>
         <ul>
-          <li><a href="https://github.com/Cysharp/MemoryPack"><strong>MemoryPack</strong></a> (<code>DEVSUITE_MEMORYPACK</code>) — preferred when installed; fastest binary format</li>
-          <li><a href="https://github.com/MessagePack-CSharp/MessagePack-CSharp"><strong>MessagePack</strong></a> (<code>DEVSUITE_MESSAGEPACK</code>) — binary alternative</li>
-          <li><a href="https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html"><strong>Newtonsoft.Json</strong></a> (<code>DEVSUITE_NEWTONSOFT</code>) — JSON via <a href="DevSuite/Assets/DevSuite/Runtime/Prefs/JsonSavedPrefs.cs"><code>JsonSavedPrefs</code></a></li>
+          <li><a href="https://github.com/Cysharp/MemoryPack"><strong>MemoryPack</strong></a> (<code>DEVSUITE_MEMORYPACK</code>) - preferred when installed; fastest binary format</li>
+          <li><a href="https://github.com/MessagePack-CSharp/MessagePack-CSharp"><strong>MessagePack</strong></a> (<code>DEVSUITE_MESSAGEPACK</code>) - binary alternative</li>
+          <li><a href="https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html"><strong>Newtonsoft.Json</strong></a> (<code>DEVSUITE_NEWTONSOFT</code>) - JSON via <a href="DevSuite/Assets/DevSuite/Runtime/Prefs/JsonSavedPrefs.cs"><code>JsonSavedPrefs</code></a></li>
         </ul>
         <p>If multiple packages are present, <strong>MemoryPack</strong> takes priority, then MessagePack, then Newtonsoft.</p>
         <p><strong>If needed, override the backend:</strong> <code><a href="DevSuite/Assets/DevSuite/Runtime/Prefs/SavedPrefs.cs">SavedPrefs</a>.Factory = name =&gt; new <a href="DevSuite/Assets/DevSuite/Runtime/Prefs/MemoryPackSavedPrefs.cs">MemoryPackSavedPrefs</a>(name);</code></p>
@@ -182,8 +186,8 @@ Refer to the documentation or sample scenes for more detailed configuration and 
         <p><a href="DevSuite/Assets/DevSuite/Runtime/Utilities/CommonCommands.cs"><code>CommonCommands</code></a> is a built-in static command set (Game, Data, System, Dev Suite categories) registered automatically unless <code>registerCommonCommands: false</code> is passed to <code>Initialize()</code>.</p>
         <p><strong>Customize without editing source</strong></p>
         <ul>
-          <li><code>CommonCommands.ModifySystemInfo</code> — transform the System Info text block</li>
-          <li><code>CommonCommands.CustomSystemInfoBuildTimeData</code> — append custom build-time lines</li>
+          <li><code>CommonCommands.ModifySystemInfo</code> - transform the System Info text block</li>
+          <li><code>CommonCommands.CustomSystemInfoBuildTimeData</code> - append custom build-time lines</li>
         </ul>
         <p><strong>Extend or replace</strong></p>
         <p>Add your own <code>[CommandCategory]</code> classes, or fork/edit <a href="DevSuite/Assets/DevSuite/Runtime/Utilities/CommonCommands.cs"><code>CommonCommands.cs</code></a> directly. Many entries use <a href="DevSuite/Assets/DevSuite/Runtime/Prefs/SavedPrefsProperty.cs"><code>SavedPrefsProperty&lt;T&gt;</code></a> so values persist across sessions.</p>
@@ -210,20 +214,20 @@ Refer to the documentation or sample scenes for more detailed configuration and 
         <p><a href="DevSuite/Assets/DevSuite/Runtime/Commands/Attributes/CommandCategoryAttribute.cs"><code>[CommandCategory]</code></a> → <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Attributes/CommandGroupAttribute.cs"><code>[CommandGroup]</code></a> → <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Attributes/CommandAttribute.cs"><code>[Command]</code></a> → <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Attributes/CommandUnitAttribute.cs"><code>[CommandValue]</code></a> / <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Attributes/CommandUnitAttribute.cs"><code>[CommandButton]</code></a></p>
         <p><strong>Common attributes</strong></p>
         <ul>
-          <li><code>[CommandCategory]</code> / <code>[CommandGroup]</code> — organization, colors, descriptions, collapse state, visibility functions</li>
-          <li><code>[Command]</code> — <code>DisplayName</code>, <code>HeightMultiplier</code>, <code>AlwaysPin</code>, <code>VisibilityFunctionName</code></li>
-          <li><code>[CommandValue]</code> — fields, properties, methods; supports <code>MinValue</code>/<code>MaxValue</code>, <code>ScaleType</code>, <code>ReadOnly</code>, <code>PossibleValuesFunctionName</code>, <code>ForceStringRepresentation</code>, <code>Flex</code>, <code>Color</code>, <code>FontResource</code></li>
-          <li><code>[CommandButton]</code> — action buttons; supports <code>Title</code>, <code>Shortcut</code>, <code>CommandId</code> to attach to an existing command row</li>
+          <li><code>[CommandCategory]</code> / <code>[CommandGroup]</code> - organization, colors, descriptions, collapse state, visibility functions</li>
+          <li><code>[Command]</code> - <code>DisplayName</code>, <code>HeightMultiplier</code>, <code>AlwaysPin</code>, <code>VisibilityFunctionName</code></li>
+          <li><code>[CommandValue]</code> - fields, properties, methods; supports <code>MinValue</code>/<code>MaxValue</code>, <code>ScaleType</code>, <code>ReadOnly</code>, <code>PossibleValuesFunctionName</code>, <code>ForceStringRepresentation</code>, <code>Flex</code>, <code>Color</code>, <code>FontResource</code></li>
+          <li><code>[CommandButton]</code> - action buttons; supports <code>Title</code>, <code>Shortcut</code>, <code>CommandId</code> to attach to an existing command row</li>
         </ul>
         <p>See <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Attributes/CommandUnitAttribute.cs"><code>BaseCommandAttribute</code></a> subclasses for the full set of properties.</p>
       </td>
       <td style="padding: 10px; border: 1px solid #88888855; width: 33%;">
         <p>Extend how command values are displayed, edited, and populated.</p>
-        <p><strong>Adapters</strong> — convert between custom types and their UI string representation:</p>
+        <p><strong>Adapters</strong> - convert between custom types and their UI string representation:</p>
         <p><code><a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteCommandsApi.cs">CommandsApi</a>.RegisterAdapter(new <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Api/CommandValueAdapter.cs">DelegateCommandValueAdapterToString&lt;MyType&gt;</a>(toString, fromString));</code></p>
-        <p><strong>Values providers</strong> — supply dropdown lists for a type:</p>
+        <p><strong>Values providers</strong> - supply dropdown lists for a type:</p>
         <p><code><a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteCommandsApi.cs">CommandsApi</a>.RegisterValuesProvider(new <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Api/CommandValuesProvider.cs">CommandValuesProvider</a>(typeof(MyType), _ =&gt; myValues));</code></p>
-        <p><strong>Functions providers</strong> — expose static/instance methods (e.g. for <code>VisibilityFunctionName</code>) from external types:</p>
+        <p><strong>Functions providers</strong> - expose static/instance methods (e.g. for <code>VisibilityFunctionName</code>) from external types:</p>
         <p><code><a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteCommandsApi.cs">CommandsApi</a>.RegisterTargetForFunctionsProvider(new <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Api/CommandFunctionsSourceProvider.cs">CommandFunctionsSourceProvider</a>(typeof(MyClass)));</code></p>
         <p>Default adapters and an enum values provider are registered automatically during initialization.</p>
       </td>
