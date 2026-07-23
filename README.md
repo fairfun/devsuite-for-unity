@@ -55,7 +55,7 @@
 </table>
 
 ## Features
-- ⚡ **Simple but Powerful**: A robust toolkit that is easy to set up yet highly extensible.
+- ⚡ **Simple but Powerful**: A robust all-in-one toolkit that is easy to set up.
 - 🪶 **Lightweight**: Minimum code and assets, optimized runtime, no dependencies.
 - 🆓 **Free & Open-Source**: 100% free and open-source, released under the MIT License for use in personal and commercial projects.
 - 🧩 **Flexible Integration**: Easy to set up and integrate into existing projects with minimal overhead.
