@@ -60,26 +60,26 @@ DevSuite serves as a modern, 100% free, and open-source alternative to popular U
 
 ## Features
 - ⚡ **Simple but Powerful**: A robust all-in-one debug toolkit that is easy to set up.
-- 🪶 **Lightweight**: Minimum code and assets, optimized runtime, no dependencies.
+- 🪶 **Lightweight**: Minimum code and assets, optimized runtime, no dependencies, available via **Unity Package Manager (UPM)**.
 - 🆓 **Free & Open-Source**: 100% free and open-source, released under the MIT License for use in personal and commercial projects.
 - 🧩 **Flexible Integration**: Easy to set up and integrate into existing projects with minimal overhead.
-- 🌐 **Cross-Platform**: Supports running in the Editor, as well as Desktop, Mobile, and WebGL builds.
+- 🌐 **Cross-Platform**: Supports running in the **Editor**, as well as **Desktop**, **Mobile**, and **WebGL** builds.
 - 📱 **Responsive Design**: Modern UI Toolkit-based interface that works seamlessly across different screen sizes.
 - 🏷️ **Commands with Extensive Attributes**: Highly customizable through attributes, allowing you to expose debug commands and data with minimal code.
 - 📊 **Performance Monitor**: Integrated graphs and statistics for real-time performance tracking (FPS, memory, etc.), can add your own custom stats too.
-- 📜 **Logs Panel**: Full-featured in-game console for viewing and filtering system logs, saving logs to a file.
+- 📜 **Logs Panel**: Full-featured in-game console for viewing and filtering logs, saving logs to a file.
 - 📌 **Pinned Commands**: A dedicated panel for your most frequently used debug actions for quick access.
 - 🌳 **Hierarchy Panel**: Browse the live scene hierarchy at runtime - search, filter, select, toggle active state, and copy the full tree as text.
 - 🔍 **Inspector Panel**: Inspect selected GameObjects at runtime - view all components, toggle MonoBehaviour enabled state, and copy all property values to clipboard.
 - 🔄 **Data Handling**: Support for custom data adapters and providers.
+- 🚀 **Fast Play Mode Ready**: Optimized for Unity's fast play mode to minimize iteration times.
 - ✨ **Quality of Life**:
   - 🗂️ **Organization**: Advanced filtering, pinning system, and category tabs.
   - 💾 **Persistent Properties**: Integrated <a href="DevSuite/Assets/DevSuite/Runtime/Prefs/SavedPrefsProperty.cs"><code>SavedPrefsProperty&lt;T&gt;</code></a> for properties that automatically save and load their values from preferences with change tracking.
   - ⏱️ **Efficiency**: Button shortcuts and a predefined set of common utility commands.
-  - 🎨 **Customization**: Customizable colors, titles, tooltips, item height, scale type for sliders, and more.
+  - 🎨 **Customization**: Customizable colors, titles, tooltips, item height, scale type for sliders, values providers for dropdown lists, and more.
   - 🔌 **Dynamic Registration**: Register and unregister commands at runtime for both static classes and specific class instances.
   - 🤝 **Unified Experience**: Identical look and feel between Editor Windows and Runtime UI.
-- 🚀 **Fast Play Mode Ready**: Optimized for Unity's fast play mode to minimize iteration times.
 
 ## Requirements
 
