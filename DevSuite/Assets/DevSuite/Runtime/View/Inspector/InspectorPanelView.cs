@@ -76,7 +76,7 @@ namespace Ff.DevSuite.View
                     {
                         serializableFields.Add(field);
                     }
-                    else
+                    else if (field.IsPublic)
                     {
                         otherMembers.Add(field);
                     }

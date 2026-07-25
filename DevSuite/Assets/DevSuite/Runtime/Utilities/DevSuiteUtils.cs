@@ -243,10 +243,38 @@ namespace Ff.DevSuite
             _getFieldsAndPropertiesCache ??= new LazyCache<Type, MemberInfo[]>(
                 t =>
                 {
-                    var res = t.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy).Cast<MemberInfo>()
-                        .Concat(t.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy).Where(p => p.CanWrite))
-                        .ToArray();
-                    return res;
+                    var members = new List<MemberInfo>();
+                    var current = t;
+                    var seenNames = new HashSet<string>();
+
+                    while (current != null &&
+                           current != typeof(MonoBehaviour) &&
+                           current != typeof(Behaviour) &&
+                           current != typeof(Component) &&
+                           current != typeof(UnityEngine.Object))
+                    {
+                        var fields = current.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                        foreach (var field in fields)
+                        {
+                            if (seenNames.Add(field.Name))
+                            {
+                                members.Add(field);
+                            }
+                        }
+
+                        var properties = current.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                        foreach (var prop in properties)
+                        {
+                            if (seenNames.Add(prop.Name))
+                            {
+                                members.Add(prop);
+                            }
+                        }
+
+                        current = current.BaseType;
+                    }
+
+                    return members.ToArray();
                 }
             );
 

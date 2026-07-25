@@ -4,7 +4,7 @@ using System;
 
 namespace Ff.DevSuite.View
 {
-    [DefaultExecutionOrder(-1000)]
+    [DefaultExecutionOrder(-99)]
     [RequireComponent(typeof(UIDocument))]
     internal class DevSuitePanelUI : MonoBehaviour
     {
@@ -82,7 +82,7 @@ namespace Ff.DevSuite.View
 
         private DevSuiteContext _context;
 
-        private void Start()
+        private void Awake()
         {
             if (_autoInitialize)
             {

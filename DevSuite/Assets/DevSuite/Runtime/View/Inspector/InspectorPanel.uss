@@ -48,12 +48,12 @@
 .inspector-list-view .unity-scroll-view__content-container {
     justify-content: flex-start;
     width: 100%;
-    padding: 4px;
+    padding: 2px;
 }
 
 /* Component Container Styling */
 .inspector-component-box {
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     background-color: rgba(0, 0, 0, 0.15);
     border-radius: 4px;
     border-width: 1px;
@@ -64,7 +64,8 @@
 .inspector-component-header {
     flex-direction: row;
     align-items: center;
-    padding: 4px 8px;
+    padding: 2px 6px;
+    min-height: 20px;
     background-color: rgba(255, 255, 255, 0.04);
     border-bottom-width: 1px;
     border-bottom-color: rgba(0, 0, 0, 0.2);
@@ -83,15 +84,15 @@
 }
 
 .inspector-component-body {
-    padding: 2px 0;
+    padding: 0;
 }
 
 /* Property Rows */
 .inspector-property-row {
     flex-direction: row;
-    padding: 3px 8px;
+    padding: 1px 6px;
     align-items: flex-start;
-    min-height: 22px;
+    min-height: 17px;
     border-bottom-width: 1px;
     border-bottom-color: rgba(255, 255, 255, 0.01);
 }
@@ -105,6 +106,7 @@
     color: rgb(180, 180, 180);
     font-size: 11px;
     padding-right: 4px;
+    margin: 0;
     overflow: hidden;
 }
 
@@ -112,6 +114,7 @@
     width: 55%;
     color: rgb(240, 240, 240);
     font-size: 11px;
+    margin: 0;
     overflow: hidden;
 }
 
@@ -146,9 +149,9 @@
 .inspector-go-header {
     background-color: rgba(60, 60, 60, 0.85);
     border-bottom-width: 0;
-    padding: 6px 8px;
-    margin-top: 10px;
-    margin-bottom: 6px;
+    padding: 3px 6px;
+    margin-top: 4px;
+    margin-bottom: 4px;
     border-radius: 4px;
     flex-direction: row;
     align-items: center;
@@ -160,7 +163,7 @@
 }
 
 .inspector-go-name {
-    font-size: 13px;
+    font-size: 12px;
     -unity-font-style: bold;
     color: var(--accent-color);
 }
@@ -169,7 +172,7 @@
     font-size: 9px;
     color: var(--text-label-color);
     -unity-font-style: italic;
-    margin-top: 1px;
+    margin-top: 0;
 }
 
 /* Positional override — base style comes from Common.uss .ff-toggle */
