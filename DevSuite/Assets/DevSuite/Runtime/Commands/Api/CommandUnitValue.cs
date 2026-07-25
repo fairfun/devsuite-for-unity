@@ -13,6 +13,7 @@ namespace Ff.DevSuite.Commands
         internal NumberRange<float>? ValuesRange { get; set; }
         internal bool ForceStringRepresentation { get; }
         internal ScaleType ScaleType { get; set; }
+        internal string Format { get; set; }
 
         public CommandUnitValue(Type type,
             Func<object> getValue,
@@ -26,7 +27,8 @@ namespace Ff.DevSuite.Commands
             bool suppressExceptions = true,
             float flex = -1f,
             Color? color = null,
-            string fontResource = null)
+            string fontResource = null,
+            string format = null)
                 : base(priority, description, suppressExceptions, flex, color, fontResource)
         {
             Type = type;
@@ -36,6 +38,7 @@ namespace Ff.DevSuite.Commands
             ValuesRange = valuesRange == null ? null : new NumberRange<float>(valuesRange.Value.Item1, valuesRange.Value.Item2);
             ForceStringRepresentation = forceStringRepresentation;
             ScaleType = scaleType;
+            Format = format;
         }
 
         public bool ReadOnly => SaveValue == null;

@@ -1241,15 +1241,15 @@ namespace Ff.DevSuite
                 return default;
             }
 
-            return GetRepresentation<T>(unit.GetValue(), unit.Type, out error, silent, unit.SuppressExceptions);
+            return GetRepresentation<T>(unit.GetValue(), unit.Type, out error, silent, unit.SuppressExceptions, unit.Format);
         }
 
-        internal T GetRepresentation<T>(object valueFrom, Type typeFrom, out string error, bool silent = false, bool suppressException = true)
+        internal T GetRepresentation<T>(object valueFrom, Type typeFrom, out string error, bool silent = false, bool suppressException = true, string format = null)
         {
-            return (T)GetRepresentation(valueFrom, typeFrom, typeof(T), out error, silent, suppressException);
+            return (T)GetRepresentation(valueFrom, typeFrom, typeof(T), out error, silent, suppressException, format);
         }
 
-        private object GetRepresentation(object valueFrom, Type typeFrom, Type typeTo, out string error, bool silent = false, bool suppressException = true)
+        private object GetRepresentation(object valueFrom, Type typeFrom, Type typeTo, out string error, bool silent = false, bool suppressException = true, string format = null)
         {
             var chainResult = GetAdaptersChain(typeFrom, typeTo, false);
             if (chainResult.Steps == null)
@@ -1269,7 +1269,7 @@ namespace Ff.DevSuite
                 var val = valueFrom;
                 foreach (var step in chainResult.Steps)
                 {
-                    val = step.Convert(val, null);
+                    val = step.Convert(val, null, format);
                     if (val == null)
                     {
                         error = null;
@@ -1481,14 +1481,14 @@ namespace Ff.DevSuite
                 Adapter = adapter;
             }
 
-            public object Convert(object objSource, object objDestination)
+            public object Convert(object objSource, object objDestination, string format = null)
             {
                 if (objDestination == null && Adapter.ModifiesExistingObject)
                 {
                     Debug.LogError($"Adapter '{Adapter.GetType().Name}' requires {nameof(objDestination)} to be not null");
                     return null;
                 }
-                return Adapter.Convert(objSource, Transition.To, objDestination);
+                return Adapter.Convert(objSource, Transition.To, objDestination, format);
             }
         }
 

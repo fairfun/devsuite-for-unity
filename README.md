@@ -100,9 +100,9 @@ DevSuite serves as a modern, 100% free, and open-source alternative to popular U
    ```text
    https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite
    ```
-   To pin a specific version, append the tag (e.g. `#0.2.1`):
+   To pin a specific version, append the tag (e.g. `#0.2.2`):
    ```text
-   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.2.1
+   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.2.2
    ```
 ## Getting Started
 
@@ -216,7 +216,7 @@ Refer to the documentation or sample scenes for more detailed configuration and 
         <ul>
           <li><code>[CommandCategory]</code> / <code>[CommandGroup]</code> - organization, colors, descriptions, collapse state, visibility functions</li>
           <li><code>[Command]</code> - <code>DisplayName</code>, <code>HeightMultiplier</code>, <code>AlwaysPin</code>, <code>VisibilityFunctionName</code></li>
-          <li><code>[CommandValue]</code> - fields, properties, methods; supports <code>MinValue</code>/<code>MaxValue</code>, <code>ScaleType</code>, <code>ReadOnly</code>, <code>PossibleValuesFunctionName</code>, <code>ForceStringRepresentation</code>, <code>Flex</code>, <code>Color</code>, <code>FontResource</code></li>
+          <li><code>[CommandValue]</code> - fields, properties, methods; supports <code>MinValue</code>/<code>MaxValue</code>, <code>ScaleType</code>, <code>ReadOnly</code>, <code>PossibleValuesFunctionName</code>, <code>ForceStringRepresentation</code>, <code>Format</code>, <code>Flex</code>, <code>Color</code>, <code>FontResource</code></li>
           <li><code>[CommandButton]</code> - action buttons; supports <code>Title</code>, <code>Shortcut</code>, <code>CommandId</code> to attach to an existing command row</li>
         </ul>
         <p>See <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Attributes/CommandUnitAttribute.cs"><code>BaseCommandAttribute</code></a> subclasses for the full set of properties.</p>

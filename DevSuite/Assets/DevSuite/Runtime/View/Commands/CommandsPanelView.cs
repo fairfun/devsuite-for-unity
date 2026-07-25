@@ -480,7 +480,7 @@ namespace Ff.DevSuite.View
                             foreach (var item in data.Values)
                             {
                                 items.Add(item);
-                                var name = _context.GetRepresentation<string>(item, item?.GetType() ?? data.Type, out var error, true, unitValue.SuppressExceptions) ?? DevSuiteContext.NullRepresentation;
+                                var name = _context.GetRepresentation<string>(item, item?.GetType() ?? data.Type, out var error, true, unitValue.SuppressExceptions, unitValue.Format) ?? DevSuiteContext.NullRepresentation;
                                 name = string.IsNullOrEmpty(error) ? name : error;
                                 choices.Add(name);
                             }
@@ -493,7 +493,7 @@ namespace Ff.DevSuite.View
                             for (; i < items.Count; i++)
                             {
                                 var item = items[i];
-                                var currentPossibleValue = _context.GetRepresentation<string>(item, item?.GetType() ?? typeof(string), out _);
+                                var currentPossibleValue = _context.GetRepresentation<string>(item, item?.GetType() ?? typeof(string), out _, format: unitValue.Format);
                                 if (currentPossibleValue == currentSavedValue)
                                 {
                                     dropdown.SetValueWithoutNotify(dropdown.choices[i]);

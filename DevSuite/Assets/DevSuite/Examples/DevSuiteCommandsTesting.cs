@@ -53,6 +53,7 @@ namespace Ff.DevSuite
                 typeof(DevSuiteTestingExternalAdapter),
                 typeof(DevSuiteTestingSameCommandId1),
                 typeof(DevSuiteTestingSameCommandId2),
+                typeof(DevSuiteTestingCategoryFormat),
             };
             foreach (var type in all)
             {
@@ -489,6 +490,37 @@ namespace Ff.DevSuite
         private static class DevSuiteTestingSameCommandId2
         {
             [CommandValue] private static string Value { get; set; }
+        }
+
+        [CommandCategory("Format")]
+        private static class DevSuiteTestingCategoryFormat
+        {
+            [CommandValue(Format = "F2")]
+            private static float FloatFormattedTwoDecimals = 12.34567f;
+
+            [CommandValue(Format = "N0")]
+            private static int IntFormattedWithThousandSeparators = 1234567;
+
+            [CommandValue(Format = "P1")]
+            private static float PercentageFormatted = 0.852f;
+
+            [CommandValue(Format = "X4")]
+            private static int HexFormattedNumber = 255;
+
+            [CommandValue(Format = "D")]
+            private static DayOfWeek EnumFormattedAsDecimal = DayOfWeek.Wednesday;
+
+            [CommandValue(Format = "x")]
+            private static DayOfWeek EnumFormattedAsHex = DayOfWeek.Wednesday;
+
+            [CommandValue(Format = "g")]
+            private static DayOfWeek EnumFormattedAsGeneral = DayOfWeek.Wednesday;
+
+            [CommandValue(Format = "yyyy-MM-dd HH:mm")]
+            private static DateTime DateTimeCustomFormat = new DateTime(2026, 7, 25, 14, 0, 0, DateTimeKind.Utc);
+
+            [CommandValue(Format = "hh\\:mm\\:ss")]
+            private static TimeSpan TimeSpanCustomFormat = new TimeSpan(1, 2, 34, 56);
         }
     }
 }

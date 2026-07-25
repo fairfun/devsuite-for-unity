@@ -300,7 +300,8 @@ namespace Ff.DevSuite.Commands.Attributes
                                 value.SuppressExceptions,
                                 value.Flex,
                                 ParseColor(value.Color),
-                                value.FontResource
+                                value.FontResource,
+                                value.Format
                             ).WithLineNumber(value.LineNumber);
                             break;
 

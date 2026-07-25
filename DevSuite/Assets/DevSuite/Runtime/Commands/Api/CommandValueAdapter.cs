@@ -23,11 +23,17 @@ namespace Ff.DevSuite.Commands
         public abstract List<Type> GetPossibleDestinations(Type typeSource, List<Type> hintDestinations = null);
         //objDestination for changing existing instance instead of creating a new one
         public abstract object Convert(object objSource, Type typeDestination, object objDestination);
+
+        public virtual object Convert(object objSource, Type typeDestination, object objDestination, string format)
+        {
+            return Convert(objSource, typeDestination, objDestination);
+        }
     }
 
     public class DelegateCommandValueAdapterToString<T> : CommandValueAdapter
     {
         private readonly ConvertToString _convertToString;
+        private readonly ConvertToStringWithFormat _convertToStringWithFormat;
         private readonly ConvertFromString _convertFromString;
         private static List<Type> _listT = null;
 
@@ -38,13 +44,20 @@ namespace Ff.DevSuite.Commands
             _listT ??= typeof(T).GetImplementations().ToList();
         }
 
+        public DelegateCommandValueAdapterToString(ConvertToStringWithFormat convertToStringWithFormat, ConvertFromString convertFromString)
+        {
+            _convertToStringWithFormat = convertToStringWithFormat;
+            _convertFromString = convertFromString;
+            _listT ??= typeof(T).GetImplementations().ToList();
+        }
+
         public override List<Type> GetPossibleDestinations(Type typeSource, List<Type> hintDestinations = null)
         {
             if (typeSource == typeof(string) && _convertFromString != null)
             {
                 return _listT;
             }
-            if (typeof(T).IsAssignableFrom(typeSource) && _convertToString != null)
+            if (typeof(T).IsAssignableFrom(typeSource) && (_convertToString != null || _convertToStringWithFormat != null))
             {
                 return AdapterValues.ListString;
             }
@@ -53,11 +66,23 @@ namespace Ff.DevSuite.Commands
 
         public override object Convert(object objSource, Type typeDestination, object objDestination)
         {
+            return Convert(objSource, typeDestination, objDestination, null);
+        }
+
+        public override object Convert(object objSource, Type typeDestination, object objDestination, string format)
+        {
             if (typeDestination == typeof(string))
             {
-                return _convertToString((T)objSource);
+                if (_convertToStringWithFormat != null)
+                {
+                    return _convertToStringWithFormat((T)objSource, format);
+                }
+                if (_convertToString != null)
+                {
+                    return _convertToString((T)objSource);
+                }
             }
-            if (typeof(T).IsAssignableFrom(typeDestination) && _convertToString != null)
+            if (typeof(T).IsAssignableFrom(typeDestination) && _convertFromString != null)
             {
                 return _convertFromString((string)objSource, typeDestination);
             }
@@ -65,6 +90,7 @@ namespace Ff.DevSuite.Commands
         }
 
         public delegate string ConvertToString(T obj);
+        public delegate string ConvertToStringWithFormat(T obj, string format);
         /// <summary>
         /// typeDestination is for cases when adapter is defined for a base class and it may be needed to know an actual class into which to convert.
         /// targetDestination is for cases when need to modify an exiting instance instead of creating a new one.
@@ -223,21 +249,26 @@ namespace Ff.DevSuite.Commands
 
             public override object Convert(object objSource, Type typeDestination, object objDestination)
             {
+                return Convert(objSource, typeDestination, objDestination, null);
+            }
+
+            public override object Convert(object objSource, Type typeDestination, object objDestination, string format)
+            {
                 if (objSource == null)
                 {
                     return null;
                 }
                 if (objSource is DateTime dt)
                 {
-                    return dt.ToUniversalTime().ToString(DateTimeFormat, CultureInfo.InvariantCulture);
+                    return dt.ToUniversalTime().ToString(format ?? DateTimeFormat, CultureInfo.InvariantCulture);
                 }
                 if (objSource is TimeSpan ts)
                 {
-                    return ts.ToString(TimeSpanFormat, CultureInfo.InvariantCulture);
+                    return ts.ToString(format ?? TimeSpanFormat, CultureInfo.InvariantCulture);
                 }
                 if (objSource is IFormattable formattable)
                 {
-                    return formattable.ToString(null, CultureInfo.InvariantCulture);
+                    return formattable.ToString(format, CultureInfo.InvariantCulture);
                 }
                 return objSource.ToString();
             }
@@ -294,6 +325,15 @@ namespace Ff.DevSuite.Commands
 
             public override object Convert(object objSource, Type typeDestination, object objDestination)
             {
+                return Convert(objSource, typeDestination, objDestination, null);
+            }
+
+            public override object Convert(object objSource, Type typeDestination, object objDestination, string format)
+            {
+                if (objSource is Enum enumVal && !string.IsNullOrEmpty(format))
+                {
+                    return enumVal.ToString(format);
+                }
                 return objSource?.ToString();
             }
         }

@@ -44,6 +44,7 @@ namespace Ff.DevSuite.Commands.Attributes
         public float MaxValue = ValueNotSetWorkaround;
         public bool ForceStringRepresentation;
         public ScaleType ScaleType;
+        public string Format;
 
         public CommandValueAttribute(string commandId = null, [CallerLineNumber] int lineNumber = 0) : base(commandId, lineNumber)
         {
