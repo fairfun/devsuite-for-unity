@@ -84,6 +84,13 @@ namespace Ff.DevSuite.View
 
         private void Awake()
         {
+            if (!DevSuiteContext.Enabled)
+            {
+                Debug.Log($"Initializing {nameof(DevSuitePanelUI)} is skipped because {nameof(DevSuiteContext)}.{nameof(DevSuiteContext.Enabled)}=false");
+                Destroy(gameObject);
+                return;
+            }
+
             if (_autoInitialize)
             {
                 DevSuiteContext.Default.Initialize(this);

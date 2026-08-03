@@ -53,6 +53,8 @@ namespace Ff.DevSuite
 #endif
     public class DevSuiteContext : IDevSuiteContext
     {
+        public static bool Enabled { get; set; } = true; // global kill-switch
+
 #if UNITY_EDITOR
         static DevSuiteContext()
         {
@@ -263,6 +265,12 @@ namespace Ff.DevSuite
         /// <param name="registerCommonCommands"></param>
         public void Initialize(MonoBehaviour coroutineStarter, IList<Assembly> staticCommandsAssemblies = null, ISavedPrefs savedPrefs = null, bool registerCommonCommands = true)
         {
+            if (!Enabled)
+            {
+                Debug.Log($"Initializing {nameof(DevSuiteContext)} is skipped because {nameof(DevSuiteContext)}.{nameof(DevSuiteContext.Enabled)}=false");
+                return;
+            }
+
             if (_initialized)
             {
                 throw new Exception("Already initialized. If you need to reinitialize call Reset() before.");

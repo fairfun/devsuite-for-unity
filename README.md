@@ -100,9 +100,9 @@ DevSuite serves as a modern, 100% free, and open-source alternative to popular U
    ```text
    https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite
    ```
-   To pin a specific version, append the tag (e.g. `#0.2.2`):
+   To pin a specific version, append the tag (e.g. `#0.2.3`):
    ```text
-   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.2.2
+   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.2.3
    ```
 ## Getting Started
 
