@@ -1,7 +1,7 @@
 {
   "name": "com.ff.devsuite",
   "version": "0.2.3",
-  "displayName": "DevSuite",
+  "displayName": "DevSuite for Unity",
   "description": "A suite of custom editor and runtime windows for making troubleshooting easier",
   "unity": "2022.3",
   "keywords": [
