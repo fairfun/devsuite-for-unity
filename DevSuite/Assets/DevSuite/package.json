@@ -13,8 +13,7 @@
     "monitor",
     "console",
     "utility",
-    "tool",
-    "custom"
+    "tool"
   ],
   "license": "MIT"
 }
