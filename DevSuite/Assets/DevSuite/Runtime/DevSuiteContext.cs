@@ -298,8 +298,15 @@ namespace Ff.DevSuite
             }
 
             RegisterPerformancePanelGraph(new FrameTimeGraphDataProvider());
+            RegisterPerformancePanelGraph(new CpuFrameTimeGraphDataProvider());
+            RegisterPerformancePanelGraph(new GpuFrameTimeGraphDataProvider());
+            RegisterPerformancePanelGraph(new CpuRenderThreadFrameTimeGraphDataProvider());
+            RegisterPerformancePanelGraph(new FpsGraphDataProvider());
+            RegisterPerformancePanelGraph(new GcMemoryGraphDataProvider());
             RegisterPerformancePanelGraph(new SystemRamGraphDataProvider());
             RegisterPerformancePanelGraph(new DrawCallsCountDataProvider());
+            RegisterPerformancePanelGraph(new BatchesCountDataProvider());
+            RegisterPerformancePanelGraph(new TrianglesCountDataProvider());
 
             if (registerCommonCommands)
             {
