@@ -238,17 +238,42 @@ namespace Ff.DevSuite.View
             if (_context != null && _context.SelectedGameObject != null)
             {
                 var targetId = _context.SelectedGameObject.GetInstanceID();
-                ExpandParents(_context.SelectedGameObject);
-                RebuildTree();
+                if (!_gameObjectRows.ContainsKey(targetId))
+                {
+                    ExpandParents(_context.SelectedGameObject);
+                    RebuildTree();
+                }
+
                 if (_gameObjectRows.TryGetValue(targetId, out var row))
                 {
-                    _scrollView.ScrollTo(row);
+                    SafeScrollTo(row);
                 }
             }
-            else
+
+            UpdateSelectionHighlight();
+        }
+
+        private void SafeScrollTo(VisualElement row)
+        {
+            if (_scrollView == null || row == null)
             {
-                UpdateSelectionHighlight();
+                return;
             }
+
+            _scrollView.schedule.Execute(() =>
+            {
+                if (_scrollView != null && _scrollView.panel != null && row != null && row.panel != null)
+                {
+                    try
+                    {
+                        _scrollView.ScrollTo(row);
+                    }
+                    catch (Exception)
+                    {
+                        // Ignore UI Toolkit internal measurement edge cases
+                    }
+                }
+            });
         }
 
         private void TogglePickMode()
@@ -864,7 +889,7 @@ namespace Ff.DevSuite.View
 
             if (_gameObjectRows.TryGetValue(target.GetInstanceID(), out var row))
             {
-                _scrollView.ScrollTo(row);
+                SafeScrollTo(row);
             }
         }
 
