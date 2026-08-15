@@ -189,7 +189,8 @@ namespace Ff.DevSuite.View
                 _searchByType = _context.HierarchySearchByType;
                 _keepDimmed = _context.HierarchyKeepDimmed;
                 UpdateButtonStates();
-
+                UpdateSearchRegex(_filterField.value);
+                PrecomputeSearch();
                 RebuildTree();
             }
         }
@@ -208,6 +209,23 @@ namespace Ff.DevSuite.View
 
         private void HandleContextChanged()
         {
+            if (_context != null)
+            {
+                var regex = _context.HierarchySearchRegex;
+                var name = _context.HierarchySearchByName;
+                var type = _context.HierarchySearchByType;
+                var dim = _context.HierarchyKeepDimmed;
+                if (regex != _searchByRegex || name != _searchByName || type != _searchByType || dim != _keepDimmed)
+                {
+                    _searchByRegex = regex;
+                    _searchByName = name;
+                    _searchByType = type;
+                    _keepDimmed = dim;
+                    UpdateButtonStates();
+                    HandleSearchOptionsChanged();
+                }
+            }
+
             if (_context != null && _context.SelectedGameObject != null)
             {
                 var targetId = _context.SelectedGameObject.GetInstanceID();

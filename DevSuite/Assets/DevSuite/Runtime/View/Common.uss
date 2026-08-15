@@ -3,6 +3,7 @@
     --panel-border-color: rgba(255, 255, 255, 0.25); /* is overwritten at DevSuitePanelUI */
     --panel-border-width: 1px;
     --panel-border-radius: 8px;
+    --toolbar-bg: rgba(30, 30, 30, 0.55);
     --text-color: rgb(220, 220, 220);
     --text-label-color: rgb(170, 170, 170);
     --text-color-semi: rgba(220, 220, 220, 0.5);
@@ -13,7 +14,7 @@
     background-color: var(--panel-bg-color);
     color: var(--text-color);
     border-width: var(--panel-border-width) !important;
-    border-color: var(--panel-border-color) !important; 
+    border-color: var(--panel-border-color) !important;
     border-radius: var(--panel-border-radius);
 }
 

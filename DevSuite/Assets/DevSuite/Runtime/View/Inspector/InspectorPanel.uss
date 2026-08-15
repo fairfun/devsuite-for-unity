@@ -1,7 +1,6 @@
 @import "../Common.uss";
 
 :root {
-    --toolbar-bg: rgba(38, 38, 38, 0.5);
     --text-color: rgb(210, 210, 210);
     --divider-color: rgba(51, 51, 51, 0.8);
     --item-hover-bg: rgba(255, 255, 255, 0.02);
@@ -20,7 +19,7 @@
     flex-direction: row;
     align-items: center;
     padding: 6px 8px;
-    background-color: rgba(30, 30, 30, 0.7);
+    background-color: var(--toolbar-bg);
     border-bottom-width: 1px;
     border-bottom-color: var(--divider-color);
 }
