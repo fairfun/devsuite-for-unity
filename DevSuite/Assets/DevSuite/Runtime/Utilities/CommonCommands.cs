@@ -192,7 +192,7 @@ namespace Ff.DevSuite
                     sb.AppendLine($"Platform: {Application.platform}, {SystemInfo.operatingSystem}, {Application.systemLanguage}");
                     sb.AppendLine($"Processor: {SystemInfo.processorType} ({SystemInfo.processorCount} cores)");
                     sb.AppendLine($"Memory: {SystemInfo.systemMemorySize} MB");
-                    sb.AppendLine($"Graphics: {SystemInfo.graphicsMemorySize}MB {SystemInfo.graphicsDeviceName} ({RenderingPipeline()})");
+                    sb.AppendLine($"Graphics: {SystemInfo.graphicsDeviceType}, {SystemInfo.graphicsMemorySize}MB {SystemInfo.graphicsDeviceName} ({RenderingPipeline()})");
                     sb.AppendLine($"Display: {DisplayInfo()}");
                     sb.AppendLine($"Device: {SystemInfo.deviceModel}, {SystemInfo.deviceType}");
                     sb.AppendLine($"Battery: {SystemInfo.batteryLevel * 100:F0}% ({SystemInfo.batteryStatus}), Run In Background {Application.runInBackground}");

@@ -3,28 +3,28 @@ using UnityEngine.Profiling;
 
 namespace Ff.DevSuite.Performance
 {
-    public class DrawCallsCountDataProvider : BaseGraphDataProvider
+    public class TrianglesCountDataProvider : BaseGraphDataProvider
     {
         public static bool RegisterByDefault = true;
-        public static new bool CollapsedByDefault = false;
+        public static new bool CollapsedByDefault = true;
 
-        internal override string Label => "Draw Calls";
-        internal override string UnitName => "";
+        internal override string Label => "Triangles";
+        internal override string UnitName => "K";
 
         private ProfilerRecorder _profileRecorder;
 
-        public DrawCallsCountDataProvider()
+        public TrianglesCountDataProvider()
         {
-            ReferenceValueProvider = () => 500;
+            ReferenceValueProvider = () => 100d;
 #if UNITY_EDITOR
             UnityEditorInternal.ProfilerDriver.SetAreaEnabled(ProfilerArea.Rendering, true);
 #endif
-            _profileRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Draw Calls Count");
+            _profileRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Triangles Count");
         }
 
         protected override double GetCurrentValue()
         {
-            return _profileRecorder.Valid ? _profileRecorder.LastValue : 0;
+            return _profileRecorder.Valid ? _profileRecorder.LastValue / 1000d : 0d;
         }
 
         public override void Dispose()

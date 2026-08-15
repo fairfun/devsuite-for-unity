@@ -45,13 +45,31 @@
 
 .ff-performance-graph-info {
     position: absolute;
-    bottom: 2px;
-    left: 2px;
-    -unity-text-align: lower-left;
+    top: 3px;
+    left: 3px;
+    margin: 0;
+    -unity-text-align: upper-left;
     color: var(--text-color);
     font-size: 10px;
     -unity-font-style: bold;
     background-color: rgba(0, 0, 0, 0.6);
     padding: 1px 4px;
     border-radius: 3px;
+}
+
+.graph-view--collapsed {
+    height: 22px;
+    min-height: 22px;
+    align-items: center;
+}
+
+.graph-view--collapsed .ff-performance-graph-info {
+    position: relative;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    margin: 0;
+    padding: 0 4px 0 5px;
+    background-color: transparent;
+    -unity-text-align: middle-left;
 }

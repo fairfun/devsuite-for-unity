@@ -232,7 +232,7 @@ Refer to the documentation or sample scenes for more detailed configuration and 
         <p>Default adapters and an enum values provider are registered automatically during initialization.</p>
       </td>
       <td style="padding: 10px; border: 1px solid #88888855; width: 33%;">
-        <p><strong>Built-in graphs:</strong> Frame Time, System RAM, Draw Calls (registered in <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.Initialize</code></a>).</p>
+        <p><strong>Built-in graphs:</strong> Frame Time, CPU Frame Time, GPU Frame Time, Render Thread Time, FPS, GC Memory, System RAM, Draw Calls, Batches, Triangles (registered in <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.Initialize</code></a>).</p>
         <p><strong>Add a custom graph</strong></p>
         <ol>
           <li>Subclass <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/BaseGraphDataProvider.cs"><code>BaseGraphDataProvider</code></a></li>
