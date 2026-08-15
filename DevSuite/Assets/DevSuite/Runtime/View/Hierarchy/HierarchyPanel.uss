@@ -187,3 +187,69 @@
     color: rgb(100, 100, 100);
 }
 
+/* Pick Mode Popup Dropdown */
+.hierarchy-pick-popup {
+    position: absolute;
+    background-color: rgba(26, 26, 30, 0.95);
+    border-color: rgba(80, 80, 80, 0.8);
+    border-width: 1px;
+    border-radius: 6px;
+    padding: 3px;
+    min-width: 180px;
+    max-width: 340px;
+    max-height: 390px;
+    flex-direction: column;
+}
+
+.hierarchy-pick-popup-scroll {
+    max-height: 380px;
+}
+
+.hierarchy-pick-popup-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 2px 6px;
+    height: 22px;
+    min-height: 22px;
+    max-height: 22px;
+    border-radius: 3px;
+    margin: 0;
+    margin-bottom: 1px;
+    background-color: transparent;
+    border-width: 0;
+}
+
+.hierarchy-pick-popup-row:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.hierarchy-pick-popup-row:hover .hierarchy-pick-popup-name {
+    color: rgb(255, 255, 255);
+}
+
+.hierarchy-pick-popup-row:active {
+    background-color: rgba(255, 255, 255, 0.22);
+}
+
+.hierarchy-pick-popup-name {
+    flex-grow: 1;
+    font-size: 11px;
+    color: rgb(220, 220, 220);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -unity-text-align: middle-left;
+    padding: 0;
+    margin: 0;
+}
+
+.hierarchy-pick-popup-badge {
+    font-size: 9px;
+    color: rgb(150, 150, 150);
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    padding: 1px 4px;
+    margin-left: 6px;
+    -unity-text-align: middle-center;
+}
+

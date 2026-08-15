@@ -836,7 +836,7 @@ namespace Ff.DevSuite
             );
         }
 
-        private static VisualElement GetTopRoot(VisualElement element)
+        internal static VisualElement GetTopRoot(VisualElement element)
         {
             if (element == null) return null;
             if (element.panel?.visualTree != null)
