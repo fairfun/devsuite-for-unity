@@ -104,6 +104,7 @@
 }
 
 .ff-commands-group-toggle-indicator {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     font-size: 12px;
     width: 14px;
     padding: 0;
@@ -138,6 +139,7 @@
 }
 
 .ff-commands-command-icon {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     width: 20px;
     height: 20px;
     margin-right: 0px;
@@ -347,6 +349,7 @@
 }
 
 .ff-commands-unit-toggle-icon {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     color: var(--text-color); /* Check color moved to the tick itself */
     font-size: 13px;
     -unity-font-style: bold;
@@ -458,6 +461,7 @@
 }
 
 .ff-commands-filter-icon {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     color: var(--text-label-color);
     font-size: 10px;
     margin-right: 1px;
@@ -486,6 +490,7 @@
 }
 
 .ff-commands-filter-clear-button {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     background-color: transparent;
     border-width: 0;
     color: var(--text-label-color);

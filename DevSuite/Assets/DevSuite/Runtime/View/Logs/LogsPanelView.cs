@@ -17,6 +17,9 @@ namespace Ff.DevSuite.View
         private readonly Button _ordinaryButton;
         private readonly Button _warningButton;
         private readonly Button _errorButton;
+        private readonly Label _ordinaryCountLabel;
+        private readonly Label _warningCountLabel;
+        private readonly Label _errorCountLabel;
 
         private readonly Button _copyButton;
         private readonly Button _saveButton;
@@ -53,12 +56,15 @@ namespace Ff.DevSuite.View
 
             _ordinaryButton = root.Q<Button>("ordinaryButton");
             _ordinaryButton.clicked += () => HandleSeverityClick(GeneralizedLogSeverity.Ordinary);
+            _ordinaryCountLabel = _ordinaryButton.Q<Label>("ordinaryCount");
 
             _warningButton = root.Q<Button>("warningButton");
             _warningButton.clicked += () => HandleSeverityClick(GeneralizedLogSeverity.Warning);
+            _warningCountLabel = _warningButton.Q<Label>("warningCount");
 
             _errorButton = root.Q<Button>("errorButton");
             _errorButton.clicked += () => HandleSeverityClick(GeneralizedLogSeverity.Error);
+            _errorCountLabel = _errorButton.Q<Label>("errorCount");
 
             _copyButton = root.Q<Button>("copyButton");
             _copyButton.clicked += () => { HandleCopyPressed(); DevSuiteUtils.ShowIconButtonClickedFeedback(_copyButton); };
@@ -184,9 +190,9 @@ namespace Ff.DevSuite.View
 
         private void UpdateSeverityButtons()
         {
-            _ordinaryButton.text = $"\uf4ad {_ordinaryCount}";
-            _warningButton.text = $"\uf071 {_warningCount}";
-            _errorButton.text = $"\uf06a {_errorCount}";
+            _ordinaryCountLabel.text = _ordinaryCount.ToString();
+            _warningCountLabel.text = _warningCount.ToString();
+            _errorCountLabel.text = _errorCount.ToString();
 
             if (_context == null)
                 return;

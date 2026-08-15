@@ -39,6 +39,7 @@
 }
 
 .logs-filter-icon {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     color: var(--text-label-color);
     font-size: 10px;
     padding: 0;
@@ -87,11 +88,25 @@
     color: rgb(255, 255, 255);
 }
 
+.logs-severity-icon {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    font-size: 12px;
+    margin-right: 4px;
+    padding: 0;
+}
+
+.logs-severity-count {
+    font-size: 12px;
+    padding: 0;
+    margin: 0;
+}
+
 .logs-severity-btn.ordinary.active { color: rgb(128, 200, 255); }
 .logs-severity-btn.warning.active { color: rgb(255, 200, 0); }
 .logs-severity-btn.error.active { color: rgb(255, 100, 100); }
 
 .logs-icon-btn {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     font-size: 14px;
     width: 28px;
     height: 24px;
@@ -166,6 +181,7 @@
 }
 
 .log-item-copy-btn {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     width: 22px;
     height: 22px;
     padding: 0;

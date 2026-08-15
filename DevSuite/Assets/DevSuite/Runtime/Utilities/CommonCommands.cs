@@ -218,7 +218,7 @@ namespace Ff.DevSuite
             }
         }
 
-        [CommandButton(nameof(SystemInfoText), Title = "\uf0e2", Flex = 0f)]
+        [CommandButton(nameof(SystemInfoText), Title = "\uf0e2", Flex = 0f, FontResource = "Font Awesome 7 Free-Solid-900 SDF")]
         public static void SystemInfoReset()
         {
             _systemInfoText = null;

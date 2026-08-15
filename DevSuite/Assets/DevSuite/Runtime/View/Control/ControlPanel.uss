@@ -19,6 +19,7 @@
 }
 
 .ff-control-panel-btn {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     font-size: 14px;
     width: 28px;
     height: 24px;

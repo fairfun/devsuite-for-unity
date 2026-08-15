@@ -15,8 +15,6 @@
     border-width: var(--panel-border-width) !important;
     border-color: var(--panel-border-color) !important; 
     border-radius: var(--panel-border-radius);
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
-    -unity-text-generator: standard;
 }
 
 .ff-panel Label,
@@ -120,6 +118,7 @@
 }
 
 .ff-toggle-icon {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     color: var(--text-color);
     font-size: 11px;
     -unity-font-style: bold;

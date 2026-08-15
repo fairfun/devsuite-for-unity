@@ -48,6 +48,7 @@
 }
 
 .hierarchy-filter-icon {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     color: var(--text-label-color);
     font-size: 10px;
     padding: 0;
@@ -75,8 +76,8 @@
 
 
 
+.hierarchy-btn,
 .hierarchy-icon-btn {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     font-size: 14px;
     width: 28px;
     height: 24px;
@@ -88,14 +89,24 @@
     border-radius: 4px;
 }
 
+.hierarchy-btn:hover,
 .hierarchy-icon-btn:hover {
     color: var(--text-color);
     background-color: rgba(255, 255, 255, 0.03);
 }
 
+.hierarchy-btn.active,
 .hierarchy-icon-btn.active {
     color: var(--text-color);
     background-color: rgba(255, 255, 255, 0.08);
+}
+
+.hierarchy-icon-btn {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+}
+
+.hierarchy-regex-btn {
+    font-size: 13px;
 }
 
 .hierarchy-list-view {
@@ -133,6 +144,7 @@
 }
 
 .hierarchy-foldout-btn {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     width: 12px;
     height: 16px;
     margin-right: 0;
