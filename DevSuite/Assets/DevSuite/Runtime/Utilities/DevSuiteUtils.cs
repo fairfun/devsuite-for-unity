@@ -678,6 +678,7 @@ namespace Ff.DevSuite
             tooltipLabel.style.position = Position.Absolute;
             tooltipLabel.pickingMode = PickingMode.Ignore;
             tooltipLabel.style.display = DisplayStyle.None;
+            tooltipLabel.style.visibility = Visibility.Hidden;
 
             // Apply theme styling programmatically to ensure it works across all panels
             tooltipLabel.style.backgroundColor = new Color(42 / 255f, 42 / 255f, 42 / 255f, 0.95f);
@@ -700,6 +701,7 @@ namespace Ff.DevSuite
             tooltipLabel.style.borderBottomColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
             tooltipLabel.style.fontSize = 12;
             tooltipLabel.style.whiteSpace = WhiteSpace.Normal;
+            tooltipLabel.style.maxWidth = 300;
 
             root.Add(tooltipLabel);
 
@@ -707,6 +709,42 @@ namespace Ff.DevSuite
             string currentTooltipText = null;
             IVisualElementScheduledItem tooltipTask = null;
             var lastMousePosition = Vector2.zero;
+
+            void EnsureAttached()
+            {
+                bool isEditor = root.panel != null && root.panel.contextType == ContextType.Editor;
+                if (isEditor)
+                {
+                    if (tooltipLabel.parent != root)
+                    {
+                        tooltipLabel.RemoveFromHierarchy();
+                        root.Add(tooltipLabel);
+                    }
+                    tooltipLabel.BringToFront();
+                }
+                else
+                {
+                    var topRoot = GetTopRoot(root);
+                    if (topRoot != null)
+                    {
+                        if (tooltipLabel.parent != topRoot)
+                        {
+                            tooltipLabel.RemoveFromHierarchy();
+                            topRoot.Add(tooltipLabel);
+                        }
+                        tooltipLabel.BringToFront();
+                    }
+                }
+            }
+
+            root.RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                HideTooltip(ref currentTooltipElement, ref currentTooltipText, tooltipTask, tooltipLabel);
+                if (tooltipLabel.parent != null && tooltipLabel.parent != root)
+                {
+                    tooltipLabel.RemoveFromHierarchy();
+                }
+            });
 
             root.RegisterCallback<MouseOverEvent>(
                 evt =>
@@ -732,20 +770,22 @@ namespace Ff.DevSuite
                             currentTooltipText = tooltipElement.tooltip;
 
                             tooltipTask?.Pause();
-                            tooltipTask = tooltipLabel.schedule.Execute(
+                            tooltipTask = root.schedule.Execute(
                                 () =>
                                 {
+                                    EnsureAttached();
                                     tooltipLabel.text = currentTooltipText;
                                     tooltipLabel.style.display = DisplayStyle.Flex;
                                     tooltipLabel.style.visibility = Visibility.Hidden;
                                     tooltipLabel.BringToFront();
 
                                     EventCallback<GeometryChangedEvent> onGeometryChanged = null;
-                                    onGeometryChanged = (evt) =>
+                                    onGeometryChanged = (e) =>
                                     {
                                         tooltipLabel.UnregisterCallback<GeometryChangedEvent>(onGeometryChanged);
                                         UpdateTooltipPosition(tooltipLabel, lastMousePosition);
                                         tooltipLabel.style.visibility = Visibility.Visible;
+                                        tooltipLabel.BringToFront();
                                     };
                                     tooltipLabel.RegisterCallback<GeometryChangedEvent>(onGeometryChanged);
                                 }
@@ -764,8 +804,9 @@ namespace Ff.DevSuite
                 evt =>
                 {
                     lastMousePosition = evt.mousePosition;
-                    if (currentTooltipElement != null)
+                    if (currentTooltipElement != null && tooltipLabel.style.display != DisplayStyle.None)
                     {
+                        EnsureAttached();
                         UpdateTooltipPosition(tooltipLabel, lastMousePosition);
                     }
                 },
@@ -786,6 +827,28 @@ namespace Ff.DevSuite
                 },
                 TrickleDown.TrickleDown
             );
+
+            root.RegisterCallback<MouseLeaveEvent>(
+                evt =>
+                {
+                    HideTooltip(ref currentTooltipElement, ref currentTooltipText, tooltipTask, tooltipLabel);
+                }
+            );
+        }
+
+        private static VisualElement GetTopRoot(VisualElement element)
+        {
+            if (element == null) return null;
+            if (element.panel?.visualTree != null)
+            {
+                return element.panel.visualTree;
+            }
+            var topRoot = element;
+            while (topRoot.parent != null)
+            {
+                topRoot = topRoot.parent;
+            }
+            return topRoot;
         }
 
         private static void UpdateTooltipPosition(Label tooltipLabel, Vector2 mousePosition)
@@ -801,37 +864,70 @@ namespace Ff.DevSuite
                 return;
             }
 
-            VisualElement topRoot = parent;
-            while (topRoot.parent != null)
+            bool isEditor = parent.panel != null && parent.panel.contextType == ContextType.Editor;
+            VisualElement topRoot;
+            if (isEditor)
             {
-                topRoot = topRoot.parent;
+                topRoot = parent;
             }
+            else
+            {
+                topRoot = GetTopRoot(parent);
+                if (topRoot != null && tooltipLabel.parent != topRoot)
+                {
+                    tooltipLabel.RemoveFromHierarchy();
+                    topRoot.Add(tooltipLabel);
+                    parent = topRoot;
+                }
+                else if (topRoot == null)
+                {
+                    topRoot = parent;
+                }
+            }
+            tooltipLabel.BringToFront();
 
             var rootWidth = topRoot.layout.width;
-            var rootHeight = topRoot.layout.height;
-
             if (float.IsNaN(rootWidth) || rootWidth <= 0)
             {
-                if (topRoot.panel != null && !float.IsNaN(topRoot.panel.visualTree.layout.width) && topRoot.panel.visualTree.layout.width > 0)
+                rootWidth = topRoot.resolvedStyle.width;
+            }
+            if (!isEditor && (float.IsNaN(rootWidth) || rootWidth <= 0) && topRoot.panel?.visualTree != null)
+            {
+                rootWidth = topRoot.panel.visualTree.layout.width;
+                if (float.IsNaN(rootWidth) || rootWidth <= 0)
                 {
-                    rootWidth = topRoot.panel.visualTree.layout.width;
-                }
-                else
-                {
-                    rootWidth = parent.layout.width;
+                    rootWidth = topRoot.panel.visualTree.resolvedStyle.width;
                 }
             }
+            if (float.IsNaN(rootWidth) || rootWidth <= 0)
+            {
+                rootWidth = parent.layout.width;
+            }
+            if (float.IsNaN(rootWidth) || rootWidth <= 0)
+            {
+                rootWidth = UnityEngine.Screen.width > 0 ? UnityEngine.Screen.width : 800f;
+            }
 
+            var rootHeight = topRoot.layout.height;
             if (float.IsNaN(rootHeight) || rootHeight <= 0)
             {
-                if (topRoot.panel != null && !float.IsNaN(topRoot.panel.visualTree.layout.height) && topRoot.panel.visualTree.layout.height > 0)
+                rootHeight = topRoot.resolvedStyle.height;
+            }
+            if (!isEditor && (float.IsNaN(rootHeight) || rootHeight <= 0) && topRoot.panel?.visualTree != null)
+            {
+                rootHeight = topRoot.panel.visualTree.layout.height;
+                if (float.IsNaN(rootHeight) || rootHeight <= 0)
                 {
-                    rootHeight = topRoot.panel.visualTree.layout.height;
+                    rootHeight = topRoot.panel.visualTree.resolvedStyle.height;
                 }
-                else
-                {
-                    rootHeight = parent.layout.height;
-                }
+            }
+            if (float.IsNaN(rootHeight) || rootHeight <= 0)
+            {
+                rootHeight = parent.layout.height;
+            }
+            if (float.IsNaN(rootHeight) || rootHeight <= 0)
+            {
+                rootHeight = UnityEngine.Screen.height > 0 ? UnityEngine.Screen.height : 600f;
             }
 
             var tooltipWidth = tooltipLabel.layout.width;
@@ -885,6 +981,7 @@ namespace Ff.DevSuite
             if (tooltipLabel != null)
             {
                 tooltipLabel.style.display = DisplayStyle.None;
+                tooltipLabel.style.visibility = Visibility.Hidden;
             }
         }
     }

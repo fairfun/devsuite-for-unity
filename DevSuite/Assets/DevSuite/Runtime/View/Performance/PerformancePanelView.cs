@@ -20,6 +20,7 @@ namespace Ff.DevSuite.View
             var root = this.Q<VisualElement>("panel-root") ?? this;
             root.AddToClassList("ff-panel");
             _graphsContainer = root.Q<VisualElement>("graphs-container");
+            DevSuiteUtils.SetupTooltips(this);
         }
 
         public void Initialize(DevSuiteContext context)
