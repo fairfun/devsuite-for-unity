@@ -299,16 +299,26 @@ namespace Ff.DevSuite
                 CommandsApi.RegisterValuesProvider(valueProvider, true);
             }
 
-            RegisterPerformancePanelGraph(new FrameTimeGraphDataProvider(), FrameTimeGraphDataProvider.CollapsedByDefault);
-            RegisterPerformancePanelGraph(new CpuFrameTimeGraphDataProvider(), CpuFrameTimeGraphDataProvider.CollapsedByDefault);
-            RegisterPerformancePanelGraph(new GpuFrameTimeGraphDataProvider(), GpuFrameTimeGraphDataProvider.CollapsedByDefault);
-            RegisterPerformancePanelGraph(new CpuRenderThreadFrameTimeGraphDataProvider(), CpuRenderThreadFrameTimeGraphDataProvider.CollapsedByDefault);
-            RegisterPerformancePanelGraph(new FpsGraphDataProvider(), FpsGraphDataProvider.CollapsedByDefault);
-            RegisterPerformancePanelGraph(new GcMemoryGraphDataProvider(), GcMemoryGraphDataProvider.CollapsedByDefault);
-            RegisterPerformancePanelGraph(new SystemRamGraphDataProvider(), SystemRamGraphDataProvider.CollapsedByDefault);
-            RegisterPerformancePanelGraph(new DrawCallsCountDataProvider(), DrawCallsCountDataProvider.CollapsedByDefault);
-            RegisterPerformancePanelGraph(new BatchesCountDataProvider(), BatchesCountDataProvider.CollapsedByDefault);
-            RegisterPerformancePanelGraph(new TrianglesCountDataProvider(), TrianglesCountDataProvider.CollapsedByDefault);
+            if (FrameTimeGraphDataProvider.RegisterByDefault)
+                RegisterPerformancePanelGraph(new FrameTimeGraphDataProvider(), FrameTimeGraphDataProvider.CollapsedByDefault);
+            if (CpuFrameTimeGraphDataProvider.RegisterByDefault)
+                RegisterPerformancePanelGraph(new CpuFrameTimeGraphDataProvider(), CpuFrameTimeGraphDataProvider.CollapsedByDefault);
+            if (GpuFrameTimeGraphDataProvider.RegisterByDefault)
+                RegisterPerformancePanelGraph(new GpuFrameTimeGraphDataProvider(), GpuFrameTimeGraphDataProvider.CollapsedByDefault);
+            if (CpuRenderThreadFrameTimeGraphDataProvider.RegisterByDefault)
+                RegisterPerformancePanelGraph(new CpuRenderThreadFrameTimeGraphDataProvider(), CpuRenderThreadFrameTimeGraphDataProvider.CollapsedByDefault);
+            if (FpsGraphDataProvider.RegisterByDefault)
+                RegisterPerformancePanelGraph(new FpsGraphDataProvider(), FpsGraphDataProvider.CollapsedByDefault);
+            if (GcMemoryGraphDataProvider.RegisterByDefault)
+                RegisterPerformancePanelGraph(new GcMemoryGraphDataProvider(), GcMemoryGraphDataProvider.CollapsedByDefault);
+            if (SystemRamGraphDataProvider.RegisterByDefault)
+                RegisterPerformancePanelGraph(new SystemRamGraphDataProvider(), SystemRamGraphDataProvider.CollapsedByDefault);
+            if (DrawCallsCountDataProvider.RegisterByDefault)
+                RegisterPerformancePanelGraph(new DrawCallsCountDataProvider(), DrawCallsCountDataProvider.CollapsedByDefault);
+            if (BatchesCountDataProvider.RegisterByDefault)
+                RegisterPerformancePanelGraph(new BatchesCountDataProvider(), BatchesCountDataProvider.CollapsedByDefault);
+            if (TrianglesCountDataProvider.RegisterByDefault)
+                RegisterPerformancePanelGraph(new TrianglesCountDataProvider(), TrianglesCountDataProvider.CollapsedByDefault);
 
             if (registerCommonCommands)
             {

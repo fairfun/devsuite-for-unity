@@ -5,6 +5,7 @@ namespace Ff.DevSuite.Performance
 {
     public class BatchesCountDataProvider : BaseGraphDataProvider
     {
+        public static bool RegisterByDefault = true;
         public static new bool CollapsedByDefault = true;
 
         internal override string Label => "Batches";

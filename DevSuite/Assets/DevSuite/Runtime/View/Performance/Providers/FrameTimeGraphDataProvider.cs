@@ -4,6 +4,7 @@ namespace Ff.DevSuite.Performance
 {
     public class FrameTimeGraphDataProvider : BaseGraphDataProvider
     {
+        public static bool RegisterByDefault = true;
         public static new bool CollapsedByDefault = false;
 
         internal override string Label => "Frame Time";
