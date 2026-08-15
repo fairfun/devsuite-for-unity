@@ -112,6 +112,7 @@ namespace Ff.DevSuite
         internal event Action OnChanged;
         internal event Action OnEveryFrame;
         internal event Action OnPerformancePanelChanged;
+        internal event Action<BaseGraphDataProvider, bool> OnPerformanceGraphCollapsedChanged;
         internal event Action OnLogMessagesChanged;
         internal event Action<LogMessageData> OnLogMessagesMessageAdded;
         internal event Action OnLogMessagesVisibilityChanged;
@@ -389,7 +390,7 @@ namespace Ff.DevSuite
             }
             Settings.Value.PerformanceGraphCollapsedState[provider.GetType().Name] = collapsed;
             Settings.ForceSave();
-            _onPerformancePanelDispatcher.Dispatch();
+            OnPerformanceGraphCollapsedChanged?.Invoke(provider, collapsed);
         }
 
         public void SetPerformanceReferenceValue<T>(Func<double?> referenceValueProvider) where T : BaseGraphDataProvider
@@ -1814,6 +1815,10 @@ namespace Ff.DevSuite
             Settings.Value = new PersistentSettings();
             Settings.ForceSave();
             RebuildTree();
+            foreach (var provider in _performancePanelProviders)
+            {
+                OnPerformanceGraphCollapsedChanged?.Invoke(provider, IsPerformanceGraphCollapsed(provider));
+            }
             _onChangedDispatcher.Dispatch();
         }
 

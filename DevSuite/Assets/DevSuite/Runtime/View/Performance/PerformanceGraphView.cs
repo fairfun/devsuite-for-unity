@@ -59,6 +59,7 @@ namespace Ff.DevSuite.View
         public void Initialize(DevSuiteContext context)
         {
             _context = context;
+            Subscribe();
             UpdateViewState();
         }
 
@@ -274,11 +275,21 @@ namespace Ff.DevSuite.View
         {
             Unsubscribe();
             _dataProvider.OnUpdate += HandleDataProviderUpdate;
+            _context.OnPerformanceGraphCollapsedChanged += HandleCollapsedChanged;
         }
 
         private void Unsubscribe()
         {
             _dataProvider.OnUpdate -= HandleDataProviderUpdate;
+            _context.OnPerformanceGraphCollapsedChanged -= HandleCollapsedChanged;
+        }
+
+        private void HandleCollapsedChanged(BaseGraphDataProvider provider, bool isCollapsed)
+        {
+            if (provider == _dataProvider)
+            {
+                UpdateViewState();
+            }
         }
 
         private void HandleDataProviderUpdate(BaseGraphDataProvider.DataPoint dataPoint)

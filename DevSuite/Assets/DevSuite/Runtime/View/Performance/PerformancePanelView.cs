@@ -49,6 +49,30 @@ namespace Ff.DevSuite.View
 
         private void UpdateViews()
         {
+            Subscribe();
+
+            bool structureMatch = _graphs.Count == _context.PerformancePanelProviders.Count;
+            if (structureMatch)
+            {
+                for (int i = 0; i < _graphs.Count; i++)
+                {
+                    if (_graphs[i].data != _context.PerformancePanelProviders[i])
+                    {
+                        structureMatch = false;
+                        break;
+                    }
+                }
+            }
+
+            if (structureMatch)
+            {
+                foreach (var graph in _graphs)
+                {
+                    graph.view.UpdateViewState();
+                }
+                return;
+            }
+
             Reset();
             foreach (var provider in _context.PerformancePanelProviders)
             {
@@ -59,8 +83,6 @@ namespace Ff.DevSuite.View
             {
                 _graphsContainer[_graphsContainer.childCount - 1].AddToClassList("graph-view--last");
             }
-
-            Subscribe();
         }
 
         private void RegisterGraph(BaseGraphDataProvider dataProvider)
