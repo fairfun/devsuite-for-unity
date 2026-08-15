@@ -161,6 +161,57 @@ namespace Ff.DevSuite
         private readonly List<GameObject> _selectedGameObjects = new();
         public IReadOnlyList<GameObject> SelectedGameObjects => _selectedGameObjects;
 
+#if UNITY_EDITOR
+        private bool _isSyncingEditorSelection;
+
+        private void SyncEditorSelection()
+        {
+            if (_isSyncingEditorSelection)
+            {
+                return;
+            }
+
+            try
+            {
+                _isSyncingEditorSelection = true;
+
+                var currentSelection = UnityEditor.Selection.gameObjects;
+                var matches = currentSelection.Length == _selectedGameObjects.Count;
+                if (matches)
+                {
+                    for (var i = 0; i < currentSelection.Length; i++)
+                    {
+                        if (currentSelection[i] != _selectedGameObjects[i])
+                        {
+                            matches = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!matches)
+                {
+                    if (_selectedGameObjects.Count == 0)
+                    {
+                        UnityEditor.Selection.objects = Array.Empty<UnityEngine.Object>();
+                    }
+                    else if (_selectedGameObjects.Count == 1)
+                    {
+                        UnityEditor.Selection.activeGameObject = _selectedGameObjects[0];
+                    }
+                    else
+                    {
+                        UnityEditor.Selection.objects = _selectedGameObjects.ToArray();
+                    }
+                }
+            }
+            finally
+            {
+                _isSyncingEditorSelection = false;
+            }
+        }
+#endif
+
         public void SetSelectedGameObjects(IEnumerable<GameObject> gameObjects)
         {
             _selectedGameObjects.Clear();
@@ -168,6 +219,9 @@ namespace Ff.DevSuite
             {
                 _selectedGameObjects.AddRange(gameObjects);
             }
+#if UNITY_EDITOR
+            SyncEditorSelection();
+#endif
             _onChangedDispatcher.Dispatch();
         }
 
@@ -185,6 +239,9 @@ namespace Ff.DevSuite
             {
                 _selectedGameObjects.Add(go);
             }
+#if UNITY_EDITOR
+            SyncEditorSelection();
+#endif
             _onChangedDispatcher.Dispatch();
         }
 
@@ -210,6 +267,28 @@ namespace Ff.DevSuite
                     _selectedGameObjects.Clear();
                     _selectedGameObjects.Add(value);
                 }
+#if UNITY_EDITOR
+                SyncEditorSelection();
+#endif
+                _onChangedDispatcher.Dispatch();
+            }
+        }
+
+        internal event Action<bool> OnPickModeChanged;
+        private bool _pickModeActive;
+
+        internal bool PickModeActive
+        {
+            get => _pickModeActive;
+            set
+            {
+                if (_pickModeActive == value)
+                {
+                    return;
+                }
+
+                _pickModeActive = value;
+                OnPickModeChanged?.Invoke(_pickModeActive);
                 _onChangedDispatcher.Dispatch();
             }
         }
@@ -250,6 +329,8 @@ namespace Ff.DevSuite
 
         public void Dispose()
         {
+            PickModeActive = false;
+            OnPickModeChanged = null;
             OnApiCalled = null;
             OnChanged = null;
 
@@ -334,6 +415,11 @@ namespace Ff.DevSuite
         public void Reset()
         {
             _initialized = false;
+
+            if (_pickModeActive)
+            {
+                PickModeActive = false;
+            }
 
             AttributesParser = null;
             CommandsApi = null;
@@ -1904,13 +1990,13 @@ namespace Ff.DevSuite
         {
             while (true)
             {
-                for (var i = 0; i < PerformancePanelProviders.Count; i++) // foreach here causes allocations
+                foreach (var provider in PerformancePanelProviders)
                 {
-                    if (IsPerformanceGraphCollapsed(PerformancePanelProviders[i]))
+                    if (IsPerformanceGraphCollapsed(provider))
                     {
                         continue;
                     }
-                    PerformancePanelProviders[i].Process();
+                    provider.Process();
                 }
 
                 OnEveryFrameDispatcher.Dispatch();

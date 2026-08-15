@@ -53,6 +53,9 @@ namespace Ff.DevSuite.View
         [SerializeField] private VisualTreeAsset _inspectorUxml;
         [SerializeField] private StyleSheet _inspectorUss;
 
+        [Header("Pick Selection")]
+        [SerializeField] private StyleSheet _pickSelectionUss;
+
         private LogsPanelView _logsPanelView;
         private CommandsPanelView _commandsFullPanelView;
         private CommandsPanelView _commandsPinnedPanelView;
@@ -60,7 +63,7 @@ namespace Ff.DevSuite.View
         private ControlPanelView _controlView;
         private HierarchyPanelView _hierarchyPanelView;
         private InspectorPanelView _inspectorPanelView;
-
+        private PickSelectionPanelView _pickSelectionPanelView;
 
         private VisualElement _logsContainer;
         private VisualElement _commandsFullContainer;
@@ -159,6 +162,10 @@ namespace Ff.DevSuite.View
             _inspectorContainer.Add(_inspectorPanelView);
             _inspectorPanelView.Initialize(_context);
 
+            _pickSelectionPanelView = new PickSelectionPanelView(_pickSelectionUss);
+            root.Add(_pickSelectionPanelView);
+            _pickSelectionPanelView.Initialize(_context);
+
             ApplyColors(root);
             UpdateVisibility();
         }
@@ -183,6 +190,7 @@ namespace Ff.DevSuite.View
             _controlView?.Reset();
             _hierarchyPanelView?.Reset();
             _inspectorPanelView?.Reset();
+            _pickSelectionPanelView?.Reset();
         }
 
         private void ApplyColors(VisualElement root)
@@ -245,6 +253,11 @@ namespace Ff.DevSuite.View
             _performancePanelContainer.style.display = expanded && _context.MetricsVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _hierarchyContainer.style.display = expanded && _context.HierarchyVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _inspectorContainer.style.display = expanded && _context.InspectorVisible ? DisplayStyle.Flex : DisplayStyle.None;
+
+            if ((!expanded || !_context.HierarchyVisible) && _context.PickModeActive)
+            {
+                _context.PickModeActive = false;
+            }
 
             if (IsPortrait)
             {

@@ -550,9 +550,8 @@ namespace Ff.DevSuite.View
                 return;
             }
 
-            for (var i = 0; i < _lastSelectedGameObjects.Count; i++)
+            foreach (var go in _lastSelectedGameObjects)
             {
-                var go = _lastSelectedGameObjects[i];
                 if (go == null || go.Equals(null))
                 {
                     RebuildInspector(null);

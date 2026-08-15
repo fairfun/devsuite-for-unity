@@ -40,28 +40,14 @@ namespace Ff.DevSuite.View
         private readonly List<VisualElement> _currentlySelectedRows = new();
         private GameObject _selectionAnchor;
 
-        private bool _pickModeActive;
-        private float? _previousTimeScale;
         private Regex _searchRegex;
-
-        private struct PickTarget
-        {
-            public GameObject GameObject;
-            public string Kind;
-        }
-
-        private VisualElement _pickPopup;
-        private ScrollView _pickPopupScrollView;
-        private StyleSheet _uss;
 
         public HierarchyPanelView(VisualTreeAsset uxml, StyleSheet uss)
         {
-            _uss = uss;
             uxml.CloneTree(this);
             styleSheets.Add(uss);
 
             AddToClassList("ff-panel");
-            RegisterCallback<DetachFromPanelEvent>(_ => SetPickMode(false));
 
             var root = this.Q<VisualElement>("hierarchy-panel-root") ?? this;
 
@@ -197,6 +183,9 @@ namespace Ff.DevSuite.View
             {
                 _context.OnChanged += HandleContextChanged;
                 _context.OnEveryFrame += HandleOnEveryFrame;
+                _context.OnPickModeChanged += HandlePickModeChanged;
+
+                _pickBtn.EnableInClassList("active", _context.PickModeActive);
 
                 _searchByRegex = _context.HierarchySearchRegex;
                 _searchByName = _context.HierarchySearchByName;
@@ -211,25 +200,25 @@ namespace Ff.DevSuite.View
 
         public void Reset()
         {
-            SetPickMode(false);
-            HidePickPopup();
-
             if (_context != null)
             {
                 _context.OnChanged -= HandleContextChanged;
                 _context.OnEveryFrame -= HandleOnEveryFrame;
+                _context.OnPickModeChanged -= HandlePickModeChanged;
                 _context = null;
             }
+        }
+
+        private void HandlePickModeChanged(bool active)
+        {
+            _pickBtn.EnableInClassList("active", active);
         }
 
         private void HandleContextChanged()
         {
             if (_context != null)
             {
-                if ((!_context.PanelExpanded || !_context.HierarchyVisible) && _pickModeActive)
-                {
-                    SetPickMode(false);
-                }
+                _pickBtn.EnableInClassList("active", _context.PickModeActive);
 
                 var regex = _context.HierarchySearchRegex;
                 var name = _context.HierarchySearchByName;
@@ -249,48 +238,22 @@ namespace Ff.DevSuite.View
             if (_context != null && _context.SelectedGameObject != null)
             {
                 var targetId = _context.SelectedGameObject.GetInstanceID();
-                if (!_gameObjectRows.ContainsKey(targetId))
+                ExpandParents(_context.SelectedGameObject);
+                RebuildTree();
+                if (_gameObjectRows.TryGetValue(targetId, out var row))
                 {
-                    ExpandParents(_context.SelectedGameObject);
-                    RebuildTree();
-                    if (_gameObjectRows.TryGetValue(targetId, out var row))
-                    {
-                        _scrollView.ScrollTo(row);
-                    }
+                    _scrollView.ScrollTo(row);
                 }
             }
-            UpdateSelectionHighlight();
+            else
+            {
+                UpdateSelectionHighlight();
+            }
         }
 
         private void TogglePickMode()
         {
-            SetPickMode(!_pickModeActive);
-        }
-
-        private void SetPickMode(bool active)
-        {
-            if (_pickModeActive == active)
-            {
-                return;
-            }
-
-            _pickModeActive = active;
-            _pickBtn.EnableInClassList("active", _pickModeActive);
-
-            if (_pickModeActive)
-            {
-                _previousTimeScale = Time.timeScale;
-                Time.timeScale = 0f;
-            }
-            else
-            {
-                HidePickPopup();
-                if (_previousTimeScale.HasValue)
-                {
-                    Time.timeScale = _previousTimeScale.Value;
-                    _previousTimeScale = null;
-                }
-            }
+            _context.PickModeActive = !_context.PickModeActive;
         }
 
         private void HandleSearchChanged(string query)
@@ -627,6 +590,16 @@ namespace Ff.DevSuite.View
             label.AddToClassList("hierarchy-item-label");
             row.Add(label);
 
+            var badgeKind = GetGameObjectKind(go);
+            if (!string.IsNullOrEmpty(badgeKind))
+            {
+                var badgeLabel = new Label(badgeKind);
+                badgeLabel.AddToClassList("hierarchy-badge");
+                badgeLabel.AddToClassList(GetBadgeClassForKind(badgeKind));
+                badgeLabel.pickingMode = PickingMode.Ignore;
+                row.Add(badgeLabel);
+            }
+
             row.Add(activityToggle);
             _gameObjectActivityToggles[instanceId] = (go, activityToggle);
 
@@ -931,7 +904,6 @@ namespace Ff.DevSuite.View
 
         private void HandleOnEveryFrame()
         {
-            UpdatePickMode();
             SyncActivityStates();
         }
 
@@ -951,84 +923,6 @@ namespace Ff.DevSuite.View
                     toggle.SetValueWithoutNotify(isActive);
                     if (isActive) row.RemoveFromClassList("inactive");
                     else row.AddToClassList("inactive");
-                }
-            }
-        }
-
-        private void UpdatePickMode()
-        {
-            if (!_pickModeActive)
-            {
-                return;
-            }
-
-#if ENABLE_INPUT_SYSTEM
-            if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
-                SetPickMode(false);
-                return;
-            }
-#else
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                SetPickMode(false);
-                return;
-            }
-#endif
-
-            var clicked = false;
-            var mousePos = Vector2.zero;
-
-#if ENABLE_INPUT_SYSTEM
-            if (UnityEngine.InputSystem.Mouse.current != null)
-            {
-                clicked = UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame;
-                mousePos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
-            }
-#else
-            clicked = Input.GetMouseButtonDown(0);
-            mousePos = Input.mousePosition;
-#endif
-
-            if (clicked)
-            {
-                var topRoot = DevSuiteUtils.GetTopRoot(this) ?? this;
-                float screenHeight = Screen.height > 0 ? Screen.height : 600f;
-                float screenWidth = Screen.width > 0 ? Screen.width : 800f;
-                float panelWidth = (topRoot?.layout.width > 0) ? topRoot.layout.width : (topRoot?.resolvedStyle.width > 0 ? topRoot.resolvedStyle.width : screenWidth);
-                float panelHeight = (topRoot?.layout.height > 0) ? topRoot.layout.height : (topRoot?.resolvedStyle.height > 0 ? topRoot.resolvedStyle.height : screenHeight);
-
-                var panelPos = new Vector2(
-                    mousePos.x * (panelWidth / screenWidth),
-                    (screenHeight - mousePos.y) * (panelHeight / screenHeight)
-                );
-
-                // 1. If click is inside the active pick popup, ignore it in pick mode so the popup button handles the click
-                if (_pickPopup != null && _pickPopup.style.display != DisplayStyle.None && _pickPopup.parent != null)
-                {
-                    if (_pickPopup.worldBound.Contains(panelPos))
-                    {
-                        return;
-                    }
-                }
-
-                // 2. If click is on an interactive DevSuite UI element (e.g. pick toggle button), close popup and let DevSuite handle it
-                var pickedUi = panel?.Pick(panelPos);
-                if (pickedUi != null && IsElementInteractiveInDevSuite(pickedUi))
-                {
-                    HidePickPopup();
-                    return;
-                }
-
-                // 3. User clicked in the game view to pick objects!
-                var targets = CollectPickTargets(mousePos);
-                if (targets.Count > 0)
-                {
-                    ShowPickPopup(targets, panelPos);
-                }
-                else
-                {
-                    HidePickPopup();
                 }
             }
         }
@@ -1141,414 +1035,52 @@ namespace Ff.DevSuite.View
         }
 #endif
 
-        private bool IsElementInDevSuite(VisualElement element)
+        private static string GetGameObjectKind(GameObject go)
         {
-            var cur = element;
-            while (cur != null)
+            if (go == null) return null;
+
+            if (go.GetComponent<UIDocument>() != null)
             {
-                if (cur.ClassListContains("devsuite-panel-root") || cur.ClassListContains("ff-control-panel") || cur.name == "ff-control-panel-root")
-                {
-                    return true;
-                }
-                cur = cur.parent;
+                return "UI Toolkit";
             }
-            return false;
+
+            if (go.GetComponent<Canvas>() != null ||
+                go.GetComponent<UnityEngine.UI.Graphic>() != null ||
+                go.GetComponent<CanvasRenderer>() != null ||
+                go.transform is RectTransform)
+            {
+                return "UI";
+            }
+
+            if (go.GetComponent<Collider2D>() != null ||
+                go.GetComponent<Rigidbody2D>() != null ||
+                go.GetComponent<SpriteRenderer>() != null)
+            {
+                return "2D";
+            }
+
+            if (go.GetComponent<Collider>() != null ||
+                go.GetComponent<Rigidbody>() != null ||
+                go.GetComponent<Renderer>() != null ||
+                go.GetComponent<MeshFilter>() != null ||
+                go.GetComponent<Camera>() != null ||
+                go.GetComponent<Light>() != null ||
+                go.GetComponent<Terrain>() != null ||
+                go.GetComponent<ParticleSystem>() != null)
+            {
+                return "3D";
+            }
+
+            return null;
         }
 
-        private bool IsElementInteractiveInDevSuite(VisualElement element)
+        private static string GetBadgeClassForKind(string kind) => kind switch
         {
-            if (element == null)
-            {
-                return false;
-            }
-            if (!IsElementInDevSuite(element))
-            {
-                return false;
-            }
-
-            var cur = element;
-            while (cur != null)
-            {
-                if (cur == _pickPopup)
-                {
-                    return true;
-                }
-
-                if (cur is Button || cur is TextField || cur is Toggle || cur is Scroller || cur is Slider)
-                {
-                    return true;
-                }
-
-                var type = cur.GetType();
-                while (type != null && type != typeof(VisualElement))
-                {
-                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(BaseField<>))
-                    {
-                        return true;
-                    }
-                    type = type.BaseType;
-                }
-
-                cur = cur.parent;
-            }
-            return false;
-        }
-
-        private bool IsGameObjectInDevSuite(GameObject go)
-        {
-            if (go == null)
-            {
-                return false;
-            }
-            var cur = go.transform;
-            while (cur != null)
-            {
-                if (cur.name.Contains("DevSuitePanel") || cur.GetComponent<DevSuitePanelUI>() != null)
-                {
-                    return true;
-                }
-                cur = cur.parent;
-            }
-            return false;
-        }
-
-        private void CreatePickPopup()
-        {
-            _pickPopup = new VisualElement();
-            if (_uss != null)
-            {
-                _pickPopup.styleSheets.Add(_uss);
-            }
-            _pickPopup.AddToClassList("hierarchy-pick-popup");
-            _pickPopup.style.position = Position.Absolute;
-            _pickPopup.style.backgroundColor = new Color(26 / 255f, 26 / 255f, 30 / 255f, 0.95f);
-            _pickPopup.style.borderLeftColor = new Color(80 / 255f, 80 / 255f, 80 / 255f, 0.8f);
-            _pickPopup.style.borderRightColor = new Color(80 / 255f, 80 / 255f, 80 / 255f, 0.8f);
-            _pickPopup.style.borderTopColor = new Color(80 / 255f, 80 / 255f, 80 / 255f, 0.8f);
-            _pickPopup.style.borderBottomColor = new Color(80 / 255f, 80 / 255f, 80 / 255f, 0.8f);
-            _pickPopup.style.borderLeftWidth = 1;
-            _pickPopup.style.borderRightWidth = 1;
-            _pickPopup.style.borderTopWidth = 1;
-            _pickPopup.style.borderBottomWidth = 1;
-            _pickPopup.style.borderTopLeftRadius = 6;
-            _pickPopup.style.borderTopRightRadius = 6;
-            _pickPopup.style.borderBottomLeftRadius = 6;
-            _pickPopup.style.borderBottomRightRadius = 6;
-            _pickPopup.style.paddingLeft = 3;
-            _pickPopup.style.paddingRight = 3;
-            _pickPopup.style.paddingTop = 3;
-            _pickPopup.style.paddingBottom = 3;
-            _pickPopup.style.minWidth = 180;
-            _pickPopup.style.maxWidth = 340;
-            _pickPopup.style.maxHeight = 390;
-            _pickPopup.pickingMode = PickingMode.Position;
-
-            _pickPopupScrollView = new ScrollView();
-            _pickPopupScrollView.AddToClassList("hierarchy-pick-popup-scroll");
-            _pickPopupScrollView.style.maxHeight = 380;
-            _pickPopupScrollView.pickingMode = PickingMode.Position;
-            _pickPopup.Add(_pickPopupScrollView);
-        }
-
-        private void HidePickPopup()
-        {
-            if (_pickPopup != null)
-            {
-                _pickPopup.style.display = DisplayStyle.None;
-                if (_pickPopup.parent != null)
-                {
-                    _pickPopup.RemoveFromHierarchy();
-                }
-            }
-        }
-
-        private void ShowPickPopup(List<PickTarget> targets, Vector2 panelPos)
-        {
-            if (_pickPopup == null)
-            {
-                CreatePickPopup();
-            }
-
-            var topRoot = DevSuiteUtils.GetTopRoot(this) ?? this;
-            if (_pickPopup.parent != topRoot)
-            {
-                _pickPopup.RemoveFromHierarchy();
-                topRoot.Add(_pickPopup);
-            }
-
-            _pickPopupScrollView.Clear();
-
-            foreach (var target in targets)
-            {
-                var go = target.GameObject;
-                if (go == null) continue;
-
-                var row = new Button(() => SelectPickedObject(go));
-                row.AddToClassList("hierarchy-pick-popup-row");
-                row.style.flexDirection = FlexDirection.Row;
-                row.style.alignItems = Align.Center;
-                row.style.justifyContent = Justify.FlexStart;
-                row.style.paddingLeft = 6;
-                row.style.paddingRight = 6;
-                row.style.paddingTop = 2;
-                row.style.paddingBottom = 2;
-                row.style.marginTop = 0;
-                row.style.marginBottom = 1;
-                row.style.marginLeft = 0;
-                row.style.marginRight = 0;
-                row.style.height = 22;
-                row.style.minHeight = 22;
-                row.style.maxHeight = 22;
-                row.style.backgroundColor = Color.clear;
-                row.style.borderLeftWidth = 0;
-                row.style.borderRightWidth = 0;
-                row.style.borderTopWidth = 0;
-                row.style.borderBottomWidth = 0;
-                row.style.borderTopLeftRadius = 3;
-                row.style.borderTopRightRadius = 3;
-                row.style.borderBottomLeftRadius = 3;
-                row.style.borderBottomRightRadius = 3;
-
-                row.RegisterCallback<MouseEnterEvent>(_ => row.style.backgroundColor = new Color(1f, 1f, 1f, 0.12f));
-                row.RegisterCallback<MouseLeaveEvent>(_ => row.style.backgroundColor = Color.clear);
-
-                var nameLabel = new Label(go.name);
-                nameLabel.AddToClassList("hierarchy-pick-popup-name");
-                nameLabel.style.flexGrow = 1;
-                nameLabel.style.fontSize = 11;
-                nameLabel.style.color = new Color(220 / 255f, 220 / 255f, 220 / 255f, 1f);
-                nameLabel.style.overflow = Overflow.Hidden;
-                nameLabel.style.textOverflow = TextOverflow.Ellipsis;
-                nameLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
-                nameLabel.style.paddingLeft = 0;
-                nameLabel.style.paddingRight = 0;
-                nameLabel.style.paddingTop = 0;
-                nameLabel.style.paddingBottom = 0;
-                nameLabel.style.marginLeft = 0;
-                nameLabel.style.marginRight = 0;
-                nameLabel.pickingMode = PickingMode.Ignore;
-                row.Add(nameLabel);
-
-                var badgeLabel = new Label(target.Kind);
-                badgeLabel.AddToClassList("hierarchy-pick-popup-badge");
-                badgeLabel.style.fontSize = 9;
-                badgeLabel.style.color = new Color(150 / 255f, 150 / 255f, 150 / 255f, 1f);
-                badgeLabel.style.backgroundColor = new Color(1f, 1f, 1f, 0.08f);
-                badgeLabel.style.borderTopLeftRadius = 3;
-                badgeLabel.style.borderTopRightRadius = 3;
-                badgeLabel.style.borderBottomLeftRadius = 3;
-                badgeLabel.style.borderBottomRightRadius = 3;
-                badgeLabel.style.paddingLeft = 4;
-                badgeLabel.style.paddingRight = 4;
-                badgeLabel.style.paddingTop = 1;
-                badgeLabel.style.paddingBottom = 1;
-                badgeLabel.style.marginLeft = 6;
-                badgeLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-                badgeLabel.pickingMode = PickingMode.Ignore;
-                row.Add(badgeLabel);
-
-                _pickPopupScrollView.Add(row);
-            }
-
-            _pickPopup.style.display = DisplayStyle.Flex;
-            _pickPopup.style.visibility = Visibility.Visible;
-            _pickPopup.BringToFront();
-
-            PositionPickPopup(_pickPopup, panelPos);
-        }
-
-        private void PositionPickPopup(VisualElement popup, Vector2 panelPos)
-        {
-            if (popup == null || popup.parent == null) return;
-            var topRoot = popup.parent;
-
-            var rootWidth = topRoot.layout.width;
-            if (float.IsNaN(rootWidth) || rootWidth <= 0) rootWidth = topRoot.resolvedStyle.width;
-            if (float.IsNaN(rootWidth) || rootWidth <= 0) rootWidth = Screen.width > 0 ? Screen.width : 800f;
-
-            var rootHeight = topRoot.layout.height;
-            if (float.IsNaN(rootHeight) || rootHeight <= 0) rootHeight = topRoot.resolvedStyle.height;
-            if (float.IsNaN(rootHeight) || rootHeight <= 0) rootHeight = Screen.height > 0 ? Screen.height : 600f;
-
-            var popupWidth = popup.layout.width;
-            if (float.IsNaN(popupWidth) || popupWidth <= 0) popupWidth = popup.resolvedStyle.width;
-            if (float.IsNaN(popupWidth) || popupWidth <= 0) popupWidth = 220f;
-
-            var popupHeight = popup.layout.height;
-            if (float.IsNaN(popupHeight) || popupHeight <= 0) popupHeight = popup.resolvedStyle.height;
-            if (float.IsNaN(popupHeight) || popupHeight <= 0) popupHeight = 225f;
-
-            var mouseInTopRoot = topRoot.WorldToLocal(panelPos);
-
-            var targetX = mouseInTopRoot.x + 8f;
-            if (targetX + popupWidth > rootWidth - 4f)
-            {
-                targetX = mouseInTopRoot.x - popupWidth - 8f;
-            }
-            targetX = Mathf.Clamp(targetX, 4f, Mathf.Max(4f, rootWidth - popupWidth - 4f));
-
-            var targetY = mouseInTopRoot.y + 8f;
-            if (targetY + popupHeight > rootHeight - 4f)
-            {
-                targetY = mouseInTopRoot.y - popupHeight - 8f;
-            }
-            targetY = Mathf.Clamp(targetY, 4f, Mathf.Max(4f, rootHeight - popupHeight - 4f));
-
-            popup.style.left = targetX;
-            popup.style.top = targetY;
-        }
-
-        private void SelectPickedObject(GameObject pickedObj)
-        {
-            if (pickedObj != null)
-            {
-                _context.SelectedGameObject = pickedObj;
-                ExpandParents(pickedObj);
-                RebuildTree();
-
-                if (_gameObjectRows.TryGetValue(pickedObj.GetInstanceID(), out var row))
-                {
-                    _scrollView.ScrollTo(row);
-                }
-            }
-
-            HidePickPopup();
-            SetPickMode(false);
-        }
-
-        private List<PickTarget> CollectPickTargets(Vector2 mousePos)
-        {
-            var targets = new List<PickTarget>();
-            var addedIds = new HashSet<int>();
-
-            void AddTarget(GameObject go, string kind)
-            {
-                if (go == null) return;
-                int id = go.GetInstanceID();
-                if (addedIds.Add(id))
-                {
-                    targets.Add(new PickTarget { GameObject = go, Kind = kind });
-                }
-            }
-
-            // 1. UI Toolkit UIDocuments
-            var uiDocs = Object.FindObjectsOfType<UIDocument>();
-            foreach (var doc in uiDocs)
-            {
-                if (doc == null || !doc.gameObject.activeInHierarchy || IsGameObjectInDevSuite(doc.gameObject))
-                {
-                    continue;
-                }
-
-                var root = doc.rootVisualElement;
-                if (root != null && root.panel != null)
-                {
-                    var localPos = RuntimePanelUtils.ScreenToPanel(root.panel, mousePos);
-                    var picked = root.panel.Pick(localPos);
-                    if (picked != null)
-                    {
-                        AddTarget(doc.gameObject, "UI Toolkit");
-                    }
-                }
-            }
-
-            // 2. Canvas UI objects (uGUI RectTransforms)
-            var graphics = Object.FindObjectsOfType<UnityEngine.UI.Graphic>();
-            var matchingGraphics = new List<(UnityEngine.UI.Graphic graphic, int depth, float area)>();
-
-            foreach (var graphic in graphics)
-            {
-                if (graphic == null || !graphic.gameObject.activeInHierarchy || !graphic.raycastTarget)
-                {
-                    continue;
-                }
-                if (IsGameObjectInDevSuite(graphic.gameObject))
-                {
-                    continue;
-                }
-
-                var rect = graphic.rectTransform;
-                var canvas = graphic.canvas;
-                Camera eventCamera = null;
-                if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
-                {
-                    eventCamera = canvas.worldCamera ?? Camera.main;
-                }
-
-                if (RectTransformUtility.RectangleContainsScreenPoint(rect, mousePos, eventCamera))
-                {
-                    var depth = 0;
-                    var t = rect.parent;
-                    while (t != null)
-                    {
-                        depth++;
-                        t = t.parent;
-                    }
-
-                    var corners = new Vector3[4];
-                    rect.GetWorldCorners(corners);
-                    var area = Vector3.Distance(corners[0], corners[1]) * Vector3.Distance(corners[1], corners[2]);
-                    matchingGraphics.Add((graphic, depth, area));
-                }
-            }
-
-            matchingGraphics.Sort((a, b) =>
-            {
-                int d = b.depth.CompareTo(a.depth);
-                if (d != 0) return d;
-                return a.area.CompareTo(b.area);
-            });
-
-            foreach (var item in matchingGraphics)
-            {
-                AddTarget(item.graphic.gameObject, "UI");
-            }
-
-            // 3. Physics (3D and 2D) across cameras
-            var cameras = Camera.allCameras;
-            if (cameras == null || cameras.Length == 0)
-            {
-                var main = Camera.main;
-                if (main != null) cameras = new[] { main };
-            }
-
-            if (cameras != null)
-            {
-                foreach (var cam in cameras)
-                {
-                    if (cam == null || !cam.gameObject.activeInHierarchy || !cam.enabled) continue;
-
-                    var ray = cam.ScreenPointToRay(mousePos);
-
-                    var hits3d = Physics.RaycastAll(ray);
-                    if (hits3d != null && hits3d.Length > 0)
-                    {
-                        Array.Sort(hits3d, (a, b) => a.distance.CompareTo(b.distance));
-                        foreach (var hit in hits3d)
-                        {
-                            if (hit.collider != null && !IsGameObjectInDevSuite(hit.collider.gameObject))
-                            {
-                                AddTarget(hit.collider.gameObject, "3D");
-                            }
-                        }
-                    }
-
-                    var hits2d = Physics2D.GetRayIntersectionAll(ray);
-                    if (hits2d != null && hits2d.Length > 0)
-                    {
-                        Array.Sort(hits2d, (a, b) => a.distance.CompareTo(b.distance));
-                        foreach (var hit2d in hits2d)
-                        {
-                            if (hit2d.collider != null && !IsGameObjectInDevSuite(hit2d.collider.gameObject))
-                            {
-                                AddTarget(hit2d.collider.gameObject, "2D");
-                            }
-                        }
-                    }
-                }
-            }
-
-            return targets;
-        }
+            "UI Toolkit" => "badge-uitoolkit",
+            "UI" => "badge-ugui",
+            "2D" => "badge-2d",
+            "3D" => "badge-3d",
+            _ => "badge-default"
+        };
     }
 }

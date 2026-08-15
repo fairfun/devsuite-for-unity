@@ -1,0 +1,115 @@
+@import "../Common.uss";
+
+.pick-selection-panel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* Pick Mode Popup Dropdown */
+.pick-selection-popup {
+    position: absolute;
+    background-color: rgba(26, 26, 30, 0.95);
+    border-color: rgba(80, 80, 80, 0.8);
+    border-left-color: rgba(80, 80, 80, 0.8);
+    border-right-color: rgba(80, 80, 80, 0.8);
+    border-top-color: rgba(80, 80, 80, 0.8);
+    border-bottom-color: rgba(80, 80, 80, 0.8);
+    border-width: 1px;
+    border-radius: 6px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    padding: 3px;
+    min-width: 180px;
+    max-width: 340px;
+    max-height: 390px;
+    flex-direction: column;
+}
+
+.pick-selection-popup-scroll {
+    max-height: 380px;
+}
+
+.pick-selection-popup-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    padding: 2px 6px !important;
+    height: 22px !important;
+    min-height: 22px !important;
+    max-height: 22px !important;
+    border-radius: 3px !important;
+    border-top-left-radius: 3px !important;
+    border-top-right-radius: 3px !important;
+    border-bottom-left-radius: 3px !important;
+    border-bottom-right-radius: 3px !important;
+    margin: 0 !important;
+    margin-bottom: 1px !important;
+    background-color: transparent !important;
+    border-width: 0 !important;
+}
+
+.pick-selection-popup-row:hover {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.pick-selection-popup-row:hover .pick-selection-popup-name {
+    color: rgb(255, 255, 255) !important;
+}
+
+.pick-selection-popup-row:active {
+    background-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.pick-selection-popup-name {
+    flex-grow: 1;
+    font-size: 11px;
+    color: rgb(220, 220, 220);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -unity-text-align: middle-left;
+    padding: 0;
+    margin: 0;
+}
+
+.pick-selection-popup-badge {
+    font-size: 9px;
+    color: rgb(150, 150, 150);
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    padding: 1px 4px;
+    margin-left: 6px;
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-right: 0;
+    -unity-text-align: middle-center;
+}
+
+/* Category Badge Variants */
+.pick-selection-popup-badge.badge-ugui {
+    background-color: rgba(245, 158, 11, 0.22) !important;
+    color: rgb(251, 191, 36) !important;
+}
+
+.pick-selection-popup-badge.badge-uitoolkit {
+    background-color: rgba(6, 182, 212, 0.22) !important;
+    color: rgb(103, 232, 249) !important;
+}
+
+.pick-selection-popup-badge.badge-2d {
+    background-color: rgba(16, 185, 129, 0.22) !important;
+    color: rgb(110, 231, 183) !important;
+}
+
+.pick-selection-popup-badge.badge-3d {
+    background-color: rgba(139, 92, 246, 0.25) !important;
+    color: rgb(196, 181, 253) !important;
+}
