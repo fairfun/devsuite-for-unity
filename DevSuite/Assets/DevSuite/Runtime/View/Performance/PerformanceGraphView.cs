@@ -209,7 +209,6 @@ namespace Ff.DevSuite.View
             var mesh = mgc.Allocate(_verticesBuffer.Length, _indicesBuffer.Length);
 
             var colorImpact = lastPoint.ReferenceColorImpact ?? 1f;
-            var halfColorImpact = 0.5f * colorImpact;
 
             curIdx = startIdx;
             var dataStartIndex = MaxValuesCount - _dataPointsCount;
@@ -230,7 +229,33 @@ namespace Ff.DevSuite.View
                     var heightPercent = (float)(val / maxValue);
                     var barHeight = rect.height * heightPercent;
 
-                    var currentToReference = Math.Clamp(Math.Pow(val / referenceValue, halfColorImpact) - 1f, 0f, 1f);
+                    double currentToReference;
+                    if (colorImpact < 0)
+                    {
+                        if (val >= referenceValue || referenceValue <= 0)
+                        {
+                            currentToReference = 0;
+                        }
+                        else
+                        {
+                            var absImpact = 0.5f * Math.Abs(colorImpact);
+                            var ratio = Math.Max(val, 0.00001) / referenceValue;
+                            currentToReference = Math.Clamp(Math.Pow(1.0 / ratio, absImpact) - 1f, 0f, 1f);
+                        }
+                    }
+                    else
+                    {
+                        if (val <= referenceValue || referenceValue <= 0)
+                        {
+                            currentToReference = 0;
+                        }
+                        else
+                        {
+                            var halfImpact = 0.5f * colorImpact;
+                            currentToReference = Math.Clamp(Math.Pow(val / referenceValue, halfImpact) - 1f, 0f, 1f);
+                        }
+                    }
+
                     finalColor = Color.Lerp(ColorGood, ColorBad, (float)currentToReference);
 
                     yMin = rect.height - barHeight;

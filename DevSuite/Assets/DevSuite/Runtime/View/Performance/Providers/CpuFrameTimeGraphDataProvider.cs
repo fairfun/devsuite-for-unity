@@ -25,15 +25,15 @@ namespace Ff.DevSuite.Performance
 
         protected override double GetCurrentValue()
         {
-            if (_profileRecorder.Valid && _profileRecorder.LastValue > 0)
-            {
-                return _profileRecorder.LastValue * 1e-6d;
-            }
-
             FrameTimingManager.CaptureFrameTimings();
             if (FrameTimingManager.GetLatestTimings(1, _frameTimings) > 0 && _frameTimings[0].cpuFrameTime > 0)
             {
                 return _frameTimings[0].cpuFrameTime;
+            }
+
+            if (_profileRecorder.Valid && _profileRecorder.LastValue > 0)
+            {
+                return _profileRecorder.LastValue * 1e-6d;
             }
 
             return 0;

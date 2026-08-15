@@ -5,6 +5,7 @@ namespace Ff.DevSuite.Performance
     public class FpsGraphDataProvider : BaseGraphDataProvider
     {
         public static new bool CollapsedByDefault = true;
+        public override float? ReferenceValueColorImpact => -1.5f;
 
         internal override string Label => "FPS";
         internal override string UnitName => "fps";
