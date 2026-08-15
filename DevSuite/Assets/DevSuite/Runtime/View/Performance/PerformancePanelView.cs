@@ -65,7 +65,7 @@ namespace Ff.DevSuite.View
 
         private void RegisterGraph(BaseGraphDataProvider dataProvider)
         {
-            var graphView = new PerformanceGraphView(dataProvider);
+            var graphView = new PerformanceGraphView(dataProvider, _context);
             _graphsContainer.Add(graphView);
             _graphs.Add((dataProvider, graphView));
         }

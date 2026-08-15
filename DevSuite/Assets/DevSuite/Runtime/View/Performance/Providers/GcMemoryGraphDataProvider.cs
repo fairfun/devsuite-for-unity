@@ -6,6 +6,8 @@ namespace Ff.DevSuite.Performance
 {
     public class GcMemoryGraphDataProvider : BaseGraphDataProvider
     {
+        public static new bool CollapsedByDefault = true;
+
         internal override string Label => "GC Memory";
         internal override string UnitName => "MB";
 

@@ -6,6 +6,8 @@ namespace Ff.DevSuite.Performance
 {
     public class CpuFrameTimeGraphDataProvider : BaseGraphDataProvider
     {
+        public static new bool CollapsedByDefault = true;
+
         internal override string Label => "CPU Frame Time";
         internal override string UnitName => "ms";
 

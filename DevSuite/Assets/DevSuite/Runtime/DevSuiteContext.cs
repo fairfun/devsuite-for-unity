@@ -39,7 +39,7 @@ namespace Ff.DevSuite
         bool Disposed { get; }
         void Initialize(MonoBehaviour coroutineStarter, IList<Assembly> staticCommandsAssemblies = null, ISavedPrefs savedPrefs = null, bool registerCommonCommands = true);
         void Reset();
-        void RegisterPerformancePanelGraph(BaseGraphDataProvider provider);
+        void RegisterPerformancePanelGraph(BaseGraphDataProvider provider, bool collapsedByDefault = false);
         void SetPerformanceReferenceValue<T>(Func<double?> referenceValueProvider) where T : BaseGraphDataProvider;
         Func<string> BuildVersionToDisplay { get; set; }
         GameObject SelectedGameObject { get; set; }
@@ -281,6 +281,7 @@ namespace Ff.DevSuite
             _savedPrefs = savedPrefs ?? SavedPrefs.Factory.Invoke("DevSuiteContext.Default");
             Settings = new SavedPrefsProperty<PersistentSettings>("DevSuiteContext_Settings", new PersistentSettings(), true, _savedPrefs);
             _savedPrefs?.EnsureReady().Wait();
+            Settings.Value.InitializeDefaultsIfNeeded();
 
             using var _ = Block.SetAndTrack(true, 1, this);
 
@@ -297,16 +298,16 @@ namespace Ff.DevSuite
                 CommandsApi.RegisterValuesProvider(valueProvider, true);
             }
 
-            RegisterPerformancePanelGraph(new FrameTimeGraphDataProvider());
-            RegisterPerformancePanelGraph(new CpuFrameTimeGraphDataProvider());
-            RegisterPerformancePanelGraph(new GpuFrameTimeGraphDataProvider());
-            RegisterPerformancePanelGraph(new CpuRenderThreadFrameTimeGraphDataProvider());
-            RegisterPerformancePanelGraph(new FpsGraphDataProvider());
-            RegisterPerformancePanelGraph(new GcMemoryGraphDataProvider());
-            RegisterPerformancePanelGraph(new SystemRamGraphDataProvider());
-            RegisterPerformancePanelGraph(new DrawCallsCountDataProvider());
-            RegisterPerformancePanelGraph(new BatchesCountDataProvider());
-            RegisterPerformancePanelGraph(new TrianglesCountDataProvider());
+            RegisterPerformancePanelGraph(new FrameTimeGraphDataProvider(), FrameTimeGraphDataProvider.CollapsedByDefault);
+            RegisterPerformancePanelGraph(new CpuFrameTimeGraphDataProvider(), CpuFrameTimeGraphDataProvider.CollapsedByDefault);
+            RegisterPerformancePanelGraph(new GpuFrameTimeGraphDataProvider(), GpuFrameTimeGraphDataProvider.CollapsedByDefault);
+            RegisterPerformancePanelGraph(new CpuRenderThreadFrameTimeGraphDataProvider(), CpuRenderThreadFrameTimeGraphDataProvider.CollapsedByDefault);
+            RegisterPerformancePanelGraph(new FpsGraphDataProvider(), FpsGraphDataProvider.CollapsedByDefault);
+            RegisterPerformancePanelGraph(new GcMemoryGraphDataProvider(), GcMemoryGraphDataProvider.CollapsedByDefault);
+            RegisterPerformancePanelGraph(new SystemRamGraphDataProvider(), SystemRamGraphDataProvider.CollapsedByDefault);
+            RegisterPerformancePanelGraph(new DrawCallsCountDataProvider(), DrawCallsCountDataProvider.CollapsedByDefault);
+            RegisterPerformancePanelGraph(new BatchesCountDataProvider(), BatchesCountDataProvider.CollapsedByDefault);
+            RegisterPerformancePanelGraph(new TrianglesCountDataProvider(), TrianglesCountDataProvider.CollapsedByDefault);
 
             if (registerCommonCommands)
             {
@@ -359,13 +360,35 @@ namespace Ff.DevSuite
             OnChanged?.Invoke();
         }
 
-        public void RegisterPerformancePanelGraph(BaseGraphDataProvider provider)
+        private readonly Dictionary<Type, bool> _performancePanelDefaultCollapsed = new();
+
+        public void RegisterPerformancePanelGraph(BaseGraphDataProvider provider, bool collapsedByDefault = false)
         {
             if (_performanceGraphReferenceValues.TryGetValue(provider.GetType(), out var refValue))
             {
                 provider.ReferenceValueProvider = refValue;
             }
+            var type = provider.GetType();
+            _performancePanelDefaultCollapsed[type] = collapsedByDefault;
             _performancePanelProviders.Add(provider);
+            _onPerformancePanelDispatcher.Dispatch();
+        }
+
+        public bool IsPerformanceGraphCollapsed(BaseGraphDataProvider provider)
+        {
+            return CheckSettingsInitialized(true) && Settings.Value.PerformanceGraphCollapsedState.TryGetValue(provider.GetType().Name, out var collapsed)
+                ? collapsed
+                : _performancePanelDefaultCollapsed.GetValueOrDefault(provider.GetType(), false);
+        }
+
+        public void SetPerformanceGraphCollapsed(BaseGraphDataProvider provider, bool collapsed)
+        {
+            if (!CheckSettingsInitialized())
+            {
+                return;
+            }
+            Settings.Value.PerformanceGraphCollapsedState[provider.GetType().Name] = collapsed;
+            Settings.ForceSave();
             _onPerformancePanelDispatcher.Dispatch();
         }
 
@@ -1868,6 +1891,10 @@ namespace Ff.DevSuite
             {
                 for (var i = 0; i < PerformancePanelProviders.Count; i++) // foreach here causes allocations
                 {
+                    if (IsPerformanceGraphCollapsed(PerformancePanelProviders[i]))
+                    {
+                        continue;
+                    }
                     PerformancePanelProviders[i].Process();
                 }
 
@@ -1969,6 +1996,15 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(15)][Key(15)] public bool HierarchySearchByName { get; set; } = true;
         [DataMember][MemoryPackOrder(16)][Key(16)] public bool HierarchySearchByType { get; set; } = true;
         [DataMember][MemoryPackOrder(17)][Key(17)] public bool HierarchyKeepDimmed { get; set; } = true;
+        [DataMember][MemoryPackOrder(18)][Key(18)] public Dictionary<string, bool> PerformanceGraphCollapsedState { get; set; } = new();
+
+        public void InitializeDefaultsIfNeeded()
+        {
+            PinnedItems ??= new();
+            PerformanceGraphCollapsedState ??= new();
+            CollapsedGroups ??= new();
+            HiddenLogSeverity ??= new();
+        }
     }
 
     [MemoryPackable(GenerateType.VersionTolerant)]

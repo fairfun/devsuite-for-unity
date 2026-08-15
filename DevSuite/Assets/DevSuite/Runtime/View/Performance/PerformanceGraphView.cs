@@ -10,6 +10,7 @@ namespace Ff.DevSuite.View
     {
         private const int MaxValuesCount = BaseGraphDataProvider.CounterLength;
         private BaseGraphDataProvider _dataProvider;
+        private DevSuiteContext _context;
         private readonly BaseGraphDataProvider.DataPoint[] _dataPointsBuffer = new BaseGraphDataProvider.DataPoint[MaxValuesCount];
         private int _dataPointsCount;
         private int _dataPointsHead;
@@ -24,9 +25,10 @@ namespace Ff.DevSuite.View
         private readonly Label _infoLabel;
         private float _lastUpdateTime = -1f;
 
-        public PerformanceGraphView(BaseGraphDataProvider dataProvider)
+        public PerformanceGraphView(BaseGraphDataProvider dataProvider, DevSuiteContext context = null)
         {
             _dataProvider = dataProvider;
+            _context = context;
 
             AddToClassList("graph-view");
             style.overflow = Overflow.Hidden;
@@ -38,14 +40,104 @@ namespace Ff.DevSuite.View
             _infoLabel.AddToClassList("ff-performance-graph-info");
             Add(_infoLabel);
 
+            RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button == 0 && _context != null)
+                {
+                    bool isCollapsed = _context.IsPerformanceGraphCollapsed(_dataProvider);
+                    _context.SetPerformanceGraphCollapsed(_dataProvider, !isCollapsed);
+                    UpdateViewState();
+                    evt.StopPropagation();
+                }
+            });
+
             Subscribe();
             generateVisualContent += OnGenerateVisualContent;
+            UpdateViewState();
+        }
+
+        public void Initialize(DevSuiteContext context)
+        {
+            _context = context;
+            UpdateViewState();
+        }
+
+        internal void UpdateViewState()
+        {
+            bool isCollapsed = _context != null && _context.IsPerformanceGraphCollapsed(_dataProvider);
+            if (isCollapsed)
+            {
+                AddToClassList("graph-view--collapsed");
+                _infoLabel.text = $"+ {_dataProvider.Label}";
+            }
+            else
+            {
+                RemoveFromClassList("graph-view--collapsed");
+                if (_dataPointsCount > 0)
+                {
+                    var lastPoint = _dataPointsBuffer[(_dataPointsHead - 1 + MaxValuesCount) % MaxValuesCount];
+                    UpdateInfoLabel(lastPoint);
+                }
+                else
+                {
+                    _infoLabel.text = $"- {_dataProvider.Label}";
+                }
+            }
+            MarkDirtyRepaint();
         }
 
         private StringBuilder _labelStringBuilder = new();
         private (double? val, string str) _referenceValueCached;
+
+        private void UpdateInfoLabel(BaseGraphDataProvider.DataPoint point)
+        {
+            var min = point.MinValue;
+            var max = point.MaxValue;
+            var average = point.AverageValue;
+            var reference = point.ReferenceValue;
+
+            _labelStringBuilder.Clear();
+            _labelStringBuilder.Append("- ");
+            _labelStringBuilder.Append(_dataProvider.Label);
+            if (reference != null)
+            {
+                _labelStringBuilder.Append(" / ");
+                if (_referenceValueCached.val != reference)
+                    _referenceValueCached = (reference, reference.Value.ToString("0.0"));
+                _labelStringBuilder.Append(_referenceValueCached.str);
+                _labelStringBuilder.Append(' ');
+                _labelStringBuilder.AppendLine(_dataProvider.UnitName);
+            }
+            else
+            {
+                _labelStringBuilder.Append('\n');
+            }
+
+            _labelStringBuilder.Append("Min: ");
+            _labelStringBuilder.Append(min.ToString("0.0"));
+            _labelStringBuilder.Append(' ');
+            _labelStringBuilder.AppendLine(_dataProvider.UnitName);
+
+            _labelStringBuilder.Append("Avg: ");
+            _labelStringBuilder.Append(average.ToString("0.0"));
+            _labelStringBuilder.Append(' ');
+            _labelStringBuilder.AppendLine(_dataProvider.UnitName);
+
+            _labelStringBuilder.Append("Max: ");
+            _labelStringBuilder.Append(max.ToString("0.0"));
+            _labelStringBuilder.Append(' ');
+            _labelStringBuilder.Append(_dataProvider.UnitName);
+
+            _infoLabel.text = _labelStringBuilder.ToString();
+        }
+
         internal void AddValue(BaseGraphDataProvider.DataPoint point)
         {
+            if (_context != null && _context.IsPerformanceGraphCollapsed(_dataProvider))
+            {
+                return;
+            }
+
             _dataPointsBuffer[_dataPointsHead] = point;
             _dataPointsHead = (_dataPointsHead + 1) % MaxValuesCount;
             if (_dataPointsCount < MaxValuesCount)
@@ -56,44 +148,7 @@ namespace Ff.DevSuite.View
             if (Time.unscaledTime - _lastUpdateTime > 0.5f)
             {
                 _lastUpdateTime = Time.unscaledTime;
-
-                var min = point.MinValue;
-                var max = point.MaxValue;
-                var average = point.AverageValue;
-                var reference = point.ReferenceValue;
-
-                _labelStringBuilder.Clear();
-                _labelStringBuilder.Append(_dataProvider.Label);
-                if (reference != null)
-                {
-                    _labelStringBuilder.Append(" / ");
-                    if (_referenceValueCached.val != reference)
-                        _referenceValueCached = (reference, reference.Value.ToString("0.0"));
-                    _labelStringBuilder.Append(_referenceValueCached.str);
-                    _labelStringBuilder.Append(' ');
-                    _labelStringBuilder.AppendLine(_dataProvider.UnitName);
-                }
-                else
-                {
-                    _labelStringBuilder.Append('\n');
-                }
-
-                _labelStringBuilder.Append("Min: ");
-                _labelStringBuilder.Append(min.ToString("0.0"));
-                _labelStringBuilder.Append(' ');
-                _labelStringBuilder.AppendLine(_dataProvider.UnitName);
-
-                _labelStringBuilder.Append("Avg: ");
-                _labelStringBuilder.Append(average.ToString("0.0"));
-                _labelStringBuilder.Append(' ');
-                _labelStringBuilder.AppendLine(_dataProvider.UnitName);
-
-                _labelStringBuilder.Append("Max: ");
-                _labelStringBuilder.Append(max.ToString("0.0"));
-                _labelStringBuilder.Append(' ');
-                _labelStringBuilder.AppendLine(_dataProvider.UnitName);
-
-                _infoLabel.text = _labelStringBuilder.ToString();
+                UpdateInfoLabel(point);
             }
 
             MarkDirtyRepaint();
@@ -101,6 +156,11 @@ namespace Ff.DevSuite.View
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
+            if (_context != null && _context.IsPerformanceGraphCollapsed(_dataProvider))
+            {
+                return;
+            }
+
             if (_dataPointsCount == 0)
             {
                 return;

@@ -5,6 +5,8 @@ namespace Ff.DevSuite.Performance
 {
     public class DrawCallsCountDataProvider : BaseGraphDataProvider
     {
+        public static new bool CollapsedByDefault = false;
+
         internal override string Label => "Draw Calls";
         internal override string UnitName => "";
 

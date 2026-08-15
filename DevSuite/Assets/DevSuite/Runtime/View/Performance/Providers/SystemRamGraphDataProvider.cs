@@ -4,6 +4,7 @@ namespace Ff.DevSuite.Performance
 {
     public class SystemRamGraphDataProvider : BaseGraphDataProvider
     {
+        public static new bool CollapsedByDefault = false;
 
         internal override string Label => "System RAM";
         internal override string UnitName => "MB";
