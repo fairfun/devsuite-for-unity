@@ -801,8 +801,38 @@ namespace Ff.DevSuite
                 return;
             }
 
-            var localPos = parent.WorldToLocal(mousePosition);
-            var parentWidth = parent.layout.width;
+            VisualElement topRoot = parent;
+            while (topRoot.parent != null)
+            {
+                topRoot = topRoot.parent;
+            }
+
+            var rootWidth = topRoot.layout.width;
+            var rootHeight = topRoot.layout.height;
+
+            if (float.IsNaN(rootWidth) || rootWidth <= 0)
+            {
+                if (topRoot.panel != null && !float.IsNaN(topRoot.panel.visualTree.layout.width) && topRoot.panel.visualTree.layout.width > 0)
+                {
+                    rootWidth = topRoot.panel.visualTree.layout.width;
+                }
+                else
+                {
+                    rootWidth = parent.layout.width;
+                }
+            }
+
+            if (float.IsNaN(rootHeight) || rootHeight <= 0)
+            {
+                if (topRoot.panel != null && !float.IsNaN(topRoot.panel.visualTree.layout.height) && topRoot.panel.visualTree.layout.height > 0)
+                {
+                    rootHeight = topRoot.panel.visualTree.layout.height;
+                }
+                else
+                {
+                    rootHeight = parent.layout.height;
+                }
+            }
 
             var tooltipWidth = tooltipLabel.layout.width;
             if (float.IsNaN(tooltipWidth) || tooltipWidth <= 0)
@@ -815,16 +845,36 @@ namespace Ff.DevSuite
                 }
             }
 
-            var targetX = localPos.x + 12;
-            if (targetX + tooltipWidth > parentWidth)
+            var tooltipHeight = tooltipLabel.layout.height;
+            if (float.IsNaN(tooltipHeight) || tooltipHeight <= 0)
             {
-                targetX = localPos.x - tooltipWidth - 12;
+                tooltipHeight = tooltipLabel.resolvedStyle.height;
+                if (float.IsNaN(tooltipHeight) || tooltipHeight <= 0)
+                {
+                    tooltipHeight = 24f;
+                }
             }
 
-            targetX = Mathf.Clamp(targetX, 4f, Mathf.Max(4f, parentWidth - tooltipWidth - 4f));
+            var mouseInTopRoot = topRoot.WorldToLocal(mousePosition);
 
-            tooltipLabel.style.left = targetX;
-            tooltipLabel.style.top = localPos.y + 12;
+            var targetX = mouseInTopRoot.x + 12f;
+            if (targetX + tooltipWidth > rootWidth - 4f)
+            {
+                targetX = mouseInTopRoot.x - tooltipWidth - 12f;
+            }
+            targetX = Mathf.Clamp(targetX, 4f, Mathf.Max(4f, rootWidth - tooltipWidth - 4f));
+
+            var targetY = mouseInTopRoot.y + 12f;
+            if (targetY + tooltipHeight > rootHeight - 4f)
+            {
+                targetY = mouseInTopRoot.y - tooltipHeight - 12f;
+            }
+            targetY = Mathf.Clamp(targetY, 4f, Mathf.Max(4f, rootHeight - tooltipHeight - 4f));
+
+            var targetInParent = topRoot.ChangeCoordinatesTo(parent, new Vector2(targetX, targetY));
+
+            tooltipLabel.style.left = targetInParent.x;
+            tooltipLabel.style.top = targetInParent.y;
         }
 
         private static void HideTooltip(ref VisualElement currentTooltipElement, ref string currentTooltipText, IVisualElementScheduledItem tooltipTask, Label tooltipLabel)
