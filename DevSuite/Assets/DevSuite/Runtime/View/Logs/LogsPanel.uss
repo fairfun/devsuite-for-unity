@@ -39,6 +39,7 @@
 
 .logs-filter-icon {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-text-generator: standard;
     color: var(--text-label-color);
     font-size: 10px;
     padding: 0;
@@ -89,6 +90,7 @@
 
 .logs-severity-icon {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-text-generator: standard;
     font-size: 12px;
     margin-right: 4px;
     padding: 0;
@@ -106,6 +108,7 @@
 
 .logs-icon-btn {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-text-generator: standard;
     font-size: 14px;
     width: 28px;
     height: 24px;
@@ -181,6 +184,7 @@
 
 .log-item-copy-btn {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-text-generator: standard;
     width: 22px;
     height: 22px;
     padding: 0;

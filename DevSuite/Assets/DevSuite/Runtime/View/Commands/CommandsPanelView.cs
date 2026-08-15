@@ -781,6 +781,7 @@ namespace Ff.DevSuite.View
             if (fontAsset != null)
             {
                 element.style.unityFontDefinition = FontDefinition.FromSDFFont(fontAsset);
+                element.AddToClassList("ff-custom-font-resource");
                 return;
             }
 
@@ -788,6 +789,7 @@ namespace Ff.DevSuite.View
             if (font != null)
             {
                 element.style.unityFontDefinition = FontDefinition.FromFont(font);
+                element.AddToClassList("ff-custom-font-resource");
             }
         }
 

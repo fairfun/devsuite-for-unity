@@ -48,6 +48,7 @@
 
 .hierarchy-filter-icon {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-text-generator: standard;
     color: var(--text-label-color);
     font-size: 10px;
     padding: 0;
@@ -102,6 +103,7 @@
 
 .hierarchy-icon-btn {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-text-generator: standard;
 }
 
 .hierarchy-regex-btn {
@@ -144,6 +146,7 @@
 
 .hierarchy-foldout-btn {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-text-generator: standard;
     width: 12px;
     height: 16px;
     margin-right: 0;

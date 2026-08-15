@@ -120,6 +120,7 @@
 
 .ff-toggle-icon {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-text-generator: standard;
     color: var(--text-color);
     font-size: 11px;
     -unity-font-style: bold;
@@ -131,4 +132,8 @@
 
 .ff-toggle:checked .ff-toggle-icon {
     display: flex;
+}
+
+.ff-custom-font-resource {
+    -unity-text-generator: standard;
 }
