@@ -17,9 +17,9 @@
 
 
 .graph-view {
-    height: 80px;
+    height: 56px;
     width: 100%;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     flex-direction: row;
     align-items: flex-end;
     background-color: rgba(0, 0, 0, 0.25);
