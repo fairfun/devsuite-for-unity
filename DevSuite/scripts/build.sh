@@ -84,14 +84,14 @@ fi
 echo "Found Unity Executable: $UNITY_PATH"
 
 # 3. Run Unity build
-LOG_FILE="$PROJECT_DIR/Builds/unity_build.log"
-mkdir -p "$PROJECT_DIR/Builds"
+LOG_FILE="$PROJECT_DIR/Build/unity_build.log"
+mkdir -p "$PROJECT_DIR/Build"
 
-OUTPUT_PATH="Builds/$TARGET"
+OUTPUT_PATH="Build/$TARGET"
 if [ "$TARGET" = "Android" ]; then
-    OUTPUT_PATH="Builds/Android/build.apk"
+    OUTPUT_PATH="Build/Android/build.apk"
 elif [ "$TARGET" = "StandaloneLinux64" ]; then
-    OUTPUT_PATH="Builds/Linux/xArena.x86_64"
+    OUTPUT_PATH="Build/Linux/xArena.x86_64"
 fi
 
 echo "Starting build for target: $TARGET..."
