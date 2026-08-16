@@ -16,6 +16,7 @@ namespace Ff.DevSuite.View
         private readonly Button _refreshBtn;
         private readonly Button _autoRefreshBtn;
         private readonly Button _autoPauseBtn;
+        private readonly Button _unselectAllBtn;
         private readonly Button _copyBtn;
         private readonly Toggle _goActivityToggle;
         private EventCallback<ChangeEvent<bool>> _goActivityCallback;
@@ -166,6 +167,16 @@ namespace Ff.DevSuite.View
                 };
             }
 
+            _unselectAllBtn = root.Q<Button>("unselectAllBtn");
+            if (_unselectAllBtn != null)
+            {
+                _unselectAllBtn.clicked += () =>
+                {
+                    _context.SetSelectedGameObjects(null);
+                    UpdateButtonStates();
+                };
+            }
+
             _copyBtn = root.Q<Button>("copyBtn");
             if (_copyBtn != null)
             {
@@ -213,6 +224,7 @@ namespace Ff.DevSuite.View
         {
             _autoRefreshBtn?.EnableInClassList("active", _context.InspectorAutoRefresh);
             _autoPauseBtn?.EnableInClassList("active", _context.InspectorAutoPause);
+            _unselectAllBtn?.EnableInClassList("has-selection", _context.SelectedGameObjects.Count > 0);
         }
 
         private void UpdateInspector()

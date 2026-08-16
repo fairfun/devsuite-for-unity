@@ -197,6 +197,19 @@
     margin-left: 11px;
 }
 
+.inspector-unselect-all-btn {
+    margin-left: 11px;
+}
+
+.inspector-unselect-all-btn.has-selection {
+    -unity-font-style: bold;
+    color: rgb(255, 204, 0);
+}
+
+.inspector-unselect-all-btn.has-selection:hover {
+    color: rgb(255, 220, 50);
+}
+
 .inspector-go-header {
     background-color: rgba(60, 60, 60, 0.85);
     border-bottom-width: 0;
