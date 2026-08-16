@@ -484,6 +484,9 @@ namespace Ff.DevSuite.View
             return selfMatches || anyChildMatches;
         }
 
+        private static readonly List<Component> _componentCache = new();
+        private static readonly List<string> _typeNamesCache = new();
+
         private bool Matches(GameObject go, Regex regex, bool searchByName, bool searchByType)
         {
             if (searchByName)
@@ -496,14 +499,19 @@ namespace Ff.DevSuite.View
 
             if (searchByType)
             {
-                var components = go.GetComponents<Component>();
-                foreach (var comp in components)
+                _componentCache.Clear();
+                go.GetComponents(typeof(Component), _componentCache);
+                for (var i = 0; i < _componentCache.Count; i++)
                 {
+                    var comp = _componentCache[i];
                     if (comp != null && regex.IsMatch(comp.GetType().Name))
                     {
+                        _componentCache.Clear();
                         return true;
                     }
                 }
+
+                _componentCache.Clear();
             }
 
             return false;
@@ -550,7 +558,7 @@ namespace Ff.DevSuite.View
             foldoutBtn.AddToClassList("hierarchy-foldout-btn");
 
             var isExpanded = !_collapsedSceneNames.Contains(sceneName);
-            foldoutBtn.text = isExpanded ? "\uf0d7" : "\uf0da"; // caret down / caret right
+            foldoutBtn.text = isExpanded ? "\uf0d7" : "\uf0da";
             row.Add(foldoutBtn);
 
             var label = new Label
@@ -576,6 +584,7 @@ namespace Ff.DevSuite.View
                         {
                             _collapsedSceneNames.Remove(sceneName);
                         }
+
                         RebuildTree();
                         evt.StopPropagation();
                     }
@@ -594,21 +603,22 @@ namespace Ff.DevSuite.View
                 if (!_collapsedSceneNames.Contains(sceneName))
                 {
                     _collapsedSceneNames.Add(sceneName);
-                    foldoutBtn.text = "\uf0da";
-                    childrenContainer.style.display = DisplayStyle.None;
                 }
                 else
                 {
                     _collapsedSceneNames.Remove(sceneName);
-                    foldoutBtn.text = "\uf0d7";
-                    childrenContainer.style.display = DisplayStyle.Flex;
                 }
+
+                RebuildTree();
             };
 
-            var rootObjects = scene.GetRootGameObjects();
-            foreach (var go in rootObjects)
+            if (isExpanded)
             {
-                RenderGameObjectNode(go, 1, childrenContainer);
+                var rootObjects = scene.GetRootGameObjects();
+                foreach (var go in rootObjects)
+                {
+                    RenderGameObjectNode(go, 1, childrenContainer);
+                }
             }
         }
 
@@ -623,7 +633,6 @@ namespace Ff.DevSuite.View
             var isMatching = _searchRegex == null || _matchingInstanceIds.Contains(instanceId);
             var hasMatchingDescendant = _searchRegex == null || _descendantMatchingInstanceIds.Contains(instanceId);
 
-            // Hide mode: If search active, hide if it doesn't match and has no matching descendants
             if (_searchRegex != null && !_keepDimmed && !isMatching && !hasMatchingDescendant)
             {
                 return;
@@ -642,6 +651,7 @@ namespace Ff.DevSuite.View
             {
                 row.AddToClassList("inactive");
             }
+
             row.style.paddingLeft = 6 + (depth * 16);
 
             if (_searchRegex != null && _keepDimmed)
@@ -676,6 +686,7 @@ namespace Ff.DevSuite.View
                 foldoutBtn.text = "";
                 foldoutBtn.style.visibility = Visibility.Hidden;
             }
+
             row.Add(foldoutBtn);
 
             var activityToggle = new Toggle
@@ -693,6 +704,7 @@ namespace Ff.DevSuite.View
                 icon.AddToClassList("ff-toggle-icon");
                 activityCheckmark.Add(icon);
             }
+
             activityToggle.RegisterValueChangedCallback(evt =>
             {
                 if (go != null)
@@ -708,6 +720,7 @@ namespace Ff.DevSuite.View
                     }
                 }
             });
+
             var label = new Label
             {
                 name = "itemLabel",
@@ -743,15 +756,13 @@ namespace Ff.DevSuite.View
                 if (_expandedGameObjectInstanceIds.Contains(instanceId))
                 {
                     _expandedGameObjectInstanceIds.Remove(instanceId);
-                    foldoutBtn.text = "\uf0da";
-                    childrenContainer.style.display = DisplayStyle.None;
                 }
                 else
                 {
                     _expandedGameObjectInstanceIds.Add(instanceId);
-                    foldoutBtn.text = "\uf0d7";
-                    childrenContainer.style.display = DisplayStyle.Flex;
                 }
+
+                RebuildTree();
             };
 
             row.RegisterCallback<ClickEvent>(
@@ -767,6 +778,7 @@ namespace Ff.DevSuite.View
                         {
                             _expandedGameObjectInstanceIds.Add(instanceId);
                         }
+
                         RebuildTree();
                         evt.StopPropagation();
                     }
@@ -811,6 +823,7 @@ namespace Ff.DevSuite.View
                                 {
                                     _context.SelectedGameObject = go;
                                 }
+
                                 _context.InspectorVisible = true;
 #if UNITY_EDITOR
                                 if (isCtrlHeld)
@@ -824,6 +837,7 @@ namespace Ff.DevSuite.View
                                     {
                                         currentSelection.Add(go);
                                     }
+
                                     UnityEditor.Selection.objects = currentSelection.ToArray();
                                 }
                                 else
@@ -837,7 +851,7 @@ namespace Ff.DevSuite.View
                 }
             );
 
-            if (hasChildren)
+            if (hasChildren && isExpanded)
             {
                 for (var i = 0; i < go.transform.childCount; i++)
                 {
@@ -1107,23 +1121,28 @@ namespace Ff.DevSuite.View
                 return;
             }
 
-            var indent = new string(' ', depth * 2);
-            var components = go.GetComponents<Component>();
-            var typeNames = new List<string>();
-            foreach (var comp in components)
+            var indent = new string(' ', depth * 4);
+            _componentCache.Clear();
+            _typeNamesCache.Clear();
+            go.GetComponents(typeof(Component), _componentCache);
+            for (var i = 0; i < _componentCache.Count; i++)
             {
+                var comp = _componentCache[i];
                 if (comp == null)
                 {
                     continue;
                 }
+
                 var typeName = comp.GetType().Name;
-                if (!typeNames.Contains(typeName))
+                if (!_typeNamesCache.Contains(typeName))
                 {
-                    typeNames.Add(typeName);
+                    _typeNamesCache.Add(typeName);
                 }
             }
 
-            var typesStr = typeNames.Count > 0 ? $" ({string.Join(", ", typeNames)})" : "";
+            var typesStr = _typeNamesCache.Count > 0 ? $" ({string.Join(", ", _typeNamesCache)})" : "";
+            _componentCache.Clear();
+            _typeNamesCache.Clear();
             var disabledStr = !go.activeSelf ? " (inactive)" : "";
             sb.AppendLine($"{indent}{go.name}{typesStr}{disabledStr}");
 
@@ -1166,36 +1185,64 @@ namespace Ff.DevSuite.View
 
         private static string GetGameObjectKind(GameObject go)
         {
-            if (go == null) return null;
-
-            if (go.GetComponent<UIDocument>() != null)
+            if (go == null)
             {
-                return "UI Toolkit";
+                return null;
             }
 
-            if (go.GetComponent<Canvas>() != null ||
-                go.GetComponent<UnityEngine.UI.Graphic>() != null ||
-                go.GetComponent<CanvasRenderer>() != null ||
-                go.transform is RectTransform)
+            if (go.transform is RectTransform)
             {
                 return "UI";
             }
 
-            if (go.GetComponent<Collider2D>() != null ||
-                go.GetComponent<Rigidbody2D>() != null ||
-                go.GetComponent<SpriteRenderer>() != null)
+            _componentCache.Clear();
+            go.GetComponents(typeof(Component), _componentCache);
+
+            var has2D = false;
+            var has3D = false;
+            var hasUI = false;
+
+            for (var i = 0; i < _componentCache.Count; i++)
+            {
+                var comp = _componentCache[i];
+                if (comp == null)
+                {
+                    continue;
+                }
+
+                if (comp is UIDocument)
+                {
+                    _componentCache.Clear();
+                    return "UI Toolkit";
+                }
+
+                if (comp is Canvas or UnityEngine.UI.Graphic or CanvasRenderer)
+                {
+                    hasUI = true;
+                }
+                else if (comp is Collider2D or Rigidbody2D or SpriteRenderer)
+                {
+                    has2D = true;
+                }
+                else if (comp is Collider or Rigidbody or Renderer or MeshFilter or Camera or Light or Terrain or ParticleSystem)
+                {
+                    has3D = true;
+                }
+            }
+
+            _componentCache.Clear();
+
+            if (hasUI)
+            {
+                return "UI";
+            }
+
+            if (has2D)
             {
                 return "2D";
             }
 
-            if (go.GetComponent<Collider>() != null ||
-                go.GetComponent<Rigidbody>() != null ||
-                go.GetComponent<Renderer>() != null ||
-                go.GetComponent<MeshFilter>() != null ||
-                go.GetComponent<Camera>() != null ||
-                go.GetComponent<Light>() != null ||
-                go.GetComponent<Terrain>() != null ||
-                go.GetComponent<ParticleSystem>() != null)
+            if (has3D)
             {
                 return "3D";
             }
@@ -1203,13 +1250,16 @@ namespace Ff.DevSuite.View
             return null;
         }
 
-        private static string GetBadgeClassForKind(string kind) => kind switch
+        private static string GetBadgeClassForKind(string kind)
         {
-            "UI Toolkit" => "badge-uitoolkit",
-            "UI" => "badge-ugui",
-            "2D" => "badge-2d",
-            "3D" => "badge-3d",
-            _ => "badge-default"
-        };
+            return kind switch
+            {
+                "UI Toolkit" => "badge-uitoolkit",
+                "UI" => "badge-ugui",
+                "2D" => "badge-2d",
+                "3D" => "badge-3d",
+                _ => "badge-default"
+            };
+        }
     }
 }
