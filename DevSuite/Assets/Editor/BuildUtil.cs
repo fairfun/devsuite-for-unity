@@ -10,25 +10,25 @@ public static class BuildUtil
     [MenuItem("Build/Build WebGL")]
     public static void BuildWebGL()
     {
-        PerformBuild(BuildTarget.WebGL, "Builds/WebGL");
+        PerformBuild(BuildTarget.WebGL, "Build/WebGL");
     }
 
     [MenuItem("Build/Build Linux")]
     public static void BuildLinux()
     {
-        PerformBuild(BuildTarget.StandaloneLinux64, "Builds/Linux");
+        PerformBuild(BuildTarget.StandaloneLinux64, "Build/Linux");
     }
 
     [MenuItem("Build/Build Android")]
     public static void BuildAndroid()
     {
-        PerformBuild(BuildTarget.Android, "Builds/Android");
+        PerformBuild(BuildTarget.Android, "Build/Android");
     }
 
     public static void Build()
     {
         var target = BuildTarget.WebGL;
-        var outputPath = "Builds/WebGL";
+        var outputPath = "Build/WebGL";
 
         var args = Environment.GetCommandLineArgs();
         for (var i = 0; i < args.Length; i++)
