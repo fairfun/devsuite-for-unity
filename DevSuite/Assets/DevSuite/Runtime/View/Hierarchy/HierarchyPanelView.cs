@@ -41,13 +41,17 @@ namespace Ff.DevSuite.View
         private GameObject _selectionAnchor;
 
         private Regex _searchRegex;
+        private VisualElement _pickOverlay;
+        private StyleSheet _uss;
 
         public HierarchyPanelView(VisualTreeAsset uxml, StyleSheet uss)
         {
+            _uss = uss;
             uxml.CloneTree(this);
             styleSheets.Add(uss);
 
             AddToClassList("ff-panel");
+            RegisterCallback<DetachFromPanelEvent>(_ => HidePickOverlay());
 
             var root = this.Q<VisualElement>("hierarchy-panel-root") ?? this;
 
@@ -186,6 +190,10 @@ namespace Ff.DevSuite.View
                 _context.OnPickModeChanged += HandlePickModeChanged;
 
                 _pickBtn.EnableInClassList("active", _context.PickModeActive);
+                if (_context.PickModeActive)
+                {
+                    ShowPickOverlay();
+                }
 
                 _searchByRegex = _context.HierarchySearchRegex;
                 _searchByName = _context.HierarchySearchByName;
@@ -200,6 +208,8 @@ namespace Ff.DevSuite.View
 
         public void Reset()
         {
+            HidePickOverlay();
+
             if (_context != null)
             {
                 _context.OnChanged -= HandleContextChanged;
@@ -212,6 +222,91 @@ namespace Ff.DevSuite.View
         private void HandlePickModeChanged(bool active)
         {
             _pickBtn.EnableInClassList("active", active);
+            if (active)
+            {
+                ShowPickOverlay();
+            }
+            else
+            {
+                HidePickOverlay();
+            }
+        }
+
+        private static Texture2D _checkerTexture;
+
+        private static Texture2D GetOrCreateCheckerTexture()
+        {
+            if (_checkerTexture != null)
+            {
+                return _checkerTexture;
+            }
+
+            const int tileSize = 12;
+            const int textureSize = tileSize * 2; // 24x24
+            _checkerTexture = new Texture2D(textureSize, textureSize, TextureFormat.RGBA32, false)
+            {
+                name = "HierarchyPickCheckerboard",
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Repeat,
+                hideFlags = HideFlags.DontSave
+            };
+
+            var colorBlack = new Color(0f, 0f, 0f, 0.06f);
+            var colorWhite = new Color(1f, 1f, 1f, 0.06f);
+            var pixels = new Color[textureSize * textureSize];
+
+            for (int y = 0; y < textureSize; y++)
+            {
+                for (int x = 0; x < textureSize; x++)
+                {
+                    bool isBlack = ((x / tileSize) + (y / tileSize)) % 2 == 0;
+                    pixels[y * textureSize + x] = isBlack ? colorBlack : colorWhite;
+                }
+            }
+
+            _checkerTexture.SetPixels(pixels);
+            _checkerTexture.Apply();
+            return _checkerTexture;
+        }
+
+        private void ShowPickOverlay()
+        {
+            if (_pickOverlay == null)
+            {
+                _pickOverlay = new VisualElement();
+                _pickOverlay.name = "hierarchy-pick-overlay";
+                if (_uss != null)
+                {
+                    _pickOverlay.styleSheets.Add(_uss);
+                }
+                _pickOverlay.AddToClassList("hierarchy-pick-overlay");
+                _pickOverlay.style.backgroundImage = new StyleBackground(GetOrCreateCheckerTexture());
+                _pickOverlay.style.backgroundRepeat = new BackgroundRepeat(Repeat.Repeat, Repeat.Repeat);
+                _pickOverlay.style.backgroundSize = new BackgroundSize(new Length(24, LengthUnit.Pixel), new Length(24, LengthUnit.Pixel));
+                _pickOverlay.pickingMode = PickingMode.Ignore;
+            }
+
+            var topRoot = DevSuiteUtils.GetTopRoot(this) ?? this;
+            if (_pickOverlay.parent != topRoot)
+            {
+                _pickOverlay.RemoveFromHierarchy();
+                topRoot.Insert(0, _pickOverlay);
+            }
+
+            _pickOverlay.style.display = DisplayStyle.Flex;
+            _pickOverlay.SendToBack();
+        }
+
+        private void HidePickOverlay()
+        {
+            if (_pickOverlay != null)
+            {
+                _pickOverlay.style.display = DisplayStyle.None;
+                if (_pickOverlay.parent != null)
+                {
+                    _pickOverlay.RemoveFromHierarchy();
+                }
+            }
         }
 
         private void HandleContextChanged()
