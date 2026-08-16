@@ -107,6 +107,8 @@ namespace Ff.DevSuite
         internal static string NullRepresentation { get; set; } = "null";
 
         internal ValueStack<bool> Block { get; } = new();
+        internal readonly ValueStack<float> _pauseHandlerGameSpeed = new(-1f, 0);
+        private float? _savedGameSpeed;
 
         private event Action OnApiCalled;
         internal event Action OnChanged;
@@ -222,6 +224,7 @@ namespace Ff.DevSuite
 #if UNITY_EDITOR
             SyncEditorSelection();
 #endif
+            UpdateInspectorAutoPause();
             _onChangedDispatcher.Dispatch();
         }
 
@@ -242,6 +245,7 @@ namespace Ff.DevSuite
 #if UNITY_EDITOR
             SyncEditorSelection();
 #endif
+            UpdateInspectorAutoPause();
             _onChangedDispatcher.Dispatch();
         }
 
@@ -270,6 +274,7 @@ namespace Ff.DevSuite
 #if UNITY_EDITOR
                 SyncEditorSelection();
 #endif
+                UpdateInspectorAutoPause();
                 _onChangedDispatcher.Dispatch();
             }
         }
@@ -288,9 +293,35 @@ namespace Ff.DevSuite
                 }
 
                 _pickModeActive = value;
+                UpdatePickModePause();
                 OnPickModeChanged?.Invoke(_pickModeActive);
                 _onChangedDispatcher.Dispatch();
             }
+        }
+
+        private void UpdatePickModePause()
+        {
+            _pauseHandlerGameSpeed.Toggle(0f, 1, _pickModeActive, this);
+        }
+
+        private void UpdateInspectorAutoPause()
+        {
+            var hasSelected = false;
+            for (var i = _selectedGameObjects.Count - 1; i >= 0; i--)
+            {
+                var go = _selectedGameObjects[i];
+                if (go == null)
+                {
+                    _selectedGameObjects.RemoveAt(i);
+                }
+                else
+                {
+                    hasSelected = true;
+                }
+            }
+
+            var shouldPause = InspectorAutoPause && hasSelected;
+            _pauseHandlerGameSpeed.Toggle(0f, 2, shouldPause, this);
         }
 
         private readonly CommandCategory _defaultCategory = new(DefaultGroupId, -1f, null);
@@ -319,6 +350,26 @@ namespace Ff.DevSuite
             _onChangedDispatcher = new BlockableDispatcher(Block, () => OnChanged?.Invoke());
             _onEveryFrameDispatcher = new BlockableDispatcher(Block, () => OnEveryFrame?.Invoke());
             _onPerformancePanelDispatcher = new BlockableDispatcher(Block, () => OnPerformancePanelChanged?.Invoke());
+
+            _pauseHandlerGameSpeed.OnChanged += speed =>
+            {
+                if (speed >= 0f)
+                {
+                    if (!_savedGameSpeed.HasValue)
+                    {
+                        _savedGameSpeed = Time.timeScale;
+                    }
+                    Time.timeScale = speed;
+                }
+                else
+                {
+                    if (_savedGameSpeed.HasValue)
+                    {
+                        Time.timeScale = _savedGameSpeed.Value;
+                        _savedGameSpeed = null;
+                    }
+                }
+            };
 
             Reset();
 
@@ -420,6 +471,9 @@ namespace Ff.DevSuite
             {
                 PickModeActive = false;
             }
+            _selectedGameObjects.Clear();
+            _pauseHandlerGameSpeed.Remove(1, this);
+            _pauseHandlerGameSpeed.Remove(2, this);
 
             AttributesParser = null;
             CommandsApi = null;
@@ -901,6 +955,22 @@ namespace Ff.DevSuite
         {
             get => (Settings?.Ready ?? false) && Settings.Value.InspectorVisible;
             set => SetSettingsValue(() => Settings.Value.InspectorVisible, v => Settings.Value.InspectorVisible = v, value);
+        }
+
+        internal bool InspectorAutoRefresh
+        {
+            get => (Settings?.Ready ?? false) && Settings.Value.InspectorAutoRefresh;
+            set => SetSettingsValue(() => Settings.Value.InspectorAutoRefresh, v => Settings.Value.InspectorAutoRefresh = v, value);
+        }
+
+        internal bool InspectorAutoPause
+        {
+            get => !(Settings?.Ready ?? false) || Settings.Value.InspectorAutoPause;
+            set
+            {
+                SetSettingsValue(() => Settings.Value.InspectorAutoPause, v => Settings.Value.InspectorAutoPause = v, value);
+                UpdateInspectorAutoPause();
+            }
         }
 
         internal bool HierarchySearchRegex
@@ -1999,6 +2069,16 @@ namespace Ff.DevSuite
                     provider.Process();
                 }
 
+                if (_selectedGameObjects.Count > 0)
+                {
+                    var countBefore = _selectedGameObjects.Count;
+                    UpdateInspectorAutoPause();
+                    if (_selectedGameObjects.Count != countBefore)
+                    {
+                        _onChangedDispatcher.Dispatch();
+                    }
+                }
+
                 OnEveryFrameDispatcher.Dispatch();
 #if !ENABLE_INPUT_SYSTEM
                 if (Input.anyKeyDown)
@@ -2098,6 +2178,8 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(16)][Key(16)] public bool HierarchySearchByType { get; set; } = true;
         [DataMember][MemoryPackOrder(17)][Key(17)] public bool HierarchyKeepDimmed { get; set; } = true;
         [DataMember][MemoryPackOrder(18)][Key(18)] public Dictionary<string, bool> PerformanceGraphCollapsedState { get; set; } = new();
+        [DataMember][MemoryPackOrder(19)][Key(19)] public bool InspectorAutoRefresh { get; set; }
+        [DataMember][MemoryPackOrder(20)][Key(20)] public bool InspectorAutoPause { get; set; } = true;
 
         public void InitializeDefaultsIfNeeded()
         {

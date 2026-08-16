@@ -13,6 +13,9 @@ namespace Ff.DevSuite.View
         private readonly Label _selectedObjectLabel;
         private readonly Label _selectedObjectPathLabel;
         private readonly ScrollView _scrollView;
+        private readonly Button _refreshBtn;
+        private readonly Button _autoRefreshBtn;
+        private readonly Button _autoPauseBtn;
         private readonly Button _copyBtn;
         private readonly Toggle _goActivityToggle;
         private EventCallback<ChangeEvent<bool>> _goActivityCallback;
@@ -132,13 +135,44 @@ namespace Ff.DevSuite.View
                 }
             }
 
+            _refreshBtn = root.Q<Button>("refreshBtn");
+            if (_refreshBtn != null)
+            {
+                _refreshBtn.text = "\uf021"; // sync icon
+                _refreshBtn.clicked += () =>
+                {
+                    RefreshInspectorValues();
+                    DevSuiteUtils.ShowIconButtonClickedFeedback(_refreshBtn);
+                };
+            }
+
+            _autoRefreshBtn = root.Q<Button>("autoRefreshBtn");
+            if (_autoRefreshBtn != null)
+            {
+                _autoRefreshBtn.clicked += () =>
+                {
+                    _context.InspectorAutoRefresh = !_context.InspectorAutoRefresh;
+                    UpdateButtonStates();
+                };
+            }
+
+            _autoPauseBtn = root.Q<Button>("autoPauseBtn");
+            if (_autoPauseBtn != null)
+            {
+                _autoPauseBtn.clicked += () =>
+                {
+                    _context.InspectorAutoPause = !_context.InspectorAutoPause;
+                    UpdateButtonStates();
+                };
+            }
+
             _copyBtn = root.Q<Button>("copyBtn");
             if (_copyBtn != null)
             {
                 _copyBtn.text = "\uf0c5"; // copy icon
                 _copyBtn.clicked += () =>
                 {
-                    if (_context != null && _context.SelectedGameObjects.Count > 0)
+                    if (_context.SelectedGameObjects.Count > 0)
                     {
                         var inspectorText = GetInspectorText(_context.SelectedGameObjects);
                         DevSuiteUtils.CopyToClipboard(inspectorText);
@@ -152,20 +186,11 @@ namespace Ff.DevSuite.View
 
         public void Initialize(DevSuiteContext context)
         {
-            if (_context != null)
-            {
-                _context.OnChanged -= HandleContextChanged;
-                _context.OnEveryFrame -= HandleOnEveryFrame;
-            }
-
             _context = context;
-
-            if (_context != null)
-            {
-                _context.OnChanged += HandleContextChanged;
-                _context.OnEveryFrame += HandleOnEveryFrame;
-                UpdateInspector();
-            }
+            UpdateButtonStates();
+            _context.OnChanged += HandleContextChanged;
+            _context.OnEveryFrame += HandleOnEveryFrame;
+            UpdateInspector();
         }
 
         public void Reset()
@@ -180,16 +205,18 @@ namespace Ff.DevSuite.View
 
         private void HandleContextChanged()
         {
+            UpdateButtonStates();
             UpdateInspector();
+        }
+
+        private void UpdateButtonStates()
+        {
+            _autoRefreshBtn?.EnableInClassList("active", _context.InspectorAutoRefresh);
+            _autoPauseBtn?.EnableInClassList("active", _context.InspectorAutoPause);
         }
 
         private void UpdateInspector()
         {
-            if (_context == null)
-            {
-                return;
-            }
-
             var currentSelection = _context.SelectedGameObjects;
             var changed = false;
             if (currentSelection.Count != _lastSelectedGameObjects.Count)
@@ -545,7 +572,30 @@ namespace Ff.DevSuite.View
 
         private void HandleOnEveryFrame()
         {
-            if (_context == null || _lastSelectedGameObjects.Count == 0)
+            if (_lastSelectedGameObjects.Count == 0)
+            {
+                return;
+            }
+
+            // Always check if an inspected GameObject was destroyed in scene
+            foreach (var go in _lastSelectedGameObjects)
+            {
+                if (go == null || go.Equals(null))
+                {
+                    RebuildInspector(null);
+                    return;
+                }
+            }
+
+            if (_context.InspectorAutoRefresh)
+            {
+                RefreshInspectorValues();
+            }
+        }
+
+        private void RefreshInspectorValues()
+        {
+            if (_lastSelectedGameObjects.Count == 0)
             {
                 return;
             }
@@ -559,6 +609,18 @@ namespace Ff.DevSuite.View
                 }
             }
 
+            // Update path label in case GameObject was renamed or reparented
+            if (_lastSelectedGameObjects.Count == 1)
+            {
+                var go = _lastSelectedGameObjects[0];
+                if (go != null)
+                {
+                    _selectedObjectLabel.text = go.name;
+                    _selectedObjectPathLabel.text = DevSuiteUtils.GetGameObjectPath(go);
+                }
+            }
+
+            // Re-read tracked property values
             foreach (var prop in _trackedProperties)
             {
                 if (prop.Target == null || prop.Target.Equals(null))
@@ -583,6 +645,7 @@ namespace Ff.DevSuite.View
                 }
             }
 
+            // Sync MonoBehaviour enabled states
             for (var i = _trackedMonoBehaviours.Count - 1; i >= 0; i--)
             {
                 var tracked = _trackedMonoBehaviours[i];
@@ -607,6 +670,7 @@ namespace Ff.DevSuite.View
                 }
             }
 
+            // Sync GameObject activeSelf states
             for (var i = _trackedGoActivities.Count - 1; i >= 0; i--)
             {
                 var tracked = _trackedGoActivities[i];
@@ -628,7 +692,7 @@ namespace Ff.DevSuite.View
 
         private GameObject GetSelectedGameObject()
         {
-            if (_context != null && _context.SelectedGameObject != null)
+            if (_context.SelectedGameObject != null)
             {
                 return _context.SelectedGameObject;
             }

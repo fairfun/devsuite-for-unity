@@ -15,20 +15,39 @@
     border-radius: var(--panel-border-radius);
 }
 
-.inspector-header-row {
+.inspector-toolbar {
     flex-direction: row;
     align-items: center;
-    padding: 6px 8px;
+    padding: 4px 6px;
     background-color: var(--toolbar-bg);
     border-bottom-width: 1px;
     border-bottom-color: var(--divider-color);
+}
+
+.inspector-header-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 5px 8px;
+    background-color: rgba(36, 36, 36, 0.4);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--divider-color);
+}
+
+.inspector-header-text-container {
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    margin-right: 4px;
 }
 
 .inspector-selected-object {
     font-size: 13px;
     -unity-font-style: bold;
     color: var(--accent-color);
-    max-width: 250px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
 .inspector-selected-object-path {
@@ -36,7 +55,10 @@
     color: var(--text-label-color);
     -unity-font-style: italic;
     margin-top: 2px;
-    max-width: 280px;
+    white-space: normal;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-height: 28px;
 }
 
 .inspector-list-view {
@@ -127,11 +149,9 @@
     -unity-font-style: italic;
 }
 
-.inspector-icon-btn {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
-    -unity-text-generator: standard;
-    font-size: 14px;
-    width: 28px;
+.inspector-btn,
+.inspector-icon-btn,
+.inspector-text-btn {
     height: 24px;
     margin-left: 2px;
     padding: 0;
@@ -141,9 +161,32 @@
     border-radius: 4px;
 }
 
-.inspector-icon-btn:hover {
+.inspector-btn:hover,
+.inspector-icon-btn:hover,
+.inspector-text-btn:hover {
     color: var(--text-color);
     background-color: rgba(255, 255, 255, 0.03);
+}
+
+.inspector-btn.active,
+.inspector-icon-btn.active,
+.inspector-text-btn.active {
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.inspector-icon-btn {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-text-generator: standard;
+    font-size: 14px;
+    width: 28px;
+}
+
+.inspector-text-btn {
+    font-size: 11px;
+    padding-left: 6px;
+    padding-right: 6px;
+    -unity-text-align: middle-center;
 }
 
 .inspector-go-header {
@@ -160,12 +203,18 @@
 .inspector-go-header-text {
     flex-direction: column;
     flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    margin-right: 4px;
 }
 
 .inspector-go-name {
     font-size: 12px;
     -unity-font-style: bold;
     color: var(--accent-color);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
 .inspector-go-path {
@@ -173,6 +222,10 @@
     color: var(--text-label-color);
     -unity-font-style: italic;
     margin-top: 0;
+    white-space: normal;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-height: 26px;
 }
 
 /* Positional override — base style comes from Common.uss .ff-toggle */

@@ -794,6 +794,7 @@ namespace Ff.DevSuite.View
                                     }
 
                                     _context.SetSelectedGameObjects(range);
+                                    _context.InspectorVisible = true;
 #if UNITY_EDITOR
                                     UnityEditor.Selection.objects = range.ToArray();
 #endif
@@ -810,6 +811,7 @@ namespace Ff.DevSuite.View
                                 {
                                     _context.SelectedGameObject = go;
                                 }
+                                _context.InspectorVisible = true;
 #if UNITY_EDITOR
                                 if (isCtrlHeld)
                                 {
@@ -985,6 +987,7 @@ namespace Ff.DevSuite.View
 
             var target = list[nextIndex];
             _context.SelectedGameObject = target;
+            _context.InspectorVisible = true;
             ExpandParents(target);
             RebuildTree();
 

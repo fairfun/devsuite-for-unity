@@ -9,7 +9,6 @@ namespace Ff.DevSuite.View
     internal class PickSelectionPanelView : VisualElement
     {
         private DevSuiteContext _context;
-        private float? _previousTimeScale;
 
         private struct PickTarget
         {
@@ -61,12 +60,6 @@ namespace Ff.DevSuite.View
 
         public void Reset()
         {
-            if (_previousTimeScale.HasValue)
-            {
-                Time.timeScale = _previousTimeScale.Value;
-                _previousTimeScale = null;
-            }
-
             HidePickPopup();
 
             if (_context != null)
@@ -80,19 +73,9 @@ namespace Ff.DevSuite.View
 
         private void HandlePickModeChanged(bool active)
         {
-            if (active)
-            {
-                _previousTimeScale = Time.timeScale;
-                Time.timeScale = 0f;
-            }
-            else
+            if (!active)
             {
                 HidePickPopup();
-                if (_previousTimeScale.HasValue)
-                {
-                    Time.timeScale = _previousTimeScale.Value;
-                    _previousTimeScale = null;
-                }
             }
         }
 
