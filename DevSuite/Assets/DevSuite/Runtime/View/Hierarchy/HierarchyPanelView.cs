@@ -283,7 +283,13 @@ namespace Ff.DevSuite.View
                 _pickOverlay.style.backgroundImage = new StyleBackground(GetOrCreateCheckerTexture());
                 _pickOverlay.style.backgroundRepeat = new BackgroundRepeat(Repeat.Repeat, Repeat.Repeat);
                 _pickOverlay.style.backgroundSize = new BackgroundSize(new Length(24, LengthUnit.Pixel), new Length(24, LengthUnit.Pixel));
-                _pickOverlay.pickingMode = PickingMode.Ignore;
+                _pickOverlay.pickingMode = PickingMode.Position;
+
+                _pickOverlay.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation(), TrickleDown.TrickleDown);
+                _pickOverlay.RegisterCallback<PointerUpEvent>(evt => evt.StopPropagation(), TrickleDown.TrickleDown);
+                _pickOverlay.RegisterCallback<ClickEvent>(evt => evt.StopPropagation(), TrickleDown.TrickleDown);
+                _pickOverlay.RegisterCallback<MouseDownEvent>(evt => evt.StopPropagation(), TrickleDown.TrickleDown);
+                _pickOverlay.RegisterCallback<MouseUpEvent>(evt => evt.StopPropagation(), TrickleDown.TrickleDown);
             }
 
             var topRoot = DevSuiteUtils.GetTopRoot(this) ?? this;
