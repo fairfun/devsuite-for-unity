@@ -392,29 +392,24 @@ namespace Ff.DevSuite.View
             }
 
             // 2. Canvas UI objects (uGUI RectTransforms)
-            var graphics = Object.FindObjectsOfType<UnityEngine.UI.Graphic>();
-            var matchingGraphics = new List<(UnityEngine.UI.Graphic graphic, int depth, float area)>();
+            var matchingUI = new List<(GameObject go, int depth, float area, float hitDistance, int sortingOrder, bool isRaycastTarget)>();
 
+            var graphics = Object.FindObjectsOfType<UnityEngine.UI.Graphic>();
             foreach (var graphic in graphics)
             {
-                if (graphic == null || !graphic.gameObject.activeInHierarchy || !graphic.raycastTarget)
-                {
-                    continue;
-                }
-                if (IsGameObjectInDevSuite(graphic.gameObject))
+                if (graphic == null || !graphic.gameObject.activeInHierarchy || IsGameObjectInDevSuite(graphic.gameObject))
                 {
                     continue;
                 }
 
                 var rect = graphic.rectTransform;
-                var canvas = graphic.canvas;
-                Camera eventCamera = null;
-                if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                if (rect == null)
                 {
-                    eventCamera = canvas.worldCamera ?? Camera.main;
+                    continue;
                 }
 
-                if (RectTransformUtility.RectangleContainsScreenPoint(rect, mousePos, eventCamera))
+                var canvas = graphic.canvas ?? graphic.GetComponentInParent<Canvas>();
+                if (TryMatchRectTransform(rect, canvas, mousePos, out var hitDistance, out var sortingOrder))
                 {
                     var depth = 0;
                     var t = rect.parent;
@@ -427,25 +422,89 @@ namespace Ff.DevSuite.View
                     var corners = new Vector3[4];
                     rect.GetWorldCorners(corners);
                     var area = Vector3.Distance(corners[0], corners[1]) * Vector3.Distance(corners[1], corners[2]);
-                    matchingGraphics.Add((graphic, depth, area));
+
+                    matchingUI.Add((graphic.gameObject, depth, area, hitDistance, sortingOrder, graphic.raycastTarget));
                 }
             }
 
-            matchingGraphics.Sort(
+            // Also check Selectables (Buttons, Toggles, etc.) that might not have a Graphic directly on their GameObject
+            var selectables = Object.FindObjectsOfType<UnityEngine.UI.Selectable>();
+            foreach (var selectable in selectables)
+            {
+                if (selectable == null || !selectable.gameObject.activeInHierarchy || IsGameObjectInDevSuite(selectable.gameObject))
+                {
+                    continue;
+                }
+
+                var rect = selectable.GetComponent<RectTransform>();
+                if (rect == null)
+                {
+                    continue;
+                }
+
+                if (matchingUI.Exists(m => m.go == selectable.gameObject))
+                {
+                    continue;
+                }
+
+                var canvas = rect.GetComponentInParent<Canvas>();
+                if (TryMatchRectTransform(rect, canvas, mousePos, out var hitDistance, out var sortingOrder))
+                {
+                    var depth = 0;
+                    var t = rect.parent;
+                    while (t != null)
+                    {
+                        depth++;
+                        t = t.parent;
+                    }
+
+                    var corners = new Vector3[4];
+                    rect.GetWorldCorners(corners);
+                    var area = Vector3.Distance(corners[0], corners[1]) * Vector3.Distance(corners[1], corners[2]);
+
+                    matchingUI.Add((selectable.gameObject, depth, area, hitDistance, sortingOrder, true));
+                }
+            }
+
+            matchingUI.Sort(
                 (a, b) =>
                 {
+                    // For 3D world UI: closer distance from camera comes first (tolerance 0.01f)
+                    var distDiff = a.hitDistance - b.hitDistance;
+                    if (Mathf.Abs(distDiff) > 0.01f)
+                    {
+                        return distDiff.CompareTo(0f);
+                    }
+
+                    // Higher sorting order first
+                    var sortDiff = b.sortingOrder.CompareTo(a.sortingOrder);
+                    if (sortDiff != 0)
+                    {
+                        return sortDiff;
+                    }
+
+                    // Prefer raycastTarget true over false
+                    var raycastDiff = b.isRaycastTarget.CompareTo(a.isRaycastTarget);
+                    if (raycastDiff != 0)
+                    {
+                        return raycastDiff;
+                    }
+
+                    // Deeper hierarchy depth first
                     var d = b.depth.CompareTo(a.depth);
                     if (d != 0)
                     {
                         return d;
                     }
+
+                    // Smaller area first (specific elements over parent containers)
                     return a.area.CompareTo(b.area);
                 }
             );
 
-            foreach (var item in matchingGraphics)
+            foreach (var item in matchingUI)
             {
-                AddTarget(item.graphic.gameObject, "UI");
+                AddTarget(item.go, "UI");
             }
 
             // 3. Physics (3D and 2D) across cameras
@@ -502,6 +561,163 @@ namespace Ff.DevSuite.View
             }
 
             return targets;
+        }
+
+        private static bool TryMatchRectTransform(RectTransform rect, Canvas canvas, Vector2 mousePos, out float hitDistance, out int sortingOrder)
+        {
+            hitDistance = float.MaxValue;
+            sortingOrder = 0;
+
+            if (rect == null)
+            {
+                return false;
+            }
+
+            if (canvas == null)
+            {
+                canvas = rect.GetComponentInParent<Canvas>();
+            }
+
+            if (canvas == null)
+            {
+                return false;
+            }
+
+            sortingOrder = canvas.sortingOrder;
+
+            if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+            {
+                if (RectTransformUtility.RectangleContainsScreenPoint(rect, mousePos, null))
+                {
+                    hitDistance = 0f;
+                    return true;
+                }
+                return false;
+            }
+
+            // ScreenSpaceCamera or WorldSpace:
+            // 1. Try canvas worldCamera or rootCanvas worldCamera
+            var primaryCam = canvas.worldCamera != null ? canvas.worldCamera : canvas.rootCanvas != null ? canvas.rootCanvas.worldCamera : null;
+            if (primaryCam != null && primaryCam.isActiveAndEnabled)
+            {
+                if (IsScreenPointInRectTransform(rect, mousePos, primaryCam, out hitDistance))
+                {
+                    return true;
+                }
+            }
+
+            // 2. Try Camera.main
+            var mainCam = Camera.main;
+            if (mainCam != null && mainCam.isActiveAndEnabled && mainCam != primaryCam)
+            {
+                if (IsScreenPointInRectTransform(rect, mousePos, mainCam, out hitDistance))
+                {
+                    return true;
+                }
+            }
+
+            // 3. Try any other active camera in scene
+            var cameras = Camera.allCameras;
+            if (cameras != null)
+            {
+                foreach (var cam in cameras)
+                {
+                    if (cam != null && cam.isActiveAndEnabled && cam != primaryCam && cam != mainCam)
+                    {
+                        if (IsScreenPointInRectTransform(rect, mousePos, cam, out hitDistance))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsScreenPointInRectTransform(RectTransform rect, Vector2 screenPoint, Camera cam, out float hitDistance)
+        {
+            hitDistance = float.MaxValue;
+            if (rect == null || cam == null)
+            {
+                return false;
+            }
+
+            // 1. Double-sided 3D ray-plane intersection against rect plane
+            var ray = cam.ScreenPointToRay(screenPoint);
+            var rectForward = rect.forward;
+            var rectPos = rect.position;
+
+            var dot = Vector3.Dot(ray.direction, rectForward);
+            if (Mathf.Abs(dot) > 1e-5f)
+            {
+                var enter = Vector3.Dot(rectPos - ray.origin, rectForward) / dot;
+                if (enter > 0f && enter >= cam.nearClipPlane && (cam.farClipPlane <= 0f || enter <= cam.farClipPlane))
+                {
+                    var worldPoint = ray.origin + ray.direction * enter;
+                    var localPoint = rect.InverseTransformPoint(worldPoint);
+                    if (rect.rect.Contains(localPoint))
+                    {
+                        hitDistance = enter;
+                        return true;
+                    }
+                }
+            }
+
+            // 2. Standard RectTransformUtility check
+            if (RectTransformUtility.RectangleContainsScreenPoint(rect, screenPoint, cam))
+            {
+                var corners = new Vector3[4];
+                rect.GetWorldCorners(corners);
+                var center = (corners[0] + corners[2]) * 0.5f;
+                hitDistance = Vector3.Distance(cam.transform.position, center);
+                return true;
+            }
+
+            // 3. Fallback: 2D Screen-space projected quad polygon test
+            var worldCorners = new Vector3[4];
+            rect.GetWorldCorners(worldCorners);
+
+            var s0 = cam.WorldToScreenPoint(worldCorners[0]);
+            var s1 = cam.WorldToScreenPoint(worldCorners[1]);
+            var s2 = cam.WorldToScreenPoint(worldCorners[2]);
+            var s3 = cam.WorldToScreenPoint(worldCorners[3]);
+
+            if (s0.z > 0f && s1.z > 0f && s2.z > 0f && s3.z > 0f)
+            {
+                if (IsPointInQuad(screenPoint, s0, s1, s2, s3))
+                {
+                    hitDistance = (s0.z + s1.z + s2.z + s3.z) * 0.25f;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsPointInTriangle(Vector2 p, Vector2 p0, Vector2 p1, Vector2 p2)
+        {
+            var dX = p.x - p2.x;
+            var dY = p.y - p2.y;
+            var dX21 = p2.x - p1.x;
+            var dY12 = p1.y - p2.y;
+            var d = dY12 * (p0.x - p2.x) + dX21 * (p0.y - p2.y);
+            if (Mathf.Abs(d) < 1e-6f)
+            {
+                return false;
+            }
+            var s = dY12 * dX + dX21 * dY;
+            var t = (p2.y - p0.y) * dX + (p0.x - p2.x) * dY;
+            if (d > 0f)
+            {
+                return s >= 0f && t >= 0f && (s + t) <= d;
+            }
+            return s <= 0f && t <= 0f && (s + t) >= d;
+        }
+
+        private static bool IsPointInQuad(Vector2 p, Vector2 a, Vector2 b, Vector2 c, Vector2 d)
+        {
+            return IsPointInTriangle(p, a, b, c) || IsPointInTriangle(p, a, c, d);
         }
 
         private bool IsElementInDevSuite(VisualElement element)
