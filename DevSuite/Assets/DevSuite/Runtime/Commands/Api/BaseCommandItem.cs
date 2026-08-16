@@ -29,7 +29,7 @@ namespace Ff.DevSuite.Commands
 
         public T WithDisplayName(string displayName)
         {
-            if (!string.IsNullOrEmpty(displayName))
+            if (displayName != null)
                 DisplayName = displayName;
             return (T)this;
         }

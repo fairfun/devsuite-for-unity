@@ -500,9 +500,9 @@ namespace Ff.DevSuite.Commands.Attributes
                     LogConflict(nameof(keep.Description), keep.Id);
                 keep.Description = use.Description;
             }
-            if (!string.IsNullOrEmpty(use.DisplayName))
+            if (use.DisplayName != null)
             {
-                if (!string.IsNullOrEmpty(keep.DisplayName) && keep.DisplayName != use.DisplayName)
+                if (keep.DisplayName != null && keep.DisplayName != use.DisplayName)
                     LogConflict(nameof(keep.DisplayName), keep.Id);
                 keep.DisplayName = use.DisplayName;
             }

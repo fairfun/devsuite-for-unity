@@ -19,7 +19,7 @@ using Key =
 
 namespace Ff.DevSuite
 {
-    [CommandCategory(CategoryCommon, Priority = 100)]
+    [CommandCategory(CategoryCommon, Priority = 100, Description = "Check the CommonCommands class implementation for hints on how to use the API.")]
     public static class CommonCommands
     {
         public static Func<string, string> ModifySystemInfo { get; set; }
@@ -38,14 +38,16 @@ namespace Ff.DevSuite
         //Game
 
         private static float? _originalGameSpeed;
-        [CommandGroup(GroupGame, Scope = AttributeScope.Continuous), Command(DisplayName = "Time Scale"), CommandValue(MinValue = 0.01f, MaxValue = 100f, ScaleType = ScaleType.Logarithmic)]
-        [CommandValue(Flex = 0.5f)]
+        [CommandGroup(GroupGame, Scope = AttributeScope.Continuous), Command(DisplayName = "Time Scale", Scope = AttributeScope.Continuous), CommandValue(MinValue = 0.01f, MaxValue = 100f, ScaleType = ScaleType.Logarithmic)]
         public static SavedPrefsProperty<float?> TimeScale = new(nameof(TimeScale), null, onTouch: t =>
         {
             _originalGameSpeed ??= Time.timeScale;
             if (t.Type == SavedPrefsProperty<float?>.TouchType.Changed)
                 Time.timeScale = t.Value ?? _originalGameSpeed ?? 1f;
         });
+
+        [CommandValue(Flex = 0.2f)]
+        private static float ActualGameSpeed => Time.timeScale;
 
         //Data
 
@@ -171,7 +173,7 @@ namespace Ff.DevSuite
 
         private static string _systemInfoText;
         [CommandGroup(GroupSystem, Scope = AttributeScope.Continuous),
-         Command(DisplayName = "Info", HeightMultiplier = 8.55f, Description = "You can change the information here by assigning CommonCommands.ModifySystemInfo. Compiler defines are not guaranteed to be 100% accurate. For adding custom build-time data use CommonCommands.CustomSystemInfoBuildTimeData."),
+         Command(DisplayName = "", HeightMultiplier = 8.55f, Description = "You can change the information here by assigning CommonCommands.ModifySystemInfo. Compiler defines are not guaranteed to be 100% accurate. For adding custom build-time data use CommonCommands.CustomSystemInfoBuildTimeData."),
          CommandValue]
         private static string SystemInfoText
         {
@@ -218,7 +220,7 @@ namespace Ff.DevSuite
             }
         }
 
-        [CommandButton(nameof(SystemInfoText), Title = "\uf0e2", Flex = 0f, FontResource = "Font Awesome 7 Free-Solid-900 SDF")]
+        [CommandButton(nameof(SystemInfoText), Title = "\uf021", Flex = 0f, FontResource = "Font Awesome 7 Free-Solid-900 SDF")]
         public static void SystemInfoReset()
         {
             _systemInfoText = null;
@@ -260,9 +262,23 @@ namespace Ff.DevSuite
             return "Legacy (Built-in) renderer";
         }
 
+        private static int? _originalTargetFPS;
+        [Command(nameof(TargetFPS)), CommandValue("Target FPS", MinValue = 0f, MaxValue = 2000f, ScaleType = ScaleType.Logarithmic)]
+        public static SavedPrefsProperty<int?> TargetFPS = new(nameof(TargetFPS), null, onTouch: t =>
+        {
+            _originalTargetFPS ??= Application.targetFrameRate;
+            if (t.Type == SavedPrefsProperty<int?>.TouchType.Changed)
+                Application.targetFrameRate = t.Value ?? _originalTargetFPS ?? -1;
+
+            if (t.Value != null && t is { Type: SavedPrefsProperty<int?>.TouchType.Changed, PreviousValue: { HasValue: true, Value: null } })
+                t.SetValue(_originalTargetFPS);
+        });
+
+        [Command(nameof(TargetFPS)), CommandValue(Flex = 0.2f)]
+        private static float ActualTargetFps => Application.targetFrameRate;
+
         private static int? _originalVSyncCount;
-        [CommandValue("vSyncCount", MinValue = 0, MaxValue = 4)]
-        [CommandValue(Flex = 0.5f)]
+        [Command(nameof(VSyncCount)), CommandValue("vSyncCount", MinValue = 0, MaxValue = 4)]
         public static SavedPrefsProperty<int?> VSyncCount = new(nameof(VSyncCount), null, onTouch: t =>
         {
             _originalVSyncCount ??= QualitySettings.vSyncCount;
@@ -273,6 +289,9 @@ namespace Ff.DevSuite
             if (t.Value != null && t is { Type: SavedPrefsProperty<int?>.TouchType.Changed, PreviousValue: { HasValue: true, Value: null } })
                 t.SetValue(_originalVSyncCount);
         });
+
+        [Command(nameof(VSyncCount)), CommandValue(Flex = 0.2f)]
+        private static float ActualVSyncCount => QualitySettings.vSyncCount;
 
         [Command(DisplayName = "GC"), CommandButton(Title = "System.GC.Collect", Flex = 1f)]
         private static void ForceGC() => GC.Collect();
@@ -313,20 +332,7 @@ namespace Ff.DevSuite
         [CommandButton(nameof(SavedPrefs), Title = "Open", Flex = 0f)]
         private static void SavedPrefs_Open() => Application.OpenURL($"file://{SavedPrefs}");
 
-        private static int? _originalTargetFPS;
-        [CommandValue("Target FPS", MinValue = 0f, MaxValue = 2000f, ScaleType = ScaleType.Logarithmic)]
-        [CommandValue(Flex = 0.5f)]
-        public static SavedPrefsProperty<int?> TargetFPS = new(nameof(TargetFPS), null, onTouch: t =>
-        {
-            _originalTargetFPS ??= Application.targetFrameRate;
-            if (t.Type == SavedPrefsProperty<int?>.TouchType.Changed)
-                Application.targetFrameRate = t.Value ?? _originalTargetFPS ?? -1;
-
-            if (t.Value != null && t is { Type: SavedPrefsProperty<int?>.TouchType.Changed, PreviousValue: { HasValue: true, Value: null } })
-                t.SetValue(_originalTargetFPS);
-        });
-
-        private static float? _originalTargetRamMb;
+        /* private static float? _originalTargetRamMb;
         [CommandValue("Target RAM", MinValue = 0f, MaxValue = 32000f, ScaleType = ScaleType.Logarithmic)]
         [CommandValue(Flex = 0.5f)]
         public static SavedPrefsProperty<float?> TargetRamMb = new(nameof(TargetRamMb), null, onTouch: t =>
@@ -356,7 +362,7 @@ namespace Ff.DevSuite
 
             if (t.Value != null && t is { Type: SavedPrefsProperty<int?>.TouchType.Changed, PreviousValue: { HasValue: true, Value: null } })
                 t.SetValue(_originalTargetDrawCallsCount);
-        });
+        }); */
 
         [Command(DisplayName = "Destroy DevSuite"), CommandButton(Title = "All", Color = ColorOrange, Flex = 0.5f)]
         private static void DestroyDevSuite()

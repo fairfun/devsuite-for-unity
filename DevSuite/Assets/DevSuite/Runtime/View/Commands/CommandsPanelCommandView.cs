@@ -87,6 +87,10 @@ namespace Ff.DevSuite.View
 
             _label = new Label(command.DisplayName);
             _label.AddToClassList("ff-commands-command-label");
+            if (string.IsNullOrEmpty(command.DisplayName))
+            {
+                _label.style.display = DisplayStyle.None;
+            }
             if (command.Color != null)
             {
                 _label.style.color = command.Color.Value;
@@ -96,6 +100,10 @@ namespace Ff.DevSuite.View
 
             UnitsContainer = new VisualElement();
             UnitsContainer.AddToClassList("ff-commands-units-container");
+            if (string.IsNullOrEmpty(command.DisplayName))
+            {
+                registerTooltip?.Invoke(UnitsContainer, command.Description);
+            }
             Add(UnitsContainer);
 
             if (command.HeightMultiplier > 1)
