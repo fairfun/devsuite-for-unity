@@ -189,6 +189,14 @@
     -unity-text-align: middle-center;
 }
 
+.inspector-auto-btn {
+    margin-left: 0px;
+}
+
+.inspector-auto-pause-btn {
+    margin-left: 11px;
+}
+
 .inspector-go-header {
     background-color: rgba(60, 60, 60, 0.85);
     border-bottom-width: 0;

@@ -3,8 +3,8 @@
         <!-- Top Toolbar / Header Row -->
         <ui:VisualElement class="inspector-toolbar">
             <ui:Button name="refreshBtn" class="inspector-btn inspector-icon-btn" tooltip="Refresh inspected object values"/>
-            <ui:Button name="autoRefreshBtn" text="auto" class="inspector-btn inspector-text-btn" tooltip="Auto-refresh: continuously update inspected values every frame"/>
-            <ui:Button name="autoPauseBtn" text="auto pause" class="inspector-btn inspector-text-btn" tooltip="Auto-pause: pause game when an object is selected"/>
+            <ui:Button name="autoRefreshBtn" text="Auto" class="inspector-btn inspector-text-btn inspector-auto-btn" tooltip="Auto-refresh: continuously update inspected values every frame"/>
+            <ui:Button name="autoPauseBtn" text="Auto Pause" class="inspector-btn inspector-text-btn inspector-auto-pause-btn" tooltip="Auto-pause: pause game when an object is selected"/>
             <ui:VisualElement style="flex-grow: 1;"/>
             <ui:Button name="copyBtn" class="inspector-btn inspector-icon-btn" tooltip="Copy inspected components and property values to clipboard"/>
         </ui:VisualElement>
