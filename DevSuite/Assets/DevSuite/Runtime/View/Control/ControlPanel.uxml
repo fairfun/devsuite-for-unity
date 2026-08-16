@@ -8,8 +8,8 @@
         <ui:Button name="logs-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Logs panel"/>
         <ui:Button name="hierarchy-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Hierarchy panel"/>
         <ui:Button name="inspector-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Inspector panel"/>
-        <ui:Button name="metrics-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Performance panel"/>
-        <ui:Button name="commands-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Commands panel"/>
+        <ui:Button name="metrics-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Performance panel.&#10;&#10;Check DevSuiteContext.Default.RegisterPerformancePanelGraph and SetPerformanceGraphSettings.&#10;&#10;Inherit BaseGraphDataProvider to implement custom graphs."/>
+        <ui:Button name="commands-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Commands panel.&#10;&#10;Check the CommonCommands class implementation for hints on how to use the API.&#10;&#10;Check DevSuiteContext.Default.AttributesParser and DevSuiteContext.Default.CommandsApi for advanced control."/>
         <ui:Button name="pinned-commands-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Pinned Commands panel"/>
         <ui:Button name="expand-btn" text="" class="ff-control-panel-btn" tooltip="Expand/Collapse DevSuite"/>
     </ui:VisualElement>

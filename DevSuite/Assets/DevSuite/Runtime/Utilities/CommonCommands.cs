@@ -341,7 +341,7 @@ namespace Ff.DevSuite
             if (t.Type == SavedPrefsProperty<float?>.TouchType.Changed)
             {
                 var val = t.Value ?? _originalTargetRamMb;
-                DevSuiteContext.Default.SetPerformanceReferenceValue<Performance.SystemRamGraphDataProvider>(() => val);
+                DevSuiteContext.Default.SetPerformanceGraphSettings<Performance.SystemRamGraphDataProvider>(new Performance.GraphDataProviderSettings(referenceValueProvider: () => val));
             }
 
             if (t.Value != null && t is { Type: SavedPrefsProperty<float?>.TouchType.Changed, PreviousValue: { HasValue: true, Value: null } })
@@ -357,7 +357,7 @@ namespace Ff.DevSuite
             if (t.Type == SavedPrefsProperty<int?>.TouchType.Changed)
             {
                 var val = t.Value ?? _originalTargetDrawCallsCount;
-                DevSuiteContext.Default.SetPerformanceReferenceValue<Performance.DrawCallsCountDataProvider>(() => val);
+                DevSuiteContext.Default.SetPerformanceGraphSettings<Performance.DrawCallsCountDataProvider>(new Performance.GraphDataProviderSettings(referenceValueProvider: () => val));
             }
 
             if (t.Value != null && t is { Type: SavedPrefsProperty<int?>.TouchType.Changed, PreviousValue: { HasValue: true, Value: null } })

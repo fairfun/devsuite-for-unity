@@ -4,8 +4,6 @@ namespace Ff.DevSuite.Performance
 {
     public class FpsGraphDataProvider : BaseGraphDataProvider
     {
-        public static bool RegisterByDefault = true;
-        public static new bool CollapsedByDefault = true;
         public override float? ReferenceValueColorImpact => -1.5f;
 
         internal override string Label => "FPS";
@@ -13,7 +11,11 @@ namespace Ff.DevSuite.Performance
 
         public FpsGraphDataProvider()
         {
-            ReferenceValueProvider = () => (double)DevSuiteUtils.TargetFps;
+            Settings = new GraphDataProviderSettings(
+                referenceValueProvider: () => (double)DevSuiteUtils.TargetFps,
+                expandedByDefault: false,
+                register: true
+            );
         }
 
         protected override double GetCurrentValue()

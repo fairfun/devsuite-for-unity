@@ -6,9 +6,6 @@ namespace Ff.DevSuite.Performance
 {
     public class GcMemoryGraphDataProvider : BaseGraphDataProvider
     {
-        public static bool RegisterByDefault = true;
-        public static new bool CollapsedByDefault = true;
-
         internal override string Label => "GC Memory";
         internal override string UnitName => "MB";
 
@@ -16,7 +13,11 @@ namespace Ff.DevSuite.Performance
 
         public GcMemoryGraphDataProvider()
         {
-            ReferenceValueProvider = () => 100d;
+            Settings = new GraphDataProviderSettings(
+                referenceValueProvider: () => 100d,
+                expandedByDefault: false,
+                register: true
+            );
 #if UNITY_EDITOR
             UnityEditorInternal.ProfilerDriver.SetAreaEnabled(ProfilerArea.Memory, true);
 #endif

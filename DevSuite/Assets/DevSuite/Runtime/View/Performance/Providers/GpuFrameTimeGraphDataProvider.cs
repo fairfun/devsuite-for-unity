@@ -6,9 +6,6 @@ namespace Ff.DevSuite.Performance
 {
     public class GpuFrameTimeGraphDataProvider : BaseGraphDataProvider
     {
-        public static bool RegisterByDefault = true;
-        public static new bool CollapsedByDefault = true;
-
         internal override string Label => "GPU Frame Time";
         internal override string UnitName => "ms";
 
@@ -17,7 +14,11 @@ namespace Ff.DevSuite.Performance
 
         public GpuFrameTimeGraphDataProvider()
         {
-            ReferenceValueProvider = () => 1000d / DevSuiteUtils.TargetFps;
+            Settings = new GraphDataProviderSettings(
+                referenceValueProvider: () => 1000d / DevSuiteUtils.TargetFps,
+                expandedByDefault: false,
+                register: true
+            );
 #if UNITY_EDITOR
             UnityEditorInternal.ProfilerDriver.SetAreaEnabled(ProfilerArea.GPU, true);
 #endif

@@ -39,8 +39,8 @@ namespace Ff.DevSuite
         bool Disposed { get; }
         void Initialize(MonoBehaviour coroutineStarter, IList<Assembly> staticCommandsAssemblies = null, ISavedPrefs savedPrefs = null, bool registerCommonCommands = true);
         void Reset();
-        void RegisterPerformancePanelGraph(BaseGraphDataProvider provider, bool collapsedByDefault = false);
-        void SetPerformanceReferenceValue<T>(Func<double?> referenceValueProvider) where T : BaseGraphDataProvider;
+        void RegisterPerformanceGraph<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider;
+        void SetPerformanceGraphSettings<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider;
         Func<string> BuildVersionToDisplay { get; set; }
         GameObject SelectedGameObject { get; set; }
         string GetAllLogsText();
@@ -156,7 +156,7 @@ namespace Ff.DevSuite
 
         internal Dictionary<Type, CommandFunctionsSourceProvider> TargetsForFunctionsProviders { get; } = new();
 
-        private readonly Dictionary<Type, Func<double?>> _performanceGraphReferenceValues = new();
+        private readonly Dictionary<Type, GraphDataProviderSettings> _performanceGraphSettings = new();
 
         public Func<string> BuildVersionToDisplay { get; set; } = () => "v" + Application.version;
 
@@ -431,26 +431,16 @@ namespace Ff.DevSuite
                 CommandsApi.RegisterValuesProvider(valueProvider, true);
             }
 
-            if (FrameTimeGraphDataProvider.RegisterByDefault)
-                RegisterPerformancePanelGraph(new FrameTimeGraphDataProvider(), FrameTimeGraphDataProvider.CollapsedByDefault);
-            if (CpuFrameTimeGraphDataProvider.RegisterByDefault)
-                RegisterPerformancePanelGraph(new CpuFrameTimeGraphDataProvider(), CpuFrameTimeGraphDataProvider.CollapsedByDefault);
-            if (GpuFrameTimeGraphDataProvider.RegisterByDefault)
-                RegisterPerformancePanelGraph(new GpuFrameTimeGraphDataProvider(), GpuFrameTimeGraphDataProvider.CollapsedByDefault);
-            if (CpuRenderThreadFrameTimeGraphDataProvider.RegisterByDefault)
-                RegisterPerformancePanelGraph(new CpuRenderThreadFrameTimeGraphDataProvider(), CpuRenderThreadFrameTimeGraphDataProvider.CollapsedByDefault);
-            if (FpsGraphDataProvider.RegisterByDefault)
-                RegisterPerformancePanelGraph(new FpsGraphDataProvider(), FpsGraphDataProvider.CollapsedByDefault);
-            if (GcMemoryGraphDataProvider.RegisterByDefault)
-                RegisterPerformancePanelGraph(new GcMemoryGraphDataProvider(), GcMemoryGraphDataProvider.CollapsedByDefault);
-            if (SystemRamGraphDataProvider.RegisterByDefault)
-                RegisterPerformancePanelGraph(new SystemRamGraphDataProvider(), SystemRamGraphDataProvider.CollapsedByDefault);
-            if (DrawCallsCountDataProvider.RegisterByDefault)
-                RegisterPerformancePanelGraph(new DrawCallsCountDataProvider(), DrawCallsCountDataProvider.CollapsedByDefault);
-            if (BatchesCountDataProvider.RegisterByDefault)
-                RegisterPerformancePanelGraph(new BatchesCountDataProvider(), BatchesCountDataProvider.CollapsedByDefault);
-            if (TrianglesCountDataProvider.RegisterByDefault)
-                RegisterPerformancePanelGraph(new TrianglesCountDataProvider(), TrianglesCountDataProvider.CollapsedByDefault);
+            RegisterPerformanceGraph(new FrameTimeGraphDataProvider());
+            RegisterPerformanceGraph(new CpuFrameTimeGraphDataProvider());
+            RegisterPerformanceGraph(new GpuFrameTimeGraphDataProvider());
+            RegisterPerformanceGraph(new CpuRenderThreadFrameTimeGraphDataProvider());
+            RegisterPerformanceGraph(new FpsGraphDataProvider());
+            RegisterPerformanceGraph(new GcMemoryGraphDataProvider());
+            RegisterPerformanceGraph(new SystemRamGraphDataProvider());
+            RegisterPerformanceGraph(new DrawCallsCountDataProvider());
+            RegisterPerformanceGraph(new BatchesCountDataProvider());
+            RegisterPerformanceGraph(new TrianglesCountDataProvider());
 
             if (registerCommonCommands)
             {
@@ -513,14 +503,29 @@ namespace Ff.DevSuite
 
         private readonly Dictionary<Type, bool> _performancePanelDefaultCollapsed = new();
 
-        public void RegisterPerformancePanelGraph(BaseGraphDataProvider provider, bool collapsedByDefault = false)
+        public void RegisterPerformanceGraph<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider
         {
-            if (_performanceGraphReferenceValues.TryGetValue(provider.GetType(), out var refValue))
+            if (overrideSettings != null)
             {
-                provider.ReferenceValueProvider = refValue;
+                SetPerformanceGraphSettings<T>(overrideSettings);
             }
+
             var type = provider.GetType();
-            _performancePanelDefaultCollapsed[type] = collapsedByDefault;
+            overrideSettings = _performanceGraphSettings.GetValueOrDefault(type);
+            var settings = overrideSettings ?? provider.Settings;
+
+            var shouldRegister = overrideSettings?.Register ?? settings?.Register ?? true;
+            if (!shouldRegister)
+                return;
+
+            var isExpanded = overrideSettings?.ExpandedByDefault ?? settings?.ExpandedByDefault ?? false;
+            var refProvider = overrideSettings?.ReferenceValueProvider ?? settings?.ReferenceValueProvider;
+            if (refProvider != null)
+            {
+                provider.Settings.ReferenceValueProvider = refProvider;
+            }
+
+            _performancePanelDefaultCollapsed[type] = !isExpanded;
             _performancePanelProviders.Add(provider);
             _onPerformancePanelDispatcher.Dispatch();
         }
@@ -543,29 +548,51 @@ namespace Ff.DevSuite
             OnPerformanceGraphCollapsedChanged?.Invoke(provider, collapsed);
         }
 
-        public void SetPerformanceReferenceValue<T>(Func<double?> referenceValueProvider) where T : BaseGraphDataProvider
+        public void SetPerformanceGraphSettings<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider
         {
-            _performanceGraphReferenceValues[typeof(T)] = referenceValueProvider;
-            foreach (var provider in _performancePanelProviders)
+            var type = typeof(T);
+
+            if (!_performanceGraphSettings.TryGetValue(type, out var currentSettings))
             {
-                if (provider is T p)
+                currentSettings = new GraphDataProviderSettings();
+                _performanceGraphSettings[type] = currentSettings;
+            }
+
+            if (settings.ReferenceValueProvider != null)
+            {
+                currentSettings.ReferenceValueProvider = settings.ReferenceValueProvider;
+                foreach (var provider in _performancePanelProviders)
                 {
-                    p.ReferenceValueProvider = referenceValueProvider;
+                    if (provider is T p)
+                    {
+                        p.Settings.ReferenceValueProvider = settings.ReferenceValueProvider;
+                    }
                 }
+            }
+
+            if (settings.ExpandedByDefault.HasValue)
+            {
+                currentSettings.ExpandedByDefault = settings.ExpandedByDefault.Value;
+                _performancePanelDefaultCollapsed[type] = !settings.ExpandedByDefault.Value;
+            }
+
+            if (settings.Register.HasValue)
+            {
+                currentSettings.Register = settings.Register.Value;
             }
         }
 
         internal double? GetPerformancePanelGraphReferenceValue<T>() where T : BaseGraphDataProvider
         {
-            if (_performanceGraphReferenceValues.TryGetValue(typeof(T), out var refValue))
+            if (_performanceGraphSettings.TryGetValue(typeof(T), out var settings) && settings.ReferenceValueProvider != null)
             {
-                return refValue?.Invoke();
+                return settings.ReferenceValueProvider.Invoke();
             }
             foreach (var provider in _performancePanelProviders)
             {
                 if (provider is T p)
                 {
-                    return p.ReferenceValueProvider?.Invoke();
+                    return p.Settings?.ReferenceValueProvider?.Invoke();
                 }
             }
             return null;

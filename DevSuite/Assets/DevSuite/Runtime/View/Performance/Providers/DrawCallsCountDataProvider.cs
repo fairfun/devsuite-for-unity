@@ -5,9 +5,6 @@ namespace Ff.DevSuite.Performance
 {
     public class DrawCallsCountDataProvider : BaseGraphDataProvider
     {
-        public static bool RegisterByDefault = true;
-        public static new bool CollapsedByDefault = false;
-
         internal override string Label => "Draw Calls";
         internal override string UnitName => "";
 
@@ -15,7 +12,11 @@ namespace Ff.DevSuite.Performance
 
         public DrawCallsCountDataProvider()
         {
-            ReferenceValueProvider = () => 500;
+            Settings = new GraphDataProviderSettings(
+                referenceValueProvider: () => 500d,
+                expandedByDefault: true,
+                register: true
+            );
 #if UNITY_EDITOR
             UnityEditorInternal.ProfilerDriver.SetAreaEnabled(ProfilerArea.Rendering, true);
 #endif

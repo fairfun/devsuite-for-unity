@@ -25,11 +25,11 @@ namespace Ff.DevSuite.Performance
         }
 
         protected abstract double GetCurrentValue();
-        public Func<double?> ReferenceValueProvider { get; set; }
+        public GraphDataProviderSettings Settings { get; set; } = new();
 
         protected virtual double? GetReferenceValue()
         {
-            return ReferenceValueProvider?.Invoke();
+            return Settings?.ReferenceValueProvider?.Invoke();
         }
 
         internal struct DataPoint
@@ -50,6 +50,30 @@ namespace Ff.DevSuite.Performance
                 MaxValue = maxValue;
                 ReferenceColorImpact = referenceColorImpact;
             }
+        }
+    }
+
+    public class GraphDataProviderSettings
+    {
+        public Func<double?> ReferenceValueProvider { get; set; }
+        public bool? ExpandedByDefault { get; set; }
+        public bool? Register { get; set; }
+
+        public GraphDataProviderSettings()
+        {
+        }
+
+        public GraphDataProviderSettings(Func<double?> referenceValueProvider = null, bool? expandedByDefault = null, bool? register = null)
+        {
+            ReferenceValueProvider = referenceValueProvider;
+            ExpandedByDefault = expandedByDefault;
+            Register = register;
+        }
+
+        public GraphDataProviderSettings(bool expandedByDefault, bool register = true)
+        {
+            ExpandedByDefault = expandedByDefault;
+            Register = register;
         }
     }
 }

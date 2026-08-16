@@ -237,11 +237,11 @@ Refer to the documentation or sample scenes for more detailed configuration and 
         <ol>
           <li>Subclass <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/BaseGraphDataProvider.cs"><code>BaseGraphDataProvider</code></a></li>
           <li>Implement <code>GetCurrentValue()</code>, <code>Label</code>, and <code>UnitName</code></li>
-          <li>Optionally set <code>ReferenceValueProvider</code> for a threshold/reference line</li>
-          <li>Call <code>RegisterPerformancePanelGraph(new <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/BaseGraphDataProvider.cs">MyGraphDataProvider</a>())</code></li>
+          <li>Use <code>SetPerformanceGraphSettings</code> to modify thresholds, change default expanded state, or hide/disable graphs</li>
+          <li>Call <code>RegisterPerformanceGraph(new <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/BaseGraphDataProvider.cs">MyGraphDataProvider</a>())</code></li>
         </ol>
-        <p><strong>Change thresholds for existing graphs</strong></p>
-        <p>Use <code>SetPerformanceReferenceValue&lt;T&gt;(() =&gt; threshold)</code> where <code>T</code> is the provider type (e.g. <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/Providers/SystemRamGraphDataProvider.cs"><code>SystemRamGraphDataProvider</code></a>, <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/Providers/DrawCallsCountDataProvider.cs"><code>DrawCallsCountDataProvider</code></a>).</p>
+        <p><strong>Configure settings for performance graphs</strong></p>
+        <p>Use <code>SetPerformanceGraphSettings&lt;T&gt;(new GraphDataProviderSettings(referenceValueProvider: () =&gt; threshold, expandedByDefault: true, register: true))</code> where <code>T</code> is the provider type (e.g. <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/Providers/SystemRamGraphDataProvider.cs"><code>SystemRamGraphDataProvider</code></a>, <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/Providers/DrawCallsCountDataProvider.cs"><code>DrawCallsCountDataProvider</code></a>).</p>
         <p>Built-in <a href="DevSuite/Assets/DevSuite/Runtime/Utilities/CommonCommands.cs"><code>CommonCommands</code></a> exposes <strong>Target RAM</strong> and <strong>Target Draw Calls</strong> sliders that update these at runtime.</p>
         <p>Frame Time reference defaults to the target FPS budget (<code>1 / TargetFps * 1000 ms</code>).</p>
       </td>

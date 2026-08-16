@@ -4,9 +4,6 @@ namespace Ff.DevSuite.Performance
 {
     public class SystemRamGraphDataProvider : BaseGraphDataProvider
     {
-        public static bool RegisterByDefault = true;
-        public static new bool CollapsedByDefault = false;
-
         internal override string Label => "System RAM";
         internal override string UnitName => "MB";
 
@@ -14,7 +11,11 @@ namespace Ff.DevSuite.Performance
 
         public SystemRamGraphDataProvider()
         {
-            ReferenceValueProvider = () => 2000d;
+            Settings = new GraphDataProviderSettings(
+                referenceValueProvider: () => 2000d,
+                expandedByDefault: true,
+                register: true
+            );
             _profileRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "System Used Memory");
         }
 
