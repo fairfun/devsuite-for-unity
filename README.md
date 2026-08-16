@@ -1,6 +1,7 @@
 # DevSuite for Unity
 
 [![Unity](https://img.shields.io/badge/unity-2022.3.62+-000.svg?style=flat-square&logo=unity)](https://unity.com/)
+[![openupm](https://img.shields.io/npm/v/com.ff.devsuite?label=openupm&registry_uri=https://package.openupm.com&style=flat-square)](https://openupm.com/packages/com.ff.devsuite/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/fairfun/devsuite-for-unity?style=social)](https://github.com/fairfun/devsuite-for-unity/stargazers)
 
@@ -91,6 +92,14 @@ DevSuite serves as a modern, 100% free, and open-source alternative to popular U
   - [Newtonsoft.Json for Unity](https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html)
 
 ## Installation
+
+### Via OpenUPM
+
+The package is available on the [openupm registry](https://openupm.com/packages/com.ff.devsuite/). It can be installed via [openupm-cli](https://github.com/openupm/openupm-cli):
+
+```sh
+openupm add com.ff.devsuite
+```
 
 ### Via Git URL (UPM)
 
