@@ -30,15 +30,19 @@ namespace Ff.DevSuite.View
         private bool _keepDimmed = true;
         private readonly ScrollView _scrollView;
 
-        private readonly HashSet<string> _collapsedSceneNames = new();
-        private readonly HashSet<int> _expandedGameObjectInstanceIds = new();
+        private HashSet<string> CollapsedSceneNames => _context.HierarchyCollapsedScenes;
+        private HashSet<int> ExpandedGameObjectInstanceIds => _context.HierarchyExpandedGameObjects;
+        private GameObject SelectionAnchor
+        {
+            get => _context.HierarchySelectionAnchor;
+            set => _context.HierarchySelectionAnchor = value;
+        }
 
         private readonly HashSet<int> _matchingInstanceIds = new();
         private readonly HashSet<int> _descendantMatchingInstanceIds = new();
         private readonly Dictionary<int, VisualElement> _gameObjectRows = new();
         private readonly Dictionary<int, (GameObject Go, Toggle Toggle)> _gameObjectActivityToggles = new();
         private readonly List<VisualElement> _currentlySelectedRows = new();
-        private GameObject _selectionAnchor;
 
         private Regex _searchRegex;
         private VisualElement _pickOverlay;
@@ -63,7 +67,7 @@ namespace Ff.DevSuite.View
             _refreshBtn.text = "\uf021"; // sync
             _refreshBtn.clicked += () =>
             {
-                RebuildTree();
+                _context.NotifyHierarchyChanged();
                 DevSuiteUtils.ShowIconButtonClickedFeedback(_refreshBtn);
             };
 
@@ -82,6 +86,7 @@ namespace Ff.DevSuite.View
             _filterField = root.Q<TextField>("filterField");
             DevSuiteUtils.SetupInputFieldFocus(_filterField);
             _filterField.RegisterValueChangedCallback(evt => HandleSearchChanged(evt.newValue));
+            _filterField.RegisterCallback<FocusOutEvent>(evt => _filterField.SetValueWithoutNotify(_context.HierarchyPattern));
 
             _prevBtn = root.Q<Button>("prevBtn");
             _prevBtn.text = "\uf104"; // angle-left
@@ -96,10 +101,7 @@ namespace Ff.DevSuite.View
             _regexBtn.clicked += () =>
             {
                 _searchByRegex = !_searchByRegex;
-                if (_context != null)
-                {
-                    _context.HierarchySearchRegex = _searchByRegex;
-                }
+                _context.HierarchySearchRegex = _searchByRegex;
                 UpdateButtonStates();
                 HandleSearchOptionsChanged();
             };
@@ -109,10 +111,7 @@ namespace Ff.DevSuite.View
             _nameBtn.clicked += () =>
             {
                 _searchByName = !_searchByName;
-                if (_context != null)
-                {
-                    _context.HierarchySearchByName = _searchByName;
-                }
+                _context.HierarchySearchByName = _searchByName;
                 UpdateButtonStates();
                 HandleSearchOptionsChanged();
             };
@@ -122,10 +121,7 @@ namespace Ff.DevSuite.View
             _typeBtn.clicked += () =>
             {
                 _searchByType = !_searchByType;
-                if (_context != null)
-                {
-                    _context.HierarchySearchByType = _searchByType;
-                }
+                _context.HierarchySearchByType = _searchByType;
                 UpdateButtonStates();
                 HandleSearchOptionsChanged();
             };
@@ -135,10 +131,7 @@ namespace Ff.DevSuite.View
             _dimBtn.clicked += () =>
             {
                 _keepDimmed = !_keepDimmed;
-                if (_context != null)
-                {
-                    _context.HierarchyKeepDimmed = _keepDimmed;
-                }
+                _context.HierarchyKeepDimmed = _keepDimmed;
                 UpdateButtonStates();
                 HandleSearchOptionsChanged();
             };
@@ -156,9 +149,7 @@ namespace Ff.DevSuite.View
                     UnityEditor.Selection.selectionChanged += HandleEditorSelectionChanged;
                     // Sync initial selection
                     if (_context != null)
-                    {
                         _context.SelectedGameObject = UnityEditor.Selection.activeGameObject;
-                    }
 #endif
                 }
             );
@@ -179,31 +170,32 @@ namespace Ff.DevSuite.View
             {
                 _context.OnChanged -= HandleContextChanged;
                 _context.OnEveryFrame -= HandleOnEveryFrame;
+                _context.OnPickModeChanged -= HandlePickModeChanged;
+                _context.OnHierarchyChanged -= HandleHierarchyChanged;
             }
 
             _context = context;
 
-            if (_context != null)
+            _context.OnChanged += HandleContextChanged;
+            _context.OnEveryFrame += HandleOnEveryFrame;
+            _context.OnPickModeChanged += HandlePickModeChanged;
+            _context.OnHierarchyChanged += HandleHierarchyChanged;
+
+            _pickBtn.EnableInClassList("active", _context.PickModeActive);
+            if (_context.PickModeActive)
             {
-                _context.OnChanged += HandleContextChanged;
-                _context.OnEveryFrame += HandleOnEveryFrame;
-                _context.OnPickModeChanged += HandlePickModeChanged;
-
-                _pickBtn.EnableInClassList("active", _context.PickModeActive);
-                if (_context.PickModeActive)
-                {
-                    ShowPickOverlay();
-                }
-
-                _searchByRegex = _context.HierarchySearchRegex;
-                _searchByName = _context.HierarchySearchByName;
-                _searchByType = _context.HierarchySearchByType;
-                _keepDimmed = _context.HierarchyKeepDimmed;
-                UpdateButtonStates();
-                UpdateSearchRegex(_filterField.value);
-                PrecomputeSearch();
-                RebuildTree();
+                ShowPickOverlay();
             }
+
+            _filterField.SetValueWithoutNotify(_context.HierarchyPattern);
+            _searchByRegex = _context.HierarchySearchRegex;
+            _searchByName = _context.HierarchySearchByName;
+            _searchByType = _context.HierarchySearchByType;
+            _keepDimmed = _context.HierarchyKeepDimmed;
+            UpdateButtonStates();
+            UpdateSearchRegex(_filterField.value);
+            PrecomputeSearch();
+            RebuildTree();
         }
 
         public void Reset()
@@ -215,7 +207,7 @@ namespace Ff.DevSuite.View
                 _context.OnChanged -= HandleContextChanged;
                 _context.OnEveryFrame -= HandleOnEveryFrame;
                 _context.OnPickModeChanged -= HandlePickModeChanged;
-                _context = null;
+                _context.OnHierarchyChanged -= HandleHierarchyChanged;
             }
         }
 
@@ -317,26 +309,23 @@ namespace Ff.DevSuite.View
 
         private void HandleContextChanged()
         {
-            if (_context != null)
-            {
-                _pickBtn.EnableInClassList("active", _context.PickModeActive);
+            _pickBtn.EnableInClassList("active", _context.PickModeActive);
 
-                var regex = _context.HierarchySearchRegex;
-                var name = _context.HierarchySearchByName;
-                var type = _context.HierarchySearchByType;
-                var dim = _context.HierarchyKeepDimmed;
-                if (regex != _searchByRegex || name != _searchByName || type != _searchByType || dim != _keepDimmed)
-                {
-                    _searchByRegex = regex;
-                    _searchByName = name;
-                    _searchByType = type;
-                    _keepDimmed = dim;
-                    UpdateButtonStates();
-                    HandleSearchOptionsChanged();
-                }
+            var regex = _context.HierarchySearchRegex;
+            var name = _context.HierarchySearchByName;
+            var type = _context.HierarchySearchByType;
+            var dim = _context.HierarchyKeepDimmed;
+            if (regex != _searchByRegex || name != _searchByName || type != _searchByType || dim != _keepDimmed)
+            {
+                _searchByRegex = regex;
+                _searchByName = name;
+                _searchByType = type;
+                _keepDimmed = dim;
+                UpdateButtonStates();
+                HandleSearchOptionsChanged();
             }
 
-            if (_context != null && _context.SelectedGameObject != null)
+            if (_context.SelectedGameObject != null)
             {
                 var targetId = _context.SelectedGameObject.GetInstanceID();
                 if (!_gameObjectRows.ContainsKey(targetId))
@@ -382,18 +371,32 @@ namespace Ff.DevSuite.View
             _context.PickModeActive = !_context.PickModeActive;
         }
 
-        private void HandleSearchChanged(string query)
+        private void HandleHierarchyChanged()
         {
-            UpdateSearchRegex(query);
+            var focused = _filterField.focusController?.focusedElement as VisualElement;
+            if (focused == null || !_filterField.Contains(focused))
+            {
+                _filterField.SetValueWithoutNotify(_context.HierarchyPattern);
+            }
+
+            _searchByRegex = _context.HierarchySearchRegex;
+            _searchByName = _context.HierarchySearchByName;
+            _searchByType = _context.HierarchySearchByType;
+            _keepDimmed = _context.HierarchyKeepDimmed;
+            UpdateButtonStates();
+            UpdateSearchRegex(_filterField.value);
             PrecomputeSearch();
             RebuildTree();
         }
 
+        private void HandleSearchChanged(string query)
+        {
+            _context.HierarchyPattern = query;
+        }
+
         private void HandleSearchOptionsChanged()
         {
-            UpdateSearchRegex(_filterField.value);
-            PrecomputeSearch();
-            RebuildTree();
+            _context.NotifyHierarchyChanged();
         }
 
         private void UpdateSearchRegex(string query)
@@ -538,6 +541,34 @@ namespace Ff.DevSuite.View
             UpdateSelectionHighlight();
         }
 
+        private void ToggleSceneCollapsed(string sceneName)
+        {
+            if (!CollapsedSceneNames.Contains(sceneName))
+            {
+                CollapsedSceneNames.Add(sceneName);
+            }
+            else
+            {
+                CollapsedSceneNames.Remove(sceneName);
+            }
+
+            _context.NotifyHierarchyChanged();
+        }
+
+        private void ToggleGameObjectExpanded(int instanceId)
+        {
+            if (ExpandedGameObjectInstanceIds.Contains(instanceId))
+            {
+                ExpandedGameObjectInstanceIds.Remove(instanceId);
+            }
+            else
+            {
+                ExpandedGameObjectInstanceIds.Add(instanceId);
+            }
+
+            _context.NotifyHierarchyChanged();
+        }
+
         private void RenderSceneNode(Scene scene)
         {
             var sceneName = scene.name;
@@ -557,7 +588,7 @@ namespace Ff.DevSuite.View
             };
             foldoutBtn.AddToClassList("hierarchy-foldout-btn");
 
-            var isExpanded = !_collapsedSceneNames.Contains(sceneName);
+            var isExpanded = !CollapsedSceneNames.Contains(sceneName);
             foldoutBtn.text = isExpanded ? "\uf0d7" : "\uf0da";
             row.Add(foldoutBtn);
 
@@ -576,16 +607,7 @@ namespace Ff.DevSuite.View
                 {
                     if (evt.clickCount == 2)
                     {
-                        if (!_collapsedSceneNames.Contains(sceneName))
-                        {
-                            _collapsedSceneNames.Add(sceneName);
-                        }
-                        else
-                        {
-                            _collapsedSceneNames.Remove(sceneName);
-                        }
-
-                        RebuildTree();
+                        ToggleSceneCollapsed(sceneName);
                         evt.StopPropagation();
                     }
                 }
@@ -600,16 +622,7 @@ namespace Ff.DevSuite.View
 
             foldoutBtn.clicked += () =>
             {
-                if (!_collapsedSceneNames.Contains(sceneName))
-                {
-                    _collapsedSceneNames.Add(sceneName);
-                }
-                else
-                {
-                    _collapsedSceneNames.Remove(sceneName);
-                }
-
-                RebuildTree();
+                ToggleSceneCollapsed(sceneName);
             };
 
             if (isExpanded)
@@ -675,7 +688,7 @@ namespace Ff.DevSuite.View
             foldoutBtn.AddToClassList("hierarchy-foldout-btn");
 
             var hasChildren = go.transform.childCount > 0;
-            var isExpanded = _expandedGameObjectInstanceIds.Contains(instanceId) || (_searchRegex != null && hasMatchingDescendant);
+            var isExpanded = ExpandedGameObjectInstanceIds.Contains(instanceId) || (_searchRegex != null && hasMatchingDescendant);
 
             if (hasChildren)
             {
@@ -753,16 +766,7 @@ namespace Ff.DevSuite.View
 
             foldoutBtn.clicked += () =>
             {
-                if (_expandedGameObjectInstanceIds.Contains(instanceId))
-                {
-                    _expandedGameObjectInstanceIds.Remove(instanceId);
-                }
-                else
-                {
-                    _expandedGameObjectInstanceIds.Add(instanceId);
-                }
-
-                RebuildTree();
+                ToggleGameObjectExpanded(instanceId);
             };
 
             row.RegisterCallback<ClickEvent>(
@@ -770,82 +774,70 @@ namespace Ff.DevSuite.View
                 {
                     if (evt.clickCount == 2 && hasChildren)
                     {
-                        if (_expandedGameObjectInstanceIds.Contains(instanceId))
-                        {
-                            _expandedGameObjectInstanceIds.Remove(instanceId);
-                        }
-                        else
-                        {
-                            _expandedGameObjectInstanceIds.Add(instanceId);
-                        }
-
-                        RebuildTree();
+                        ToggleGameObjectExpanded(instanceId);
                         evt.StopPropagation();
                     }
                     else if (evt.clickCount == 1)
                     {
-                        if (_context != null)
+                        var isCtrlHeld = evt.ctrlKey || evt.commandKey;
+                        var isShiftHeld = evt.shiftKey;
+
+                        if (isShiftHeld && SelectionAnchor != null)
                         {
-                            var isCtrlHeld = evt.ctrlKey || evt.commandKey;
-                            var isShiftHeld = evt.shiftKey;
-
-                            if (isShiftHeld && _selectionAnchor != null)
+                            var visibleList = GetVisibleGameObjectsInOrder();
+                            if (visibleList.Contains(SelectionAnchor) && visibleList.Contains(go))
                             {
-                                var visibleList = GetVisibleGameObjectsInOrder();
-                                if (visibleList.Contains(_selectionAnchor) && visibleList.Contains(go))
+                                var anchorIndex = visibleList.IndexOf(SelectionAnchor);
+                                var targetIndex = visibleList.IndexOf(go);
+                                var start = Mathf.Min(anchorIndex, targetIndex);
+                                var end = Mathf.Max(anchorIndex, targetIndex);
+
+                                var range = new List<GameObject>();
+                                for (var i = start; i <= end; i++)
                                 {
-                                    var anchorIndex = visibleList.IndexOf(_selectionAnchor);
-                                    var targetIndex = visibleList.IndexOf(go);
-                                    var start = Mathf.Min(anchorIndex, targetIndex);
-                                    var end = Mathf.Max(anchorIndex, targetIndex);
-
-                                    var range = new List<GameObject>();
-                                    for (var i = start; i <= end; i++)
-                                    {
-                                        range.Add(visibleList[i]);
-                                    }
-
-                                    _context.SetSelectedGameObjects(range);
-                                    _context.InspectorVisible = true;
-#if UNITY_EDITOR
-                                    UnityEditor.Selection.objects = range.ToArray();
-#endif
+                                    range.Add(visibleList[i]);
                                 }
+
+                                _context.SetSelectedGameObjects(range);
+                                _context.InspectorVisible = true;
+#if UNITY_EDITOR
+                                UnityEditor.Selection.objects = range.ToArray();
+#endif
+                            }
+                        }
+                        else
+                        {
+                            SelectionAnchor = go;
+                            if (isCtrlHeld)
+                            {
+                                _context.ToggleSelectedGameObject(go);
                             }
                             else
                             {
-                                _selectionAnchor = go;
-                                if (isCtrlHeld)
-                                {
-                                    _context.ToggleSelectedGameObject(go);
-                                }
-                                else
-                                {
-                                    _context.SelectedGameObject = go;
-                                }
-
-                                _context.InspectorVisible = true;
-#if UNITY_EDITOR
-                                if (isCtrlHeld)
-                                {
-                                    var currentSelection = new List<Object>(UnityEditor.Selection.objects);
-                                    if (currentSelection.Contains(go))
-                                    {
-                                        currentSelection.Remove(go);
-                                    }
-                                    else
-                                    {
-                                        currentSelection.Add(go);
-                                    }
-
-                                    UnityEditor.Selection.objects = currentSelection.ToArray();
-                                }
-                                else
-                                {
-                                    UnityEditor.Selection.activeGameObject = go;
-                                }
-#endif
+                                _context.SelectedGameObject = go;
                             }
+
+                            _context.InspectorVisible = true;
+#if UNITY_EDITOR
+                            if (isCtrlHeld)
+                            {
+                                var currentSelection = new List<Object>(UnityEditor.Selection.objects);
+                                if (currentSelection.Contains(go))
+                                {
+                                    currentSelection.Remove(go);
+                                }
+                                else
+                                {
+                                    currentSelection.Add(go);
+                                }
+
+                                UnityEditor.Selection.objects = currentSelection.ToArray();
+                            }
+                            else
+                            {
+                                UnityEditor.Selection.activeGameObject = go;
+                            }
+#endif
                         }
                     }
                 }
@@ -871,26 +863,23 @@ namespace Ff.DevSuite.View
             }
             _currentlySelectedRows.Clear();
 
-            if (_context != null)
+            foreach (var go in _context.SelectedGameObjects)
             {
-                foreach (var go in _context.SelectedGameObjects)
+                if (go == null)
                 {
-                    if (go == null)
-                    {
-                        continue;
-                    }
-                    var selId = go.GetInstanceID();
-                    if (_gameObjectRows.TryGetValue(selId, out var row))
-                    {
-                        row.AddToClassList("selected");
-                        _currentlySelectedRows.Add(row);
-                    }
+                    continue;
                 }
+                var selId = go.GetInstanceID();
+                if (_gameObjectRows.TryGetValue(selId, out var row))
+                {
+                    row.AddToClassList("selected");
+                    _currentlySelectedRows.Add(row);
+                }
+            }
 
-                if (_selectionAnchor == null || !_context.SelectedGameObjects.Contains(_selectionAnchor))
-                {
-                    _selectionAnchor = _context.SelectedGameObject;
-                }
+            if (SelectionAnchor == null || !_context.SelectedGameObjects.Contains(SelectionAnchor))
+            {
+                SelectionAnchor = _context.SelectedGameObject;
             }
         }
 
@@ -904,7 +893,7 @@ namespace Ff.DevSuite.View
                 {
                     continue;
                 }
-                if (_collapsedSceneNames.Contains(scene.name))
+                if (CollapsedSceneNames.Contains(scene.name))
                 {
                     continue;
                 }
@@ -937,7 +926,7 @@ namespace Ff.DevSuite.View
             }
 
             var instanceId = go.GetInstanceID();
-            if (_expandedGameObjectInstanceIds.Contains(instanceId))
+            if (ExpandedGameObjectInstanceIds.Contains(instanceId))
             {
                 for (var i = 0; i < go.transform.childCount; i++)
                 {
@@ -1003,7 +992,7 @@ namespace Ff.DevSuite.View
             _context.SelectedGameObject = target;
             _context.InspectorVisible = true;
             ExpandParents(target);
-            RebuildTree();
+            _context.NotifyHierarchyChanged();
 
             if (_gameObjectRows.TryGetValue(target.GetInstanceID(), out var row))
             {
@@ -1035,12 +1024,12 @@ namespace Ff.DevSuite.View
                 return;
             }
 
-            _collapsedSceneNames.Remove(go.scene.name);
+            CollapsedSceneNames.Remove(go.scene.name);
 
             var parent = go.transform.parent;
             while (parent != null)
             {
-                _expandedGameObjectInstanceIds.Add(parent.gameObject.GetInstanceID());
+                ExpandedGameObjectInstanceIds.Add(parent.gameObject.GetInstanceID());
                 parent = parent.parent;
             }
         }
@@ -1080,7 +1069,7 @@ namespace Ff.DevSuite.View
 
         private GameObject GetSelectedGameObject()
         {
-            if (_context != null && _context.SelectedGameObject != null)
+            if (_context.SelectedGameObject != null)
             {
                 return _context.SelectedGameObject;
             }
@@ -1155,30 +1144,27 @@ namespace Ff.DevSuite.View
 #if UNITY_EDITOR
         private void HandleEditorSelectionChanged()
         {
-            if (_context != null)
+            var newSelection = UnityEditor.Selection.gameObjects;
+            var selectionChanged = false;
+            if (_context.SelectedGameObjects.Count != newSelection.Length)
             {
-                var newSelection = UnityEditor.Selection.gameObjects;
-                var selectionChanged = false;
-                if (_context.SelectedGameObjects.Count != newSelection.Length)
+                selectionChanged = true;
+            }
+            else
+            {
+                foreach (var selection in newSelection)
                 {
-                    selectionChanged = true;
-                }
-                else
-                {
-                    foreach (var selection in newSelection)
+                    if (!_context.SelectedGameObjects.Contains(selection))
                     {
-                        if (!_context.SelectedGameObjects.Contains(selection))
-                        {
-                            selectionChanged = true;
-                            break;
-                        }
+                        selectionChanged = true;
+                        break;
                     }
                 }
+            }
 
-                if (selectionChanged)
-                {
-                    _context.SetSelectedGameObjects(newSelection);
-                }
+            if (selectionChanged)
+            {
+                _context.SetSelectedGameObjects(newSelection);
             }
         }
 #endif

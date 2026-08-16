@@ -118,10 +118,12 @@ namespace Ff.DevSuite
         internal event Action OnLogMessagesChanged;
         internal event Action<LogMessageData> OnLogMessagesMessageAdded;
         internal event Action OnLogMessagesVisibilityChanged;
+        internal event Action OnHierarchyChanged;
         private readonly BlockableDispatcher _apiCalledDispatcher;
         private readonly BlockableDispatcher _onChangedDispatcher;
         private readonly BlockableDispatcher _onEveryFrameDispatcher;
         private readonly BlockableDispatcher _onPerformancePanelDispatcher;
+        private readonly BlockableDispatcher _onHierarchyPanelDispatcher;
         private BlockableDispatcher OnEveryFrameDispatcher => _onEveryFrameDispatcher;
         internal BlockableDispatcher ApiCalledDispatcher => _apiCalledDispatcher;
 
@@ -162,6 +164,11 @@ namespace Ff.DevSuite
 
         private readonly List<GameObject> _selectedGameObjects = new();
         public IReadOnlyList<GameObject> SelectedGameObjects => _selectedGameObjects;
+
+        internal HashSet<string> HierarchyCollapsedScenes { get; } = new();
+        internal HashSet<int> HierarchyExpandedGameObjects { get; } = new();
+        internal GameObject HierarchySelectionAnchor { get; set; }
+        internal void NotifyHierarchyChanged() => _onHierarchyPanelDispatcher.Dispatch();
 
 #if UNITY_EDITOR
         private bool _isSyncingEditorSelection;
@@ -350,6 +357,7 @@ namespace Ff.DevSuite
             _onChangedDispatcher = new BlockableDispatcher(Block, () => OnChanged?.Invoke());
             _onEveryFrameDispatcher = new BlockableDispatcher(Block, () => OnEveryFrame?.Invoke());
             _onPerformancePanelDispatcher = new BlockableDispatcher(Block, () => OnPerformancePanelChanged?.Invoke());
+            _onHierarchyPanelDispatcher = new BlockableDispatcher(Block, () => OnHierarchyChanged?.Invoke());
 
             _pauseHandlerGameSpeed.OnChanged += speed =>
             {
@@ -486,6 +494,10 @@ namespace Ff.DevSuite
             _onChangedDispatcher.Reset();
             _onEveryFrameDispatcher.Reset();
             _onPerformancePanelDispatcher.Reset();
+            _onHierarchyPanelDispatcher.Reset();
+            HierarchyCollapsedScenes.Clear();
+            HierarchyExpandedGameObjects.Clear();
+            HierarchySelectionAnchor = null;
 
             foreach (var provider in _performancePanelProviders)
             {
@@ -1022,6 +1034,26 @@ namespace Ff.DevSuite
         {
             get => !(Settings?.Ready ?? false) || Settings.Value.HierarchyKeepDimmed;
             set => SetSettingsValue(() => Settings.Value.HierarchyKeepDimmed, v => Settings.Value.HierarchyKeepDimmed = v, value);
+        }
+
+        internal string HierarchyPattern
+        {
+            get => Settings?.Ready ?? false ? Settings.Value.HierarchyPattern : "";
+            set =>
+                SetSettingsValue(
+                    () => Settings.Value.HierarchyPattern,
+                    v =>
+                    {
+                        if (Settings.Value.HierarchyPattern == v)
+                        {
+                            return;
+                        }
+
+                        Settings.Value.HierarchyPattern = v;
+                        _onHierarchyPanelDispatcher.Dispatch();
+                    },
+                    value
+                );
         }
 
         private void SetSettingsValue<T>(Func<T> getter, Action<T> setter, T value)
@@ -2207,6 +2239,7 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(18)][Key(18)] public Dictionary<string, bool> PerformanceGraphCollapsedState { get; set; } = new();
         [DataMember][MemoryPackOrder(19)][Key(19)] public bool InspectorAutoRefresh { get; set; }
         [DataMember][MemoryPackOrder(20)][Key(20)] public bool InspectorAutoPause { get; set; } = true;
+        [DataMember][MemoryPackOrder(21)][Key(21)] public string HierarchyPattern { get; set; }
 
         public void InitializeDefaultsIfNeeded()
         {
