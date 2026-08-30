@@ -1752,7 +1752,6 @@ namespace Ff.DevSuite
 
             Settings.Value.VirtualButtonParameters[key] = strVal;
             Settings.ForceSave();
-            _onChangedDispatcher.Dispatch();
         }
 
         internal bool CanConvert(Type a, Type b)
