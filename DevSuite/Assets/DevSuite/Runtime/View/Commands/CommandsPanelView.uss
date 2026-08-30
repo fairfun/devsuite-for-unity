@@ -249,15 +249,26 @@
     padding: 0 4px;
     font-size: 11px;
     color: var(--text-color);
+    overflow: hidden;
+    min-width: 0;
+    flex-shrink: 1;
 }
 
 .ff-commands-unit-dropdown .unity-base-popup-field__text {
     color: var(--text-color);
     margin-right: 4px;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    -unity-text-overflow-position: end;
+    -unity-text-align: middle-left;
 }
 
 .ff-commands-unit-dropdown .unity-base-popup-field__arrow {
     -unity-background-image-tint-color: rgb(255, 255, 255);
+    flex-shrink: 0;
 }
 
 /* Force hide any focus rings or background images on ALL slider components */
@@ -401,6 +412,8 @@
 .unity-base-dropdown__item {
     background-color: transparent !important;
     padding: 2px 4px !important;
+    flex-direction: row !important;
+    align-items: center !important;
 }
 
 .unity-base-dropdown__item:hover {
@@ -410,6 +423,12 @@
 .unity-base-dropdown__label {
     color: var(--text-color) !important;
     font-size: 11px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    -unity-text-overflow-position: end !important;
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
 }
 
 .unity-base-dropdown__item:hover .unity-base-dropdown__label {
@@ -421,6 +440,9 @@
     -unity-background-image-tint-color: rgb(255, 255, 255) !important;
     width: 12px !important;
     height: 12px !important;
+    min-width: 12px !important;
+    min-height: 12px !important;
+    flex-shrink: 0 !important;
 }
 
 .unity-base-dropdown__header,

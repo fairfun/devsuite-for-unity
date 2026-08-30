@@ -173,7 +173,7 @@ namespace Ff.DevSuite
 
         private static string _systemInfoText;
         [CommandGroup(GroupSystem, Scope = AttributeScope.Continuous),
-         Command(DisplayName = "", HeightMultiplier = 8.55f, Description = "You can change the information here by assigning CommonCommands.ModifySystemInfo. Compiler defines are not guaranteed to be 100% accurate. For adding custom build-time data use CommonCommands.CustomSystemInfoBuildTimeData."),
+         Command(DisplayName = "", HeightMultiplier = 9f, Description = "You can change the information here by assigning CommonCommands.ModifySystemInfo. Compiler defines are not guaranteed to be 100% accurate. For adding custom build-time data use CommonCommands.CustomSystemInfoBuildTimeData."),
          CommandValue]
         private static string SystemInfoText
         {
