@@ -283,11 +283,10 @@ namespace Ff.DevSuite.Commands.Attributes
                         AddCommandToContext(associatedCommand);
                     }
 
-                    BaseCommandUnit unit = null;
                     switch (attributeCommandUnit)
                     {
                         case CommandValueAttribute value:
-                            unit = new CommandUnitValue(
+                            var valueUnit = new CommandUnitValue(
                                 member.GetReturnType(),
                                 GetMemberValueFunction(member, instance),
                                 value.ReadOnly ? null : SetMemberValueFunction(member, instance),
@@ -303,29 +302,123 @@ namespace Ff.DevSuite.Commands.Attributes
                                 value.FontResource,
                                 value.Format
                             ).WithLineNumber(value.LineNumber);
+
+                            _commandsForUnits[attributeCommandUnit] = associatedCommand;
+                            _context.CommandsApi.AttachCommandUnit(
+                                new CommandKey(associatedCommand.Id, associatedCommand.GroupId, associatedCommand.CategoryId, instance),
+                                valueUnit,
+                                SuppressWarnings
+                            );
                             break;
 
                         case CommandButtonAttribute button:
-                            unit = new CommandUnitButton(
-                                !string.IsNullOrEmpty(button.Title) ? button.Title : member.Name,
-                                GetActionFunction(member, instance),
-                                button.Priority,
-                                button.Shortcut,
-                                button.Description,
-                                button.SuppressExceptions,
-                                button.Flex,
-                                ParseColor(button.Color),
-                                button.FontResource
-                            ).WithLineNumber(button.LineNumber);
+                            if (member is MethodInfo method && method.GetParameters().Length > 0)
+                            {
+                                var parameters = method.GetParameters();
+                                var getters = new Func<object>[parameters.Length];
+                                for (var i = 0; i < parameters.Length; i++)
+                                {
+                                    var param = parameters[i];
+                                    var pIndex = i;
+                                    var pType = param.ParameterType;
+                                    var pDefault = param.HasDefaultValue ? param.DefaultValue : null;
+                                    var pKey = _context.GetVirtualParameterKey(associatedCommand.Id, associatedCommand.GroupId, associatedCommand.CategoryId, method, pIndex, param.Name);
+                                    getters[pIndex] = () => _context.GetVirtualParameterValue(pKey, pType, pDefault);
+                                }
+
+                                Action action = () =>
+                                {
+                                    var args = new object[parameters.Length];
+                                    for (var i = 0; i < parameters.Length; i++)
+                                    {
+                                        var p = parameters[i];
+                                        var val = getters[i]();
+                                        if (val == null && p.ParameterType.IsValueType && Nullable.GetUnderlyingType(p.ParameterType) == null)
+                                        {
+                                            val = p.HasDefaultValue ? p.DefaultValue : Activator.CreateInstance(p.ParameterType);
+                                        }
+                                        args[i] = val;
+                                    }
+                                    method.Invoke(instance, args);
+                                };
+
+                                var buttonUnit = new CommandUnitButton(
+                                    !string.IsNullOrEmpty(button.Title) ? button.Title : member.Name,
+                                    action,
+                                    button.Priority,
+                                    button.Shortcut,
+                                    button.Description,
+                                    button.SuppressExceptions,
+                                    button.Flex,
+                                    ParseColor(button.Color),
+                                    button.FontResource
+                                );
+                                buttonUnit.LineNumber = button.LineNumber;
+
+                                _commandsForUnits[attributeCommandUnit] = associatedCommand;
+                                var commandKey = new CommandKey(associatedCommand.Id, associatedCommand.GroupId, associatedCommand.CategoryId, instance);
+                                _context.CommandsApi.AttachCommandUnit(
+                                    commandKey,
+                                    buttonUnit,
+                                    SuppressWarnings
+                                );
+
+                                for (var i = 0; i < parameters.Length; i++)
+                                {
+                                    var param = parameters[i];
+                                    var pIndex = i;
+                                    var pType = param.ParameterType;
+                                    var pKey = _context.GetVirtualParameterKey(associatedCommand.Id, associatedCommand.GroupId, associatedCommand.CategoryId, method, pIndex, param.Name);
+
+                                    var flex = -1f;
+                                    if (_context.HasLimitedValues(new CommandUnitValue(pType, null)))
+                                    {
+                                        flex = 1.5f;
+                                    }
+
+                                    var paramUnit = new CommandUnitButtonParameter(
+                                        buttonUnit,
+                                        pIndex,
+                                        param.Name,
+                                        pType,
+                                        getters[pIndex],
+                                        val => _context.SetVirtualParameterValue(pKey, pType, val),
+                                        priority: button.Priority,
+                                        description: param.Name,
+                                        flex: flex,
+                                        suppressExceptions: button.SuppressExceptions
+                                    ).WithLineNumber(button.LineNumber);
+
+                                    _context.CommandsApi.AttachCommandUnit(
+                                        commandKey,
+                                        paramUnit,
+                                        SuppressWarnings
+                                    );
+                                }
+                            }
+                            else
+                            {
+                                var buttonUnit = new CommandUnitButton(
+                                    !string.IsNullOrEmpty(button.Title) ? button.Title : member.Name,
+                                    GetActionFunction(member, instance),
+                                    button.Priority,
+                                    button.Shortcut,
+                                    button.Description,
+                                    button.SuppressExceptions,
+                                    button.Flex,
+                                    ParseColor(button.Color),
+                                    button.FontResource
+                                ).WithLineNumber(button.LineNumber);
+
+                                _commandsForUnits[attributeCommandUnit] = associatedCommand;
+                                _context.CommandsApi.AttachCommandUnit(
+                                    new CommandKey(associatedCommand.Id, associatedCommand.GroupId, associatedCommand.CategoryId, instance),
+                                    buttonUnit,
+                                    SuppressWarnings
+                                );
+                            }
                             break;
                     }
-
-                    _commandsForUnits[attributeCommandUnit] = associatedCommand;
-                    _context.CommandsApi.AttachCommandUnit(
-                        new CommandKey(associatedCommand.Id, associatedCommand.GroupId, associatedCommand.CategoryId, instance),
-                        unit,
-                        SuppressWarnings
-                    );
                 }
             }
             return;

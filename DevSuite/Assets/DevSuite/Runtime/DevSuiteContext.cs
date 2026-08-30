@@ -1659,6 +1659,101 @@ namespace Ff.DevSuite
             return val;
         }
 
+        internal string GetVirtualParameterKey(string commandId, string groupId, string categoryId, MethodInfo method, int paramIndex, string paramName)
+        {
+            var declType = method.DeclaringType?.FullName ?? "";
+            var methodName = method.Name;
+            return $"{categoryId ?? ""}__{groupId ?? ""}__{commandId ?? methodName}__{declType}__{methodName}__{paramIndex}__{paramName}";
+        }
+
+        internal object GetVirtualParameterValue(string key, Type targetType, object defaultValue)
+        {
+            if (CheckSettingsInitialized(true) && Settings.Value.VirtualButtonParameters.TryGetValue(key, out var savedStr))
+            {
+                if (savedStr == null || savedStr == NullRepresentation)
+                {
+                    if (targetType.IsNullable() || !targetType.IsValueType)
+                    {
+                        return null;
+                    }
+                }
+                else
+                {
+                    var chainResult = GetAdaptersChain(typeof(string), targetType, true);
+                    if (chainResult.Steps != null)
+                    {
+                        try
+                        {
+                            object val = savedStr;
+                            foreach (var step in chainResult.Steps)
+                            {
+                                val = step.Convert(val, null);
+                            }
+                            return val;
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogWarning($"Failed to convert virtual parameter '{key}' from string '{savedStr}' to '{targetType.Name}': {e}");
+                        }
+                    }
+                }
+            }
+
+            if (defaultValue != null)
+            {
+                if (targetType.IsAssignableFrom(defaultValue.GetType()))
+                {
+                    return defaultValue;
+                }
+
+                var chainResult = GetAdaptersChain(defaultValue.GetType(), targetType, true);
+                if (chainResult.Steps != null)
+                {
+                    try
+                    {
+                        object val = defaultValue;
+                        foreach (var step in chainResult.Steps)
+                        {
+                            val = step.Convert(val, null);
+                        }
+                        return val;
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+            }
+
+            if (targetType.IsValueType && Nullable.GetUnderlyingType(targetType) == null)
+            {
+                return Activator.CreateInstance(targetType);
+            }
+
+            return null;
+        }
+
+        internal void SetVirtualParameterValue(string key, Type targetType, object value)
+        {
+            if (!CheckSettingsInitialized())
+            {
+                return;
+            }
+
+            string strVal;
+            if (value == null)
+            {
+                strVal = NullRepresentation;
+            }
+            else
+            {
+                strVal = GetRepresentation<string>(value, value.GetType(), out _, true);
+                strVal ??= value.ToString();
+            }
+
+            Settings.Value.VirtualButtonParameters[key] = strVal;
+            Settings.ForceSave();
+        }
+
         internal bool CanConvert(Type a, Type b)
         {
             return GetAdaptersChain(a, b, true).Error == null;
@@ -2268,6 +2363,7 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(19)][Key(19)] public bool InspectorAutoRefresh { get; set; }
         [DataMember][MemoryPackOrder(20)][Key(20)] public bool InspectorAutoPause { get; set; } = true;
         [DataMember][MemoryPackOrder(21)][Key(21)] public string HierarchyPattern { get; set; }
+        [DataMember][MemoryPackOrder(22)][Key(22)] public Dictionary<string, string> VirtualButtonParameters { get; set; } = new();
 
         public void InitializeDefaultsIfNeeded()
         {
@@ -2275,6 +2371,7 @@ namespace Ff.DevSuite
             PerformanceGraphCollapsedState ??= new();
             CollapsedGroups ??= new();
             HiddenLogSeverity ??= new();
+            VirtualButtonParameters ??= new();
         }
     }
 

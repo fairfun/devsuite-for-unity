@@ -399,22 +399,34 @@ namespace Ff.DevSuite
         [CommandCategory("Buttons")]
         private static class DevSuiteTestingCategoryButtons
         {
-            [CommandButton]
-            private static void ParameterlessMethod() => Debug.LogWarning(nameof(ParameterlessMethod));
+            [Command(DisplayName = "")][CommandButton]
+            private static void NoParams() => Debug.LogWarning(nameof(NoParams));
 
-            [CommandButton]
-            private static event Action ActionWithoutParameters;
+            [Command(DisplayName = "")][CommandButton]
+            private static event Action ActionNoParams;
             static DevSuiteTestingCategoryButtons()
             {
-                ActionWithoutParameters += () => Debug.LogWarning(nameof(ActionWithoutParameters));
+                ActionNoParams += () => Debug.LogWarning(nameof(ActionNoParams));
             }
 
-            [CommandButton]
-            private static string MethodWithParameters(string a = null, string b = null)
+            [Command(DisplayName = "")][CommandButton]
+            private static string Strings(string a = null, string b = null)
             {
-                var result = $"{nameof(MethodWithParameters)}: {nameof(a)}={a}, {nameof(b)}={b}";
+                var result = $"{nameof(Strings)}: {nameof(a)}={a}, {nameof(b)}={b}";
                 Debug.LogWarning(result);
                 return result;
+            }
+
+            [Command(DisplayName = "")][CommandButton]
+            private static void Various(int count = 5, DayOfWeek day = DayOfWeek.Friday, bool special = true, float? num = 3.14f)
+            {
+                Debug.LogWarning($"{nameof(Various)}: count={count}, day={day}, special={special}, num={num}");
+            }
+
+            [Command(DisplayName = "")][CommandButton]
+            private static void Vector(Vector3 pos = default, int? num = null)
+            {
+                Debug.LogWarning($"{nameof(Vector)}: pos={pos}, num={num}");
             }
         }
 

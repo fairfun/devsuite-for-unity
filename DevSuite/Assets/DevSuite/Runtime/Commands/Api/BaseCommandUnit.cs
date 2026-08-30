@@ -17,6 +17,7 @@ namespace Ff.DevSuite.Commands
 
         public int RegistrationOrder { get; set; }
         public Command AssignedToCommand { get; set; }
+        public BaseCommandUnit OwnerUnit { get; set; }
 
         protected BaseCommandUnit(float? priority, string description, bool suppressExceptions, float flex, Color? color = null, string fontResource = null)
         {
@@ -38,15 +39,35 @@ namespace Ff.DevSuite.Commands
         {
             if (ReferenceEquals(this, other))
                 return 0;
-            var cmp = other == null ? -1 : 0;
+            if (other == null)
+                return -1;
+
+            var primaryThis = OwnerUnit ?? this;
+            var primaryOther = other.OwnerUnit ?? other;
+
+            var cmp = -primaryThis.Priority.CompareTo(primaryOther.Priority);
             if (cmp == 0)
-                cmp = -Priority.CompareTo(other.Priority);
+                cmp = primaryThis.LineNumber.CompareTo(primaryOther.LineNumber);
+
+            if (cmp == 0 && !ReferenceEquals(primaryThis, primaryOther))
+            {
+                cmp = (primaryThis is CommandUnitButton ? 1 : 0).CompareTo(primaryOther is CommandUnitButton ? 1 : 0);
+                if (cmp == 0)
+                    cmp = primaryThis.RegistrationOrder.CompareTo(primaryOther.RegistrationOrder);
+            }
+
             if (cmp == 0)
-                cmp = LineNumber.CompareTo(other.LineNumber);
-            if (cmp == 0)
-                cmp = (this is CommandUnitButton ? 1 : 0).CompareTo(other is CommandUnitButton ? 1 : 0);
+            {
+                cmp = (this is CommandUnitButtonParameter ? 1 : 0).CompareTo(other is CommandUnitButtonParameter ? 1 : 0);
+                if (cmp == 0 && this is CommandUnitButtonParameter paramThis && other is CommandUnitButtonParameter paramOther)
+                {
+                    cmp = paramThis.ParameterIndex.CompareTo(paramOther.ParameterIndex);
+                }
+            }
+
             if (cmp == 0)
                 cmp = RegistrationOrder.CompareTo(other.RegistrationOrder);
+
             return cmp;
         }
     }
