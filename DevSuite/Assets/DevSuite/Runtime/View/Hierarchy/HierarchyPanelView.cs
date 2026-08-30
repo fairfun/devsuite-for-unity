@@ -149,7 +149,7 @@ namespace Ff.DevSuite.View
                     UnityEditor.Selection.selectionChanged += HandleEditorSelectionChanged;
                     // Sync initial selection
                     if (_context != null)
-                        _context.SelectedGameObject = UnityEditor.Selection.activeGameObject;
+                        _context.SetSelectedGameObjectsFromEditor(UnityEditor.Selection.gameObjects);
 #endif
                 }
             );
@@ -1164,7 +1164,7 @@ namespace Ff.DevSuite.View
 
             if (selectionChanged)
             {
-                _context.SetSelectedGameObjects(newSelection);
+                _context.SetSelectedGameObjectsFromEditor(newSelection);
             }
         }
 #endif

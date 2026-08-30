@@ -319,7 +319,7 @@ namespace Ff.DevSuite.View
         {
             if (pickedObj != null && _context != null)
             {
-                _context.SelectedGameObject = pickedObj;
+                _context.SelectGameObjectViaPick(pickedObj);
                 _context.InspectorVisible = true;
             }
 

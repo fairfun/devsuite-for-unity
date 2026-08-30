@@ -221,7 +221,9 @@ namespace Ff.DevSuite
         }
 #endif
 
-        public void SetSelectedGameObjects(IEnumerable<GameObject> gameObjects)
+        private bool _isSelectedFromDevSuite;
+
+        internal void SetSelectedGameObjects(IEnumerable<GameObject> gameObjects)
         {
             _selectedGameObjects.Clear();
             if (gameObjects != null)
@@ -231,11 +233,24 @@ namespace Ff.DevSuite
 #if UNITY_EDITOR
             SyncEditorSelection();
 #endif
+            _isSelectedFromDevSuite = _selectedGameObjects.Count > 0;
             UpdateInspectorAutoPause();
             _onChangedDispatcher.Dispatch();
         }
 
-        public void ToggleSelectedGameObject(GameObject go)
+        internal void SetSelectedGameObjectsFromEditor(IEnumerable<GameObject> gameObjects)
+        {
+            _selectedGameObjects.Clear();
+            if (gameObjects != null)
+            {
+                _selectedGameObjects.AddRange(gameObjects);
+            }
+            _isSelectedFromDevSuite = false;
+            UpdateInspectorAutoPause();
+            _onChangedDispatcher.Dispatch();
+        }
+
+        internal void ToggleSelectedGameObject(GameObject go)
         {
             if (go == null)
             {
@@ -252,6 +267,7 @@ namespace Ff.DevSuite
 #if UNITY_EDITOR
             SyncEditorSelection();
 #endif
+            _isSelectedFromDevSuite = _selectedGameObjects.Count > 0;
             UpdateInspectorAutoPause();
             _onChangedDispatcher.Dispatch();
         }
@@ -281,9 +297,15 @@ namespace Ff.DevSuite
 #if UNITY_EDITOR
                 SyncEditorSelection();
 #endif
+                _isSelectedFromDevSuite = _selectedGameObjects.Count > 0;
                 UpdateInspectorAutoPause();
                 _onChangedDispatcher.Dispatch();
             }
+        }
+
+        internal void SelectGameObjectViaPick(GameObject go)
+        {
+            SelectedGameObject = go;
         }
 
         internal event Action<bool> OnPickModeChanged;
@@ -327,7 +349,12 @@ namespace Ff.DevSuite
                 }
             }
 
-            var shouldPause = InspectorAutoPause && hasSelected;
+            if (!hasSelected)
+            {
+                _isSelectedFromDevSuite = false;
+            }
+
+            var shouldPause = InspectorAutoPause && hasSelected && _isSelectedFromDevSuite;
             _pauseHandlerGameSpeed.Toggle(0f, 2, shouldPause, this);
         }
 
@@ -470,6 +497,7 @@ namespace Ff.DevSuite
                 PickModeActive = false;
             }
             _selectedGameObjects.Clear();
+            _isSelectedFromDevSuite = false;
             _pauseHandlerGameSpeed.Remove(1, this);
             _pauseHandlerGameSpeed.Remove(2, this);
 
