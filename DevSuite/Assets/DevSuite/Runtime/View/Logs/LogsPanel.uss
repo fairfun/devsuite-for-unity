@@ -216,3 +216,141 @@
 }
 
 /* Scrollbar styles removed, using Common.uss */
+
+/* CLI Command Input */
+.logs-cli-container {
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 6px;
+    background-color: var(--toolbar-bg);
+    border-top-width: 1px;
+    border-top-color: var(--divider-color);
+    position: relative;
+}
+
+.logs-cli-input-wrapper {
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(36, 36, 36, 0.6);
+    border-radius: 4px;
+    padding: 4px 5px;
+    margin: 2px 0;
+    margin-right: 4px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.05);
+    flex-grow: 1;
+}
+
+.logs-cli-icon {
+    color: var(--text-label-color);
+    font-size: 12px;
+    -unity-font-style: bold;
+    padding: 0;
+    margin: 0;
+    margin-right: 4px;
+}
+
+.logs-cli-field {
+    flex-grow: 1;
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    padding: 0;
+    margin: 0;
+    height: 16px;
+    --unity-cursor-color: rgb(180, 180, 180);
+}
+
+.logs-cli-field .unity-base-text-field__input {
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    padding: 0;
+    color: rgb(255, 255, 255);
+    font-size: 12px;
+}
+
+.logs-cli-send-btn {
+    height: 24px;
+    padding: 0 10px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: rgb(220, 220, 220);
+    font-size: 12px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-left: 2px;
+}
+
+.logs-cli-send-btn:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: rgb(255, 255, 255);
+}
+
+/* CLI Suggestions Tooltip */
+.logs-cli-tooltip {
+    position: absolute;
+    bottom: 34px;
+    left: 6px;
+    right: 6px;
+    background-color: rgba(30, 30, 30, 0.96);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    padding: 2px;
+    max-height: 272px;
+    overflow: hidden;
+}
+
+.logs-cli-tooltip-scroll {
+    max-height: 268px;
+}
+
+.logs-cli-tooltip-item {
+    flex-direction: column;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-bottom: 1px;
+}
+
+.logs-cli-tooltip-item:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.logs-cli-tooltip-item.selected {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.logs-cli-tooltip-header {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 1px;
+    padding: 1px;
+}
+
+.logs-cli-tooltip-cmd {
+    color: rgb(128, 200, 255);
+    font-size: 11px;
+    margin: 1px;
+    margin-right: 4px;
+    padding: 1px;
+    -unity-font-style: bold;
+}
+
+.logs-cli-tooltip-params {
+    color: rgb(180, 180, 180);
+    font-size: 10px;
+    margin: 1px;
+    padding: 1px;
+}
+
+.logs-cli-tooltip-desc {
+    color: rgb(136, 136, 136);
+    font-size: 9.5px;
+    margin: 1px;
+    margin-top: 0px;
+    padding: 1px;
+    white-space: normal;
+}

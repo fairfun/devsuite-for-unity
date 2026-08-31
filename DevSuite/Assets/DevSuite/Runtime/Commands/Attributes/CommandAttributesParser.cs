@@ -342,8 +342,13 @@ namespace Ff.DevSuite.Commands.Attributes
                                     method.Invoke(instance, args);
                                 };
 
+                                var title = !string.IsNullOrEmpty(button.Title) ? button.Title : member.Name;
+                                var cliCommand = !string.IsNullOrEmpty(button.CliCommand)
+                                    ? DevSuiteUtils.SanitizeCliCommand(button.CliCommand, !SuppressWarnings)
+                                    : DevSuiteUtils.SanitizeCliCommand(title, false);
+
                                 var buttonUnit = new CommandUnitButton(
-                                    !string.IsNullOrEmpty(button.Title) ? button.Title : member.Name,
+                                    title,
                                     action,
                                     button.Priority,
                                     button.Shortcut,
@@ -351,7 +356,8 @@ namespace Ff.DevSuite.Commands.Attributes
                                     button.SuppressExceptions,
                                     button.Flex,
                                     ParseColor(button.Color),
-                                    button.FontResource
+                                    button.FontResource,
+                                    cliCommand
                                 );
                                 buttonUnit.LineNumber = button.LineNumber;
 
@@ -398,8 +404,13 @@ namespace Ff.DevSuite.Commands.Attributes
                             }
                             else
                             {
+                                var title = !string.IsNullOrEmpty(button.Title) ? button.Title : member.Name;
+                                var cliCommand = !string.IsNullOrEmpty(button.CliCommand)
+                                    ? DevSuiteUtils.SanitizeCliCommand(button.CliCommand, !SuppressWarnings)
+                                    : DevSuiteUtils.SanitizeCliCommand(title, false);
+
                                 var buttonUnit = new CommandUnitButton(
-                                    !string.IsNullOrEmpty(button.Title) ? button.Title : member.Name,
+                                    title,
                                     GetActionFunction(member, instance),
                                     button.Priority,
                                     button.Shortcut,
@@ -407,7 +418,8 @@ namespace Ff.DevSuite.Commands.Attributes
                                     button.SuppressExceptions,
                                     button.Flex,
                                     ParseColor(button.Color),
-                                    button.FontResource
+                                    button.FontResource,
+                                    cliCommand
                                 ).WithLineNumber(button.LineNumber);
 
                                 _commandsForUnits[attributeCommandUnit] = associatedCommand;

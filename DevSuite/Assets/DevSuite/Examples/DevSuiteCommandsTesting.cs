@@ -428,6 +428,12 @@ namespace Ff.DevSuite
             {
                 Debug.LogWarning($"{nameof(Vector)}: pos={pos}, num={num}");
             }
+
+            [Command(DisplayName = "")][CommandButton(Title = "Run CLI Tests")]
+            private static void RunCliTests()
+            {
+                DevSuiteCliCommandsTests.RunAllTests();
+            }
         }
 
         [CommandCategory("Scale Types")]
