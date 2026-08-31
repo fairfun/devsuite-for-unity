@@ -331,38 +331,6 @@ namespace Ff.DevSuite
         [CommandButton(nameof(SavedPrefs), Title = "Open", Flex = 0f)]
         private static void SavedPrefs_Open() => Application.OpenURL($"file://{SavedPrefs}");
 
-        /* private static float? _originalTargetRamMb;
-        [CommandValue("Target RAM", MinValue = 0f, MaxValue = 32000f, ScaleType = ScaleType.Logarithmic)]
-        [CommandValue(Flex = 0.5f)]
-        public static SavedPrefsProperty<float?> TargetRamMb = new(nameof(TargetRamMb), null, onTouch: t =>
-        {
-            _originalTargetRamMb ??= (float?)(DevSuiteContext.Default as DevSuiteContext).GetPerformancePanelGraphReferenceValue<Performance.SystemRamGraphDataProvider>();
-            if (t.Type == SavedPrefsProperty<float?>.TouchType.Changed)
-            {
-                var val = t.Value ?? _originalTargetRamMb;
-                DevSuiteContext.Default.SetPerformanceGraphSettings<Performance.SystemRamGraphDataProvider>(new Performance.GraphDataProviderSettings(referenceValueProvider: () => val));
-            }
-
-            if (t.Value != null && t is { Type: SavedPrefsProperty<float?>.TouchType.Changed, PreviousValue: { HasValue: true, Value: null } })
-                t.SetValue(_originalTargetRamMb);
-        });
-
-        private static int? _originalTargetDrawCallsCount;
-        [CommandValue("Target Draw Calls", MinValue = 0f, MaxValue = 10000f, ScaleType = ScaleType.Logarithmic)]
-        [CommandValue(Flex = 0.5f)]
-        public static SavedPrefsProperty<int?> TargetDrawCallsCount = new(nameof(TargetDrawCallsCount), null, onTouch: t =>
-        {
-            _originalTargetDrawCallsCount ??= (int?)(DevSuiteContext.Default as DevSuiteContext).GetPerformancePanelGraphReferenceValue<Performance.DrawCallsCountDataProvider>();
-            if (t.Type == SavedPrefsProperty<int?>.TouchType.Changed)
-            {
-                var val = t.Value ?? _originalTargetDrawCallsCount;
-                DevSuiteContext.Default.SetPerformanceGraphSettings<Performance.DrawCallsCountDataProvider>(new Performance.GraphDataProviderSettings(referenceValueProvider: () => val));
-            }
-
-            if (t.Value != null && t is { Type: SavedPrefsProperty<int?>.TouchType.Changed, PreviousValue: { HasValue: true, Value: null } })
-                t.SetValue(_originalTargetDrawCallsCount);
-        }); */
-
         [Command(DisplayName = "Destroy DevSuite"), CommandButton(Title = "All", Color = ColorOrange, Flex = 0.5f)]
         private static void DestroyDevSuite()
         {
