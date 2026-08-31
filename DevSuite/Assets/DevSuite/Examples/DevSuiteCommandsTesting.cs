@@ -122,9 +122,9 @@ namespace Ff.DevSuite
             private static bool Checked = true;
 
 #if ENABLE_INPUT_SYSTEM
-            [Command("Command"), CommandButton(Shortcut = new[] { Key.A, Key.LeftCtrl })]
+            [Command("Command"), CommandButton(Shortcut = new[] { Key.A, Key.LeftCtrl }, CliEnabled = false)]
 #else
-            [Command("Command"), CommandButton(Shortcut = new[] { Key.A, Key.LeftControl })]
+            [Command("Command"), CommandButton(Shortcut = new[] { Key.A, Key.LeftControl }, CliEnabled = false)]
 #endif
             private static bool Action()
             {
@@ -399,17 +399,17 @@ namespace Ff.DevSuite
         [CommandCategory("Buttons")]
         private static class DevSuiteTestingCategoryButtons
         {
-            [Command(DisplayName = "")][CommandButton]
+            [Command(DisplayName = "")][CommandButton(CliEnabled = false)]
             private static void NoParams() => Debug.LogWarning(nameof(NoParams));
 
-            [Command(DisplayName = "")][CommandButton]
+            [Command(DisplayName = "")][CommandButton(CliEnabled = false)]
             private static event Action ActionNoParams;
             static DevSuiteTestingCategoryButtons()
             {
                 ActionNoParams += () => Debug.LogWarning(nameof(ActionNoParams));
             }
 
-            [Command(DisplayName = "")][CommandButton]
+            [Command(DisplayName = "")][CommandButton(CliEnabled = false)]
             private static string Strings(string a = null, string b = null)
             {
                 var result = $"{nameof(Strings)}: {nameof(a)}={a}, {nameof(b)}={b}";
@@ -417,16 +417,22 @@ namespace Ff.DevSuite
                 return result;
             }
 
-            [Command(DisplayName = "")][CommandButton]
+            [Command(DisplayName = "")][CommandButton(CliEnabled = false)]
             private static void Various(int count = 5, DayOfWeek day = DayOfWeek.Friday, bool special = true, float? num = 3.14f)
             {
                 Debug.LogWarning($"{nameof(Various)}: count={count}, day={day}, special={special}, num={num}");
             }
 
-            [Command(DisplayName = "")][CommandButton]
+            [Command(DisplayName = "")][CommandButton(CliEnabled = false)]
             private static void Vector(Vector3 pos = default, int? num = null)
             {
                 Debug.LogWarning($"{nameof(Vector)}: pos={pos}, num={num}");
+            }
+
+            [Command(DisplayName = "")][CommandButton(Title = "Run CLI Tests", CliEnabled = false)]
+            private static void RunCliTests()
+            {
+                DevSuiteCliCommandsTests.RunAllTests();
             }
         }
 
@@ -479,7 +485,7 @@ namespace Ff.DevSuite
         [CommandCategory("InstanceBased")]
         private class DevSuiteTestingCategoryInstanceBased
         {
-            [CommandButton]
+            [CommandButton(CliEnabled = false)]
             public void ParameterlessMethod() => Debug.LogWarning($"{nameof(ParameterlessMethod)} {GetHashCode()}");
             [CommandValue] public string SomeStringValue { get; set; } = "some value";
         }

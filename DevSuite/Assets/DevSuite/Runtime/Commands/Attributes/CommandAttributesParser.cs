@@ -342,8 +342,13 @@ namespace Ff.DevSuite.Commands.Attributes
                                     method.Invoke(instance, args);
                                 };
 
+                                var title = !string.IsNullOrEmpty(button.Title) ? button.Title : member.Name;
+                                var cliCommand = !string.IsNullOrEmpty(button.CliCommand)
+                                    ? DevSuiteUtils.SanitizeCliCommand(button.CliCommand, !SuppressWarnings)
+                                    : DevSuiteUtils.SanitizeCliCommand(title, false);
+
                                 var buttonUnit = new CommandUnitButton(
-                                    !string.IsNullOrEmpty(button.Title) ? button.Title : member.Name,
+                                    title,
                                     action,
                                     button.Priority,
                                     button.Shortcut,
@@ -351,7 +356,9 @@ namespace Ff.DevSuite.Commands.Attributes
                                     button.SuppressExceptions,
                                     button.Flex,
                                     ParseColor(button.Color),
-                                    button.FontResource
+                                    button.FontResource,
+                                    cliCommand,
+                                    button.CliEnabled
                                 );
                                 buttonUnit.LineNumber = button.LineNumber;
 
@@ -398,8 +405,13 @@ namespace Ff.DevSuite.Commands.Attributes
                             }
                             else
                             {
+                                var title = !string.IsNullOrEmpty(button.Title) ? button.Title : member.Name;
+                                var cliCommand = !string.IsNullOrEmpty(button.CliCommand)
+                                    ? DevSuiteUtils.SanitizeCliCommand(button.CliCommand, !SuppressWarnings)
+                                    : DevSuiteUtils.SanitizeCliCommand(title, false);
+
                                 var buttonUnit = new CommandUnitButton(
-                                    !string.IsNullOrEmpty(button.Title) ? button.Title : member.Name,
+                                    title,
                                     GetActionFunction(member, instance),
                                     button.Priority,
                                     button.Shortcut,
@@ -407,7 +419,9 @@ namespace Ff.DevSuite.Commands.Attributes
                                     button.SuppressExceptions,
                                     button.Flex,
                                     ParseColor(button.Color),
-                                    button.FontResource
+                                    button.FontResource,
+                                    cliCommand,
+                                    button.CliEnabled
                                 ).WithLineNumber(button.LineNumber);
 
                                 _commandsForUnits[attributeCommandUnit] = associatedCommand;
@@ -792,10 +806,31 @@ namespace Ff.DevSuite.Commands.Attributes
             if (string.IsNullOrEmpty(colorHex))
                 return null;
             colorHex = colorHex.Trim().TrimStart('#');
-            if (ColorUtility.TryParseHtmlString(colorHex, out var color))
-                return color;
-            if (ColorUtility.TryParseHtmlString($"#{colorHex}", out color))
-                return color;
+            if (colorHex.Length == 6 && uint.TryParse(colorHex, System.Globalization.NumberStyles.HexNumber, null, out var rgb))
+            {
+                var r = (byte)((rgb >> 16) & 0xFF) / 255f;
+                var g = (byte)((rgb >> 8) & 0xFF) / 255f;
+                var b = (byte)(rgb & 0xFF) / 255f;
+                return new Color(r, g, b, 1f);
+            }
+            if (colorHex.Length == 8 && uint.TryParse(colorHex, System.Globalization.NumberStyles.HexNumber, null, out var rgba))
+            {
+                var r = (byte)((rgba >> 24) & 0xFF) / 255f;
+                var g = (byte)((rgba >> 16) & 0xFF) / 255f;
+                var b = (byte)((rgba >> 8) & 0xFF) / 255f;
+                var a = (byte)(rgba & 0xFF) / 255f;
+                return new Color(r, g, b, a);
+            }
+            try
+            {
+                if (ColorUtility.TryParseHtmlString(colorHex, out var color))
+                    return color;
+                if (ColorUtility.TryParseHtmlString($"#{colorHex}", out color))
+                    return color;
+            }
+            catch
+            {
+            }
             return null;
         }
     }

@@ -478,6 +478,99 @@ namespace Ff.DevSuite
             return name;
         }
 
+        public static string SanitizeCliCommand(string cliCommand, bool warnOnWhitespace = false)
+        {
+            if (string.IsNullOrEmpty(cliCommand))
+            {
+                return string.Empty;
+            }
+
+            var trimmed = cliCommand.Trim();
+            if (trimmed.Any(char.IsWhiteSpace))
+            {
+                var singleWord = Regex.Replace(trimmed, @"\s+", "");
+                if (warnOnWhitespace)
+                {
+                    Debug.LogWarning($"CliCommand '{cliCommand}' is not a single word. Modifying it to '{singleWord}'.");
+                }
+                return singleWord;
+            }
+
+            return trimmed;
+        }
+
+        public static List<string> TokenizeCommandLine(string commandLine)
+        {
+            var tokens = new List<string>();
+            if (string.IsNullOrWhiteSpace(commandLine))
+            {
+                return tokens;
+            }
+
+            var current = new System.Text.StringBuilder();
+            var inQuotes = false;
+            var quoteChar = '\0';
+            var isEscaped = false;
+
+            for (var i = 0; i < commandLine.Length; i++)
+            {
+                var c = commandLine[i];
+
+                if (isEscaped)
+                {
+                    current.Append(c);
+                    isEscaped = false;
+                    continue;
+                }
+
+                if (c == '\\')
+                {
+                    isEscaped = true;
+                    continue;
+                }
+
+                if (inQuotes)
+                {
+                    if (c == quoteChar)
+                    {
+                        inQuotes = false;
+                        quoteChar = '\0';
+                    }
+                    else
+                    {
+                        current.Append(c);
+                    }
+                }
+                else
+                {
+                    if (c == '"' || c == '\'')
+                    {
+                        inQuotes = true;
+                        quoteChar = c;
+                    }
+                    else if (char.IsWhiteSpace(c))
+                    {
+                        if (current.Length > 0)
+                        {
+                            tokens.Add(current.ToString());
+                            current.Clear();
+                        }
+                    }
+                    else
+                    {
+                        current.Append(c);
+                    }
+                }
+            }
+
+            if (current.Length > 0)
+            {
+                tokens.Add(current.ToString());
+            }
+
+            return tokens;
+        }
+
         public static void ShowIconButtonClickedFeedback(Button button)
         {
             if (button.userData is string)
@@ -983,6 +1076,26 @@ namespace Ff.DevSuite
                 tooltipLabel.style.display = DisplayStyle.None;
                 tooltipLabel.style.visibility = Visibility.Hidden;
             }
+        }
+
+        public static string GetFriendlyTypeName(Type t)
+        {
+            if (t == null) return "object";
+            var underlying = Nullable.GetUnderlyingType(t);
+            if (underlying != null)
+            {
+                return $"{GetFriendlyTypeName(underlying)}?";
+            }
+            if (t == typeof(string)) return "string";
+            if (t == typeof(int)) return "int";
+            if (t == typeof(float)) return "float";
+            if (t == typeof(bool)) return "bool";
+            if (t == typeof(double)) return "double";
+            if (t == typeof(uint)) return "uint";
+            if (t == typeof(long)) return "long";
+            if (t == typeof(byte)) return "byte";
+            if (t == typeof(short)) return "short";
+            return t.Name;
         }
     }
 }

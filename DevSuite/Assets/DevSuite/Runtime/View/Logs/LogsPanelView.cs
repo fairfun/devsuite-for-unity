@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Ff.DevSuite.Commands;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -27,6 +29,17 @@ namespace Ff.DevSuite.View
         private readonly Button _clearButton;
 
         private readonly ScrollView _scrollView;
+
+        private readonly TextField _cliInputField;
+        private readonly TextField _cliGhostField;
+        private readonly Button _cliSendButton;
+        private readonly VisualElement _cliTooltipContainer;
+        private readonly ScrollView _cliTooltipScrollView;
+        private bool _isPointerOverTooltip;
+        private bool _cliInputFocused;
+        private int _cliHistoryIndex = -1;
+        private string _cliDraftText = string.Empty;
+
         private int _ordinaryCount, _warningCount, _errorCount;
 
         private readonly HashSet<GeneralizedLogSeverity> _collectStackTraceFor = new() { GeneralizedLogSeverity.Warning, GeneralizedLogSeverity.Error };
@@ -38,6 +51,7 @@ namespace Ff.DevSuite.View
             uxml.CloneTree(this);
             styleSheets.Add(uss);
 
+            style.flexGrow = 1;
             AddToClassList("ff-panel");
 
             var root = this.Q<VisualElement>("logs-panel-root") ?? this;
@@ -81,6 +95,70 @@ namespace Ff.DevSuite.View
             _scrollView = root.Q<ScrollView>("logsScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             _scrollView.verticalScroller.valueChanged += _ => ClearHovers();
+
+            _cliInputField = root.Q<TextField>("cliInputField");
+            _cliGhostField = root.Q<TextField>("cliGhostField");
+            _cliSendButton = root.Q<Button>("cliSendButton");
+            _cliTooltipContainer = root.Q<VisualElement>("cliTooltipContainer");
+            _cliTooltipScrollView = root.Q<ScrollView>("cliTooltipScrollView");
+
+            if (_cliInputField != null)
+            {
+                DevSuiteUtils.SetupInputFieldFocus(_cliInputField);
+                _cliInputField.RegisterValueChangedCallback(evt => HandleCliInputChanged(evt.newValue));
+                _cliInputField.RegisterCallback<FocusInEvent>(_ =>
+                {
+                    _cliInputFocused = true;
+                    ShowCliTooltip();
+                });
+                _cliInputField.RegisterCallback<FocusOutEvent>(_ =>
+                {
+                    _cliInputFocused = false;
+                    schedule.Execute(() =>
+                    {
+                        if (!_cliInputFocused && !_isPointerOverTooltip)
+                        {
+                            HideCliTooltip();
+                        }
+                    }).StartingIn(200);
+                });
+                _cliInputField.RegisterCallback<KeyDownEvent>(evt =>
+                {
+                    if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
+                    {
+                        evt.StopImmediatePropagation();
+                        HandleCliSend();
+                    }
+                    else if (evt.keyCode == KeyCode.UpArrow)
+                    {
+                        if (NavigateCliHistory(-1))
+                        {
+                            evt.StopImmediatePropagation();
+                            evt.PreventDefault();
+                        }
+                    }
+                    else if (evt.keyCode == KeyCode.DownArrow)
+                    {
+                        if (NavigateCliHistory(1))
+                        {
+                            evt.StopImmediatePropagation();
+                            evt.PreventDefault();
+                        }
+                    }
+                });
+            }
+
+            if (_cliSendButton != null)
+            {
+                _cliSendButton.clicked += HandleCliSend;
+            }
+
+            if (_cliTooltipContainer != null)
+            {
+                _cliTooltipContainer.RegisterCallback<PointerEnterEvent>(_ => _isPointerOverTooltip = true);
+                _cliTooltipContainer.RegisterCallback<PointerLeaveEvent>(_ => _isPointerOverTooltip = false);
+            }
+
             DevSuiteUtils.SetupTooltips(this);
         }
 
@@ -178,6 +256,7 @@ namespace Ff.DevSuite.View
             _context.OnLogMessagesChanged += HandleLogMessagesChanged;
             _context.OnLogMessagesMessageAdded += HandleLogMessagesMessageAdded;
             _context.OnLogMessagesVisibilityChanged += HandleLogMessagesVisibilityChanged;
+            _context.OnFocusCliRequested += FocusCliInput;
 
             _copyButton.text = "\uf0c5";
             _saveButton.text = "\uf0c7";
@@ -186,6 +265,34 @@ namespace Ff.DevSuite.View
 
             _filterField.SetValueWithoutNotify(_context.LogsPattern);
             UpdateView();
+        }
+
+        public void FocusCliInput()
+        {
+            void DoFocus()
+            {
+                if (_cliInputField != null)
+                {
+                    _cliInputField.focusable = true;
+                    var input = _cliInputField.Q("unity-text-input");
+                    if (input != null)
+                    {
+                        input.focusable = true;
+                        input.Focus();
+                    }
+                    else
+                    {
+                        _cliInputField.Focus();
+                    }
+                    var len = _cliInputField.value?.Length ?? 0;
+                    _cliInputField.SelectRange(len, len);
+                    _cliInputFocused = true;
+                    ShowCliTooltip();
+                }
+            }
+
+            DoFocus();
+            schedule.Execute(DoFocus).StartingIn(50);
         }
 
         private void UpdateSeverityButtons()
@@ -219,14 +326,397 @@ namespace Ff.DevSuite.View
                 _context.OnLogMessagesMessageAdded -= HandleLogMessagesMessageAdded;
                 _context.OnLogMessagesChanged -= HandleLogMessagesChanged;
                 _context.OnLogMessagesVisibilityChanged -= HandleLogMessagesVisibilityChanged;
+                _context.OnFocusCliRequested -= FocusCliInput;
                 _context = null;
             }
+            _cliInputField?.SetValueWithoutNotify(string.Empty);
+            _cliGhostField?.SetValueWithoutNotify(string.Empty);
+            HideCliTooltip();
             _scrollView.Clear();
             _allMessageElements.Clear();
             _ordinaryCount = 0;
             _warningCount = 0;
             _errorCount = 0;
             UpdateSeverityButtons();
+        }
+
+        private void HandleCliSend()
+        {
+            _cliHistoryIndex = -1;
+            _cliDraftText = string.Empty;
+
+            if (_context == null || _cliInputField == null)
+                return;
+
+            var text = _cliInputField.value;
+            if (string.IsNullOrWhiteSpace(text))
+                return;
+
+            _context.ExecuteCliCommand(text);
+            _cliInputField.SetValueWithoutNotify(string.Empty);
+            _cliGhostField?.SetValueWithoutNotify(string.Empty);
+            HideCliTooltip();
+        }
+
+        private bool NavigateCliHistory(int direction)
+        {
+            if (_context == null || _cliInputField == null)
+                return false;
+
+            var history = _context.GetCliCommandHistory();
+            if (history == null || history.Count == 0)
+                return false;
+
+            if (direction < 0) // UpArrow: older command
+            {
+                if (_cliHistoryIndex == -1)
+                {
+                    _cliDraftText = _cliInputField.value ?? string.Empty;
+                    _cliHistoryIndex = history.Count - 1;
+                }
+                else if (_cliHistoryIndex > 0)
+                {
+                    _cliHistoryIndex--;
+                }
+                else
+                {
+                    return true;
+                }
+
+                SetCliInputFromHistory(history[_cliHistoryIndex]);
+                return true;
+            }
+            else if (direction > 0) // DownArrow: newer command
+            {
+                if (_cliHistoryIndex == -1)
+                {
+                    return false;
+                }
+
+                if (_cliHistoryIndex < history.Count - 1)
+                {
+                    _cliHistoryIndex++;
+                    SetCliInputFromHistory(history[_cliHistoryIndex]);
+                }
+                else
+                {
+                    _cliHistoryIndex = -1;
+                    SetCliInputFromHistory(_cliDraftText);
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        private void SetCliInputFromHistory(string text)
+        {
+            if (_cliInputField == null)
+                return;
+
+            _cliInputField.value = text;
+            _cliInputField.SelectRange(text.Length, text.Length);
+            UpdateCliGhost(text);
+            UpdateCliTooltip(text);
+        }
+
+        private void HandleCliInputChanged(string newText)
+        {
+            UpdateCliGhost(newText);
+            if (_cliInputFocused)
+            {
+                UpdateCliTooltip(newText);
+            }
+        }
+
+        private void ShowCliTooltip()
+        {
+            if (_cliInputField != null)
+            {
+                UpdateCliTooltip(_cliInputField.value);
+            }
+        }
+
+        private void HideCliTooltip()
+        {
+            if (_cliTooltipContainer != null)
+            {
+                _cliTooltipContainer.style.display = DisplayStyle.None;
+            }
+        }
+
+        private void UpdateCliTooltip(string currentText)
+        {
+            if (_context == null || _cliTooltipContainer == null || _cliTooltipScrollView == null)
+                return;
+
+            var allCommands = _context.GetActiveCliCommands();
+            if (allCommands == null || allCommands.Count == 0)
+            {
+                HideCliTooltip();
+                return;
+            }
+
+            var query = (currentText ?? "").TrimStart();
+            var spaceIdx = query.IndexOf(' ');
+            var cmdQuery = spaceIdx >= 0 ? query.Substring(0, spaceIdx) : query;
+
+            List<CliCommandData> matches;
+            if (string.IsNullOrEmpty(cmdQuery))
+            {
+                matches = allCommands
+                    .OrderBy(x => x.CliCommand, StringComparer.OrdinalIgnoreCase)
+                    .ThenByDescending(x => x.Priority)
+                    .ToList();
+            }
+            else
+            {
+                var smartRegex = DevSuiteUtils.GetSmartSearchRegex(cmdQuery);
+                matches = allCommands
+                    .Select(c =>
+                    {
+                        int rank = int.MaxValue;
+                        var fullPath = $"{c.CategoryName}/{c.GroupName}/{c.CommandId}/{c.CliCommand}";
+                        if (string.Equals(c.CliCommand, cmdQuery, StringComparison.OrdinalIgnoreCase))
+                            rank = 0;
+                        else if (c.CliCommand.StartsWith(cmdQuery, StringComparison.OrdinalIgnoreCase))
+                            rank = 1;
+                        else if (c.CliCommand.IndexOf(cmdQuery, StringComparison.OrdinalIgnoreCase) >= 0)
+                            rank = 2;
+                        else if (smartRegex.IsMatch(c.CliCommand))
+                            rank = 3;
+                        else if (fullPath.IndexOf(cmdQuery, StringComparison.OrdinalIgnoreCase) >= 0 || smartRegex.IsMatch(fullPath))
+                            rank = 4;
+                        else if (!string.IsNullOrEmpty(c.Description) && c.Description.IndexOf(cmdQuery, StringComparison.OrdinalIgnoreCase) >= 0)
+                            rank = 5;
+                        return (cmd: c, rank: rank);
+                    })
+                    .Where(x => x.rank < int.MaxValue)
+                    .OrderBy(x => x.rank)
+                    .ThenBy(x => x.cmd.CliCommand, StringComparer.OrdinalIgnoreCase)
+                    .ThenByDescending(x => x.cmd.Priority)
+                    .Select(x => x.cmd)
+                    .ToList();
+            }
+
+            if (matches.Count == 0)
+            {
+                HideCliTooltip();
+                return;
+            }
+
+            _cliTooltipScrollView.Clear();
+            foreach (var cmd in matches)
+            {
+                var item = CreateCliSuggestionItem(cmd);
+                _cliTooltipScrollView.Add(item);
+            }
+
+            _cliTooltipContainer.style.display = DisplayStyle.Flex;
+        }
+
+        private VisualElement CreateCliSuggestionItem(CliCommandData cmd)
+        {
+            var item = new VisualElement();
+            item.AddToClassList("logs-cli-tooltip-item");
+
+            var header = new VisualElement();
+            header.AddToClassList("logs-cli-tooltip-header");
+
+            var pathPrefix = $"{cmd.CategoryName}/{cmd.GroupName}/{cmd.CommandId}/";
+            var pathLabel = new Label(pathPrefix);
+            pathLabel.AddToClassList("logs-cli-tooltip-path");
+            header.Add(pathLabel);
+
+            var cmdLabel = new Label(cmd.CliCommand);
+            cmdLabel.AddToClassList("logs-cli-tooltip-cmd");
+            header.Add(cmdLabel);
+
+            var paramStr = FormatParameters(cmd);
+            if (!string.IsNullOrEmpty(paramStr))
+            {
+                var paramsLabel = new Label(paramStr);
+                paramsLabel.AddToClassList("logs-cli-tooltip-params");
+                header.Add(paramsLabel);
+            }
+            item.Add(header);
+
+            if (!string.IsNullOrEmpty(cmd.Description))
+            {
+                var descLabel = new Label(cmd.Description);
+                descLabel.AddToClassList("logs-cli-tooltip-desc");
+                item.Add(descLabel);
+            }
+
+            item.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                evt.StopImmediatePropagation();
+                if (_cliInputField != null)
+                {
+                    _cliHistoryIndex = -1;
+                    _cliDraftText = string.Empty;
+                    var pastedText = cmd.CliCommand + " ";
+                    _cliInputField.value = pastedText;
+                    _cliInputField.focusable = true;
+                    var textInput = _cliInputField.Q("unity-text-input");
+                    if (textInput != null)
+                    {
+                        textInput.focusable = true;
+                        textInput.Focus();
+                    }
+                    else
+                    {
+                        _cliInputField.Focus();
+                    }
+                    _cliInputField.SelectRange(pastedText.Length, pastedText.Length);
+                    _cliInputFocused = true;
+                    UpdateCliGhost(pastedText);
+                    UpdateCliTooltip(pastedText);
+
+                    schedule.Execute(() =>
+                    {
+                        if (_cliInputField != null)
+                        {
+                            _cliInputField.focusable = true;
+                            var input = _cliInputField.Q("unity-text-input");
+                            if (input != null)
+                            {
+                                input.focusable = true;
+                                input.Focus();
+                            }
+                            else
+                            {
+                                _cliInputField.Focus();
+                            }
+                            _cliInputField.SelectRange(pastedText.Length, pastedText.Length);
+                            _cliInputFocused = true;
+                        }
+                    });
+                }
+            });
+
+            return item;
+        }
+
+        private void UpdateCliGhost(string currentText)
+        {
+            if (_cliGhostField == null)
+                return;
+
+            if (string.IsNullOrEmpty(currentText) || _context == null)
+            {
+                _cliGhostField.SetValueWithoutNotify(string.Empty);
+                return;
+            }
+
+            var allCommands = _context.GetActiveCliCommands();
+            if (allCommands == null || allCommands.Count == 0)
+            {
+                _cliGhostField.SetValueWithoutNotify(string.Empty);
+                return;
+            }
+
+            var trimmed = currentText.TrimStart();
+            var spaceIdx = trimmed.IndexOf(' ');
+
+            if (spaceIdx < 0)
+            {
+                var cmdQuery = trimmed;
+                var matched = allCommands.FirstOrDefault(c => string.Equals(c.CliCommand, cmdQuery, StringComparison.OrdinalIgnoreCase))
+                           ?? allCommands.FirstOrDefault(c => c.CliCommand.StartsWith(cmdQuery, StringComparison.OrdinalIgnoreCase));
+
+                if (matched != null)
+                {
+                    var remainingCmd = matched.CliCommand.Length > cmdQuery.Length 
+                        ? matched.CliCommand.Substring(cmdQuery.Length) 
+                        : string.Empty;
+
+                    var paramPlaceholders = FormatParameterPlaceholders(matched.Parameters, 0);
+                    var ghostSuffix = remainingCmd;
+                    if (!string.IsNullOrEmpty(paramPlaceholders))
+                    {
+                        ghostSuffix += (string.IsNullOrEmpty(ghostSuffix) ? " " : " ") + paramPlaceholders;
+                    }
+
+                    _cliGhostField.SetValueWithoutNotify(currentText + ghostSuffix);
+                }
+                else
+                {
+                    _cliGhostField.SetValueWithoutNotify(currentText);
+                }
+            }
+            else
+            {
+                var cmdName = trimmed.Substring(0, spaceIdx);
+                var matched = allCommands.FirstOrDefault(c => string.Equals(c.CliCommand, cmdName, StringComparison.OrdinalIgnoreCase));
+
+                if (matched != null && matched.Parameters != null && matched.Parameters.Count > 0)
+                {
+                    var tokens = DevSuiteUtils.TokenizeCommandLine(trimmed);
+                    var userArgsCount = Math.Max(0, tokens.Count - 1);
+                    var endsWithSpace = currentText.EndsWith(" ");
+
+                    var nextParamIdx = userArgsCount;
+                    var remainingPlaceholders = FormatParameterPlaceholders(matched.Parameters, nextParamIdx);
+                    if (!string.IsNullOrEmpty(remainingPlaceholders))
+                    {
+                        var separator = endsWithSpace ? string.Empty : " ";
+                        _cliGhostField.SetValueWithoutNotify(currentText + separator + remainingPlaceholders);
+                    }
+                    else
+                    {
+                        _cliGhostField.SetValueWithoutNotify(currentText);
+                    }
+                }
+                else
+                {
+                    _cliGhostField.SetValueWithoutNotify(currentText);
+                }
+            }
+        }
+
+        private static string FormatParameterPlaceholders(IReadOnlyList<CommandUnitButtonParameter> parameters, int startIndex)
+        {
+            if (parameters == null || startIndex >= parameters.Count)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string>();
+            for (var i = startIndex; i < parameters.Count; i++)
+            {
+                var p = parameters[i];
+                var typeName = DevSuiteUtils.GetFriendlyTypeName(p.Type);
+                parts.Add($"<{typeName} {p.ParameterName}>");
+            }
+            return string.Join(" ", parts);
+        }
+
+        private static string FormatParameters(CliCommandData cmd)
+        {
+            if (cmd.Parameters == null || cmd.Parameters.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string>();
+            for (var i = 0; i < cmd.Parameters.Count; i++)
+            {
+                var p = cmd.Parameters[i];
+                var typeName = DevSuiteUtils.GetFriendlyTypeName(p.Type);
+                var val = p.GetValue?.Invoke();
+                var valStr = val != null ? (val is string s ? $"\"{s}\"" : val.ToString()) : null;
+
+                if (!string.IsNullOrEmpty(valStr))
+                {
+                    parts.Add($"<{typeName} {p.ParameterName} = {valStr}>");
+                }
+                else
+                {
+                    parts.Add($"<{typeName} {p.ParameterName}>");
+                }
+            }
+            return string.Join(" ", parts);
         }
 
         private void HandleLogMessagesChanged()

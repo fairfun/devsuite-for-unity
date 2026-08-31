@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Ff.DevSuite.Commands;
@@ -28,6 +29,7 @@ using Key =
 #endif
 
 [assembly: InternalsVisibleTo("DevSuite.Editor")]
+[assembly: InternalsVisibleTo("DevSuite.Examples")]
 
 namespace Ff.DevSuite
 {
@@ -93,8 +95,8 @@ namespace Ff.DevSuite
 
         internal static DevSuiteContext DefaultInternal => Default as DevSuiteContext;
 
-        public CommandAttributesParser AttributesParser { get; private set; }
-        public DevSuiteCommandsApi CommandsApi { get; private set; }
+        public CommandAttributesParser AttributesParser { get; internal set; }
+        public DevSuiteCommandsApi CommandsApi { get; internal set; }
 
         public IDisposable SuspendEvents(object requestor)
         {
@@ -119,6 +121,9 @@ namespace Ff.DevSuite
         internal event Action<LogMessageData> OnLogMessagesMessageAdded;
         internal event Action OnLogMessagesVisibilityChanged;
         internal event Action OnHierarchyChanged;
+        internal event Action OnFocusCliRequested;
+        internal void RequestFocusCli() => OnFocusCliRequested?.Invoke();
+
         private readonly BlockableDispatcher _apiCalledDispatcher;
         private readonly BlockableDispatcher _onChangedDispatcher;
         private readonly BlockableDispatcher _onEveryFrameDispatcher;
@@ -365,7 +370,7 @@ namespace Ff.DevSuite
 
         internal IReadOnlyList<TreeCategory> Tree { get; private set; }
 
-        private SavedPrefsProperty<PersistentSettings> Settings { get; set; }
+        internal SavedPrefsProperty<PersistentSettings> Settings { get; set; }
 
         private const string ErrorNoAdapter = "<No Adapter>";
         private const string ErrorException = "<Exception>";
@@ -408,7 +413,13 @@ namespace Ff.DevSuite
 
             Reset();
 
-            Application.logMessageReceivedThreaded += HandleUnityLog; // start collecting messages already, even though everything else awaits to be initialized yet
+            try
+            {
+                Application.logMessageReceivedThreaded += HandleUnityLog; // start collecting messages already, even though everything else awaits to be initialized yet
+            }
+            catch
+            {
+            }
         }
 
         public bool Disposed { get; private set; }
@@ -1454,6 +1465,324 @@ namespace Ff.DevSuite
             }
         }
 
+        internal List<CliCommandData> GetActiveCliCommands()
+        {
+            var list = new List<CliCommandData>();
+            var seen = new HashSet<CommandUnitButton>();
+
+            foreach (var kvp in Commands)
+            {
+                var command = kvp.Value;
+                if (!CheckVisibilityByVisibilityFunction(command, null))
+                {
+                    continue;
+                }
+
+                foreach (var unit in command.Units)
+                {
+                    if (unit is CommandUnitButton button && button.CliEnabled && CheckUnitAvailability(button) && seen.Add(button))
+                    {
+                        var cliCmd = button.CliCommand;
+                        if (string.IsNullOrEmpty(cliCmd))
+                        {
+                            continue;
+                        }
+
+                        var paramUnits = command.Units
+                            .OfType<CommandUnitButtonParameter>()
+                            .Where(p => p.OwnerButton == button)
+                            .OrderBy(p => p.ParameterIndex)
+                            .ToList();
+
+                        var desc = !string.IsNullOrEmpty(button.Description) ? button.Description : command.Description;
+                        list.Add(new CliCommandData(cliCmd, button.Text, desc, button, command, paramUnits));
+                    }
+                }
+            }
+
+            return list
+                .OrderBy(c => c.CliCommand, StringComparer.OrdinalIgnoreCase)
+                .ThenByDescending(c => c.Priority)
+                .ToList();
+        }
+
+        internal bool TryConvertStringToType(string str, Type targetType, out object result)
+        {
+            if (targetType == typeof(string))
+            {
+                result = str;
+                return true;
+            }
+
+            if (str == null || str == NullRepresentation || (string.IsNullOrEmpty(str) && (targetType.IsNullable() || !targetType.IsValueType)))
+            {
+                if (targetType.IsNullable() || !targetType.IsValueType)
+                {
+                    result = null;
+                    return true;
+                }
+            }
+
+            var underlyingType = Nullable.GetUnderlyingType(targetType);
+            var nonNullableType = underlyingType ?? targetType;
+
+            var chainResult = GetAdaptersChain(typeof(string), targetType, true);
+            if (chainResult.Steps != null && chainResult.Steps.Count > 0)
+            {
+                try
+                {
+                    object val = str;
+                    foreach (var step in chainResult.Steps)
+                    {
+                        val = step.Convert(val, null);
+                    }
+                    if (val != null || targetType.IsNullable() || !targetType.IsValueType)
+                    {
+                        result = val;
+                        return true;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            if (underlyingType != null)
+            {
+                var nonNullableChain = GetAdaptersChain(typeof(string), nonNullableType, true);
+                if (nonNullableChain.Steps != null && nonNullableChain.Steps.Count > 0)
+                {
+                    try
+                    {
+                        object val = str;
+                        foreach (var step in nonNullableChain.Steps)
+                        {
+                            val = step.Convert(val, null);
+                        }
+                        if (val != null)
+                        {
+                            result = val;
+                            return true;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            try
+            {
+                if (nonNullableType.IsEnum)
+                {
+                    if (Enum.TryParse(nonNullableType, str, true, out var enumVal))
+                    {
+                        result = enumVal;
+                        return true;
+                    }
+                    result = null;
+                    return false;
+                }
+
+                if (nonNullableType == typeof(bool))
+                {
+                    if (bool.TryParse(str, out var bVal))
+                    {
+                        result = bVal;
+                        return true;
+                    }
+                    if (str == "1") { result = true; return true; }
+                    if (str == "0") { result = false; return true; }
+                    result = null;
+                    return false;
+                }
+
+                if (nonNullableType == typeof(int) && int.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var iVal)) { result = iVal; return true; }
+                if (nonNullableType == typeof(float) && float.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var fVal)) { result = fVal; return true; }
+                if (nonNullableType == typeof(double) && double.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var dVal)) { result = dVal; return true; }
+                if (nonNullableType == typeof(uint) && uint.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var uVal)) { result = uVal; return true; }
+                if (nonNullableType == typeof(long) && long.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var lVal)) { result = lVal; return true; }
+                if (nonNullableType == typeof(ulong) && ulong.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var ulVal)) { result = ulVal; return true; }
+                if (nonNullableType == typeof(short) && short.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var sVal)) { result = sVal; return true; }
+                if (nonNullableType == typeof(ushort) && ushort.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var usVal)) { result = usVal; return true; }
+                if (nonNullableType == typeof(byte) && byte.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var byVal)) { result = byVal; return true; }
+                if (nonNullableType == typeof(sbyte) && sbyte.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var sbVal)) { result = sbVal; return true; }
+            }
+            catch
+            {
+            }
+
+            result = null;
+            return false;
+        }
+
+        internal void ExecuteCliCommand(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return;
+            }
+
+            var tokens = DevSuiteUtils.TokenizeCommandLine(input);
+            if (tokens.Count == 0)
+            {
+                return;
+            }
+
+            var commandName = tokens[0];
+            var userArgs = tokens.Skip(1).ToList();
+
+            var activeCommands = GetActiveCliCommands();
+            var match = activeCommands.FirstOrDefault(c => string.Equals(c.CliCommand, commandName, StringComparison.OrdinalIgnoreCase));
+
+            if (match == null)
+            {
+                Debug.LogWarning($"unknown command '{commandName}'");
+                return;
+            }
+
+            var button = match.Button;
+            var parameters = match.Parameters;
+
+            if (parameters.Count == 0)
+            {
+                if (userArgs.Count > 0)
+                {
+                    Debug.LogWarning($"incorrect arguments of command '{match.CliCommand}'");
+                    return;
+                }
+
+                try
+                {
+                    ExecuteButton(button);
+                    AddCliCommandToHistory(input);
+                    Debug.Log($"executed command '{match.CliCommand}'");
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"Exception while executing command '{match.CliCommand}': {e}");
+                    if (!button.SuppressExceptions)
+                    {
+                        throw;
+                    }
+                }
+                return;
+            }
+
+            if (userArgs.Count > parameters.Count)
+            {
+                Debug.LogWarning($"incorrect arguments of command '{match.CliCommand}'");
+                return;
+            }
+
+            var convertedArgs = new object[parameters.Count];
+            for (var i = 0; i < parameters.Count; i++)
+            {
+                var param = parameters[i];
+                var pType = param.Type;
+
+                if (i < userArgs.Count)
+                {
+                    var strArg = userArgs[i];
+                    if (!TryConvertStringToType(strArg, pType, out var convertedValue))
+                    {
+                        Debug.LogWarning($"incorrect arguments of command '{match.CliCommand}'");
+                        return;
+                    }
+                    convertedArgs[i] = convertedValue;
+                }
+                else
+                {
+                    var currentVal = param.GetValue?.Invoke();
+                    if (currentVal == null && pType.IsValueType && Nullable.GetUnderlyingType(pType) == null)
+                    {
+                        Debug.LogWarning($"incorrect arguments of command '{match.CliCommand}'");
+                        return;
+                    }
+                    convertedArgs[i] = currentVal;
+                }
+            }
+
+            for (var i = 0; i < parameters.Count; i++)
+            {
+                if (i < userArgs.Count)
+                {
+                    parameters[i].SaveValue?.Invoke(convertedArgs[i]);
+                }
+            }
+
+            try
+            {
+                ExecuteButton(button);
+                AddCliCommandToHistory(input);
+
+                if (userArgs.Count > 0)
+                {
+                    var formattedArgs = string.Join(" ", userArgs.Select(a => $"'{a}'"));
+                    Debug.Log($"executed command '{match.CliCommand}' with arguments: {formattedArgs}");
+                }
+                else
+                {
+                    Debug.Log($"executed command '{match.CliCommand}'");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Exception while executing command '{match.CliCommand}': {e}");
+                if (!button.SuppressExceptions)
+                {
+                    throw;
+                }
+            }
+        }
+
+        internal void AddCliCommandToHistory(string commandLine)
+        {
+            if (string.IsNullOrWhiteSpace(commandLine) || !CheckSettingsInitialized(true))
+                return;
+
+            commandLine = commandLine.Trim();
+            var history = Settings.Value.CliCommandHistory;
+            if (history == null)
+            {
+                history = new List<string>();
+                Settings.Value.CliCommandHistory = history;
+            }
+
+            history.Remove(commandLine);
+            history.Add(commandLine);
+            while (history.Count > 20)
+            {
+                history.RemoveAt(0);
+            }
+            Settings.Value = Settings.Value;
+        }
+
+        internal IReadOnlyList<string> GetCliCommandHistory()
+        {
+            if (!CheckSettingsInitialized(true))
+                return Array.Empty<string>();
+            return Settings.Value.CliCommandHistory ?? (IReadOnlyList<string>)Array.Empty<string>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static TimeSpan GetUnityTime()
+        {
+            return TimeSpan.FromSeconds(Time.unscaledTime);
+        }
+
+        internal static TimeSpan GetCurrentTime()
+        {
+            try
+            {
+                return GetUnityTime();
+            }
+            catch
+            {
+                return TimeSpan.Zero;
+            }
+        }
+
         internal bool CheckVisibilityByVisibilityFunction(BaseCommandItem item, TimeSpan? time, bool ignoreTime = false)
         {
             if (item == _groupPinned || item == _categoryPinned || item.Id == PinnedMockId)
@@ -1461,7 +1790,7 @@ namespace Ff.DevSuite
                 return true;
             }
 
-            time ??= TimeSpan.FromSeconds(Time.unscaledTime);
+            time ??= GetCurrentTime();
 
             if (item is CommandGroup group && !CheckVisibilityByVisibilityFunction(group.AssignedToCategory, time, ignoreTime))
             {
@@ -2180,13 +2509,25 @@ namespace Ff.DevSuite
             StartUpdateLoop();
 
             OnApiCalled += HandleApiCalled;
-            Application.logMessageReceivedThreaded += HandleUnityLog;
+            try
+            {
+                Application.logMessageReceivedThreaded += HandleUnityLog;
+            }
+            catch
+            {
+            }
         }
 
         private void Unsubscribe()
         {
             OnApiCalled -= HandleApiCalled;
-            Application.logMessageReceivedThreaded -= HandleUnityLog;
+            try
+            {
+                Application.logMessageReceivedThreaded -= HandleUnityLog;
+            }
+            catch
+            {
+            }
 
             if (_updateCoroutine == null)
             {
@@ -2364,6 +2705,7 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(20)][Key(20)] public bool InspectorAutoPause { get; set; } = true;
         [DataMember][MemoryPackOrder(21)][Key(21)] public string HierarchyPattern { get; set; }
         [DataMember][MemoryPackOrder(22)][Key(22)] public Dictionary<string, string> VirtualButtonParameters { get; set; } = new();
+        [DataMember][MemoryPackOrder(23)][Key(23)] public List<string> CliCommandHistory { get; set; } = new();
 
         public void InitializeDefaultsIfNeeded()
         {
@@ -2372,6 +2714,7 @@ namespace Ff.DevSuite
             CollapsedGroups ??= new();
             HiddenLogSeverity ??= new();
             VirtualButtonParameters ??= new();
+            CliCommandHistory ??= new();
         }
     }
 
@@ -2575,6 +2918,30 @@ namespace Ff.DevSuite
         public void ChangeCommands(IReadOnlyList<Command> commands)
         {
             Commands = commands;
+        }
+    }
+
+    internal class CliCommandData
+    {
+        public string CliCommand { get; }
+        public string Title { get; }
+        public string Description { get; }
+        public CommandUnitButton Button { get; }
+        public Command Command { get; }
+        public IReadOnlyList<CommandUnitButtonParameter> Parameters { get; }
+        public float Priority => Button?.Priority ?? 0f;
+        public string CategoryName => Command?.AssignedToGroup?.AssignedToCategory?.DisplayName ?? (Command?.CategoryId != null ? DevSuiteUtils.TrimName(Command.CategoryId) : "Default");
+        public string GroupName => Command?.AssignedToGroup?.DisplayName ?? (Command?.GroupId != null ? DevSuiteUtils.TrimName(Command.GroupId) : "Default");
+        public string CommandId => !string.IsNullOrEmpty(Command?.DisplayName) ? Command.DisplayName : (!string.IsNullOrEmpty(Command?.Id) ? DevSuiteUtils.TrimName(Command.Id) : "Default");
+
+        public CliCommandData(string cliCommand, string title, string description, CommandUnitButton button, Command command, IReadOnlyList<CommandUnitButtonParameter> parameters)
+        {
+            CliCommand = cliCommand;
+            Title = title;
+            Description = description;
+            Button = button;
+            Command = command;
+            Parameters = parameters ?? Array.Empty<CommandUnitButtonParameter>();
         }
     }
 
