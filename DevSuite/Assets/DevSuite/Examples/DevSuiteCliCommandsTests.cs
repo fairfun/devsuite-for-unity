@@ -55,6 +55,11 @@ namespace Ff.DevSuite
                 LastFloatVal = num;
             }
 
+            [CommandButton(Description = "Line 1 of description\nLine 2 of description")]
+            public static void TestMultilineDesc()
+            {
+            }
+
             [CommandButton(CliEnabled = false)]
             public static void TestDisabledCli()
             {
@@ -126,6 +131,7 @@ namespace Ff.DevSuite
             context.Settings.Value.InitializeDefaultsIfNeeded();
             context.CommandsApi = new DevSuiteCommandsApi(context);
             context.AttributesParser = new CommandAttributesParser(context);
+            DevSuiteContext.Default = context;
             foreach (var defaultAdapter in DefaultCommandValueAdapters.Get())
             {
                 context.CommandsApi.RegisterAdapter(defaultAdapter, true);
@@ -213,9 +219,18 @@ namespace Ff.DevSuite
                 var reorderedHistory = context.GetCliCommandHistory();
                 Assert(reorderedHistory.Count == 20, "History count remains 20 after duplicate add");
                 Assert(reorderedHistory[reorderedHistory.Count - 1] == "cmd_10 arg", "Duplicate command moved to most recent position");
+
+                // Test 12: Help command
+                context.AttributesParser.RegisterStatic(typeof(CommonCommands));
+                logs.Clear();
+                context.ExecuteCliCommand("help");
+                var helpLog = logs.FirstOrDefault(l => l.Contains("Available CLI Commands"));
+                Assert(helpLog != null, "Help command logs available CLI commands list");
+                Assert(helpLog.Contains("    CliTests/Default/TestMultilineDesc/TestMultilineDesc\n        Line 1 of description\n        Line 2 of description"), "Command and parameters on line 1, descriptions on subsequent lines");
             }
             finally
             {
+                DevSuiteContext.Default = null;
                 ExternalLogSink = null;
                 try
                 {

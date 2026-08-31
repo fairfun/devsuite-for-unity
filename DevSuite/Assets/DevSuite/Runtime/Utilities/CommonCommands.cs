@@ -299,7 +299,7 @@ namespace Ff.DevSuite
         private static void ForceGCIncremental() => GarbageCollector.CollectIncremental();
 
         [Command(DisplayName = "Test Log"), CommandButton(Title = "Send Log", CliEnabled = false)]
-        private static void SendLogMessage(LogType logType)
+        private static void SendLogMessage(LogType logType = LogType.Error)
         {
             Debug.LogFormat(logType, LogOption.None, null, "Test Log");
         }
@@ -321,20 +321,79 @@ namespace Ff.DevSuite
         )]
         private static void TogglePanel()
         {
-            var ctx = DevSuiteContext.DefaultInternal;
-            if (ctx == null)
-                return;
-
-            if (!ctx.PanelExpanded)
+            var context = DevSuiteContext.DefaultInternal;
+            if (!context.PanelExpanded)
             {
-                ctx.PanelExpanded = true;
-                ctx.LogsVisible = true;
-                ctx.RequestFocusCli();
+                context.PanelExpanded = true;
+                context.LogsVisible = true;
+                context.RequestFocusCli();
             }
             else
             {
-                ctx.PanelExpanded = false;
+                context.PanelExpanded = false;
             }
+        }
+
+        [Command(DisplayName = "CLI Commands"), CommandButton(Title = "Show Cli Commands", CliCommand = "help")]
+        public static void ShowCliCommands()
+        {
+            var commands = DevSuiteContext.DefaultInternal.GetActiveCliCommands();
+            Debug.Log(FormatCliCommands(commands));
+        }
+
+        [CommandButton(nameof(ShowCliCommands), Title = "\uf0c5", Flex = 0f, FontResource = "Font Awesome 7 Free-Solid-900 SDF", Description = "Copy CLI commands to clipboard", CliEnabled = false)]
+        public static void CopyCliCommands()
+        {
+            var commands = DevSuiteContext.DefaultInternal.GetActiveCliCommands();
+            var text = FormatCliCommands(commands);
+            DevSuiteUtils.CopyToClipboard(text);
+            Debug.Log("Copied CLI commands to clipboard.");
+        }
+
+        private static string FormatCliCommands(IReadOnlyList<CliCommandData> commands)
+        {
+            if (commands == null || commands.Count == 0)
+            {
+                return "No active CLI commands found.";
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"Available CLI Commands ({commands.Count}):");
+            foreach (var cmd in commands)
+            {
+                var fullPath = $"{cmd.CategoryName}/{cmd.GroupName}/{cmd.CommandId}/";
+                var paramsList = new List<string>();
+                if (cmd.Parameters != null)
+                {
+                    foreach (var p in cmd.Parameters)
+                    {
+                        var typeName = DevSuiteUtils.GetFriendlyTypeName(p.Type);
+                        var val = p.GetValue?.Invoke();
+                        var valStr = val != null ? (val is string s ? $"\"{s}\"" : val.ToString()) : null;
+                        if (!string.IsNullOrEmpty(valStr))
+                        {
+                            paramsList.Add($"<{typeName} {p.ParameterName} = {valStr}>");
+                        }
+                        else
+                        {
+                            paramsList.Add($"<{typeName} {p.ParameterName}>");
+                        }
+                    }
+                }
+                var paramsText = paramsList.Count > 0 ? " " + string.Join(" ", paramsList) : string.Empty;
+                sb.AppendLine($"    {fullPath}{cmd.CliCommand}{paramsText}");
+
+                if (!string.IsNullOrEmpty(cmd.Description))
+                {
+                    var descLines = DevSuiteUtils.NewLineRegex.Split(cmd.Description);
+                    foreach (var line in descLines)
+                    {
+                        sb.AppendLine($"        {line}");
+                    }
+                }
+            }
+
+            return sb.ToString().TrimEnd();
         }
 
         [CommandValue(nameof(SavedPrefs))]

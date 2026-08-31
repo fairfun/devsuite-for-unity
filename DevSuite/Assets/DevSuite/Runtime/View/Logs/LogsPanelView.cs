@@ -686,7 +686,7 @@ namespace Ff.DevSuite.View
             for (var i = startIndex; i < parameters.Count; i++)
             {
                 var p = parameters[i];
-                var typeName = GetFriendlyTypeName(p.Type);
+                var typeName = DevSuiteUtils.GetFriendlyTypeName(p.Type);
                 parts.Add($"<{typeName} {p.ParameterName}>");
             }
             return string.Join(" ", parts);
@@ -703,7 +703,7 @@ namespace Ff.DevSuite.View
             for (var i = 0; i < cmd.Parameters.Count; i++)
             {
                 var p = cmd.Parameters[i];
-                var typeName = GetFriendlyTypeName(p.Type);
+                var typeName = DevSuiteUtils.GetFriendlyTypeName(p.Type);
                 var val = p.GetValue?.Invoke();
                 var valStr = val != null ? (val is string s ? $"\"{s}\"" : val.ToString()) : null;
 
@@ -717,26 +717,6 @@ namespace Ff.DevSuite.View
                 }
             }
             return string.Join(" ", parts);
-        }
-
-        private static string GetFriendlyTypeName(Type t)
-        {
-            if (t == null) return "object";
-            var underlying = Nullable.GetUnderlyingType(t);
-            if (underlying != null)
-            {
-                return $"{GetFriendlyTypeName(underlying)}?";
-            }
-            if (t == typeof(string)) return "string";
-            if (t == typeof(int)) return "int";
-            if (t == typeof(float)) return "float";
-            if (t == typeof(bool)) return "bool";
-            if (t == typeof(double)) return "double";
-            if (t == typeof(uint)) return "uint";
-            if (t == typeof(long)) return "long";
-            if (t == typeof(byte)) return "byte";
-            if (t == typeof(short)) return "short";
-            return t.Name;
         }
 
         private void HandleLogMessagesChanged()

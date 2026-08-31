@@ -806,10 +806,31 @@ namespace Ff.DevSuite.Commands.Attributes
             if (string.IsNullOrEmpty(colorHex))
                 return null;
             colorHex = colorHex.Trim().TrimStart('#');
-            if (ColorUtility.TryParseHtmlString(colorHex, out var color))
-                return color;
-            if (ColorUtility.TryParseHtmlString($"#{colorHex}", out color))
-                return color;
+            if (colorHex.Length == 6 && uint.TryParse(colorHex, System.Globalization.NumberStyles.HexNumber, null, out var rgb))
+            {
+                var r = (byte)((rgb >> 16) & 0xFF) / 255f;
+                var g = (byte)((rgb >> 8) & 0xFF) / 255f;
+                var b = (byte)(rgb & 0xFF) / 255f;
+                return new Color(r, g, b, 1f);
+            }
+            if (colorHex.Length == 8 && uint.TryParse(colorHex, System.Globalization.NumberStyles.HexNumber, null, out var rgba))
+            {
+                var r = (byte)((rgba >> 24) & 0xFF) / 255f;
+                var g = (byte)((rgba >> 16) & 0xFF) / 255f;
+                var b = (byte)((rgba >> 8) & 0xFF) / 255f;
+                var a = (byte)(rgba & 0xFF) / 255f;
+                return new Color(r, g, b, a);
+            }
+            try
+            {
+                if (ColorUtility.TryParseHtmlString(colorHex, out var color))
+                    return color;
+                if (ColorUtility.TryParseHtmlString($"#{colorHex}", out color))
+                    return color;
+            }
+            catch
+            {
+            }
             return null;
         }
     }

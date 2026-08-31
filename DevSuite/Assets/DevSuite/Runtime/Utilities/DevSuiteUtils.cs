@@ -1077,5 +1077,25 @@ namespace Ff.DevSuite
                 tooltipLabel.style.visibility = Visibility.Hidden;
             }
         }
+
+        public static string GetFriendlyTypeName(Type t)
+        {
+            if (t == null) return "object";
+            var underlying = Nullable.GetUnderlyingType(t);
+            if (underlying != null)
+            {
+                return $"{GetFriendlyTypeName(underlying)}?";
+            }
+            if (t == typeof(string)) return "string";
+            if (t == typeof(int)) return "int";
+            if (t == typeof(float)) return "float";
+            if (t == typeof(bool)) return "bool";
+            if (t == typeof(double)) return "double";
+            if (t == typeof(uint)) return "uint";
+            if (t == typeof(long)) return "long";
+            if (t == typeof(byte)) return "byte";
+            if (t == typeof(short)) return "short";
+            return t.Name;
+        }
     }
 }
