@@ -186,6 +186,27 @@ namespace Ff.DevSuite
                 logs.Clear();
                 context.ExecuteCliCommand("TestVarious 1 2 3 4 5 6 7");
                 Assert(logs.Any(l => l.Contains("incorrect arguments of command 'TestVarious'")), "Log message for too many arguments");
+
+                // Test 11: CLI Command History (persistent data & max 20)
+                var history = context.GetCliCommandHistory();
+                Assert(history.Contains("TestParameterless"), "History contains TestParameterless");
+                Assert(history.Contains("TestStrings \"hello world\" \"foo bar\""), "History contains TestStrings with args");
+                Assert(history.Contains("TestVarious 42 Friday true 3.14"), "History contains TestVarious with args");
+
+                for (var i = 1; i <= 25; i++)
+                {
+                    context.AddCliCommandToHistory($"cmd_{i} arg");
+                }
+                var updatedHistory = context.GetCliCommandHistory();
+                Assert(updatedHistory.Count == 20, "History capped at max 20 entries");
+                Assert(updatedHistory[updatedHistory.Count - 1] == "cmd_25 arg", "Latest command is at end of history");
+                Assert(updatedHistory[0] == "cmd_6 arg", "Oldest entries properly evicted");
+
+                // Test duplicate move to latest
+                context.AddCliCommandToHistory("cmd_10 arg");
+                var reorderedHistory = context.GetCliCommandHistory();
+                Assert(reorderedHistory.Count == 20, "History count remains 20 after duplicate add");
+                Assert(reorderedHistory[reorderedHistory.Count - 1] == "cmd_10 arg", "Duplicate command moved to most recent position");
             }
             finally
             {

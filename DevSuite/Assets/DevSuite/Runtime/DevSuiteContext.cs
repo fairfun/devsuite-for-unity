@@ -1652,6 +1652,7 @@ namespace Ff.DevSuite
                 try
                 {
                     ExecuteButton(button);
+                    AddCliCommandToHistory(input);
                     Debug.Log($"executed command '{match.CliCommand}'");
                 }
                 catch (Exception e)
@@ -1710,6 +1711,7 @@ namespace Ff.DevSuite
             try
             {
                 ExecuteButton(button);
+                AddCliCommandToHistory(input);
 
                 if (userArgs.Count > 0)
                 {
@@ -1729,6 +1731,35 @@ namespace Ff.DevSuite
                     throw;
                 }
             }
+        }
+
+        internal void AddCliCommandToHistory(string commandLine)
+        {
+            if (string.IsNullOrWhiteSpace(commandLine) || !CheckSettingsInitialized(true))
+                return;
+
+            commandLine = commandLine.Trim();
+            var history = Settings.Value.CliCommandHistory;
+            if (history == null)
+            {
+                history = new List<string>();
+                Settings.Value.CliCommandHistory = history;
+            }
+
+            history.Remove(commandLine);
+            history.Add(commandLine);
+            while (history.Count > 20)
+            {
+                history.RemoveAt(0);
+            }
+            Settings.Value = Settings.Value;
+        }
+
+        internal IReadOnlyList<string> GetCliCommandHistory()
+        {
+            if (!CheckSettingsInitialized(true))
+                return Array.Empty<string>();
+            return Settings.Value.CliCommandHistory ?? (IReadOnlyList<string>)Array.Empty<string>();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -2671,6 +2702,7 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(20)][Key(20)] public bool InspectorAutoPause { get; set; } = true;
         [DataMember][MemoryPackOrder(21)][Key(21)] public string HierarchyPattern { get; set; }
         [DataMember][MemoryPackOrder(22)][Key(22)] public Dictionary<string, string> VirtualButtonParameters { get; set; } = new();
+        [DataMember][MemoryPackOrder(23)][Key(23)] public List<string> CliCommandHistory { get; set; } = new();
 
         public void InitializeDefaultsIfNeeded()
         {
@@ -2679,6 +2711,7 @@ namespace Ff.DevSuite
             CollapsedGroups ??= new();
             HiddenLogSeverity ??= new();
             VirtualButtonParameters ??= new();
+            CliCommandHistory ??= new();
         }
     }
 

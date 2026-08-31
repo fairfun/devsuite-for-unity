@@ -37,6 +37,8 @@ namespace Ff.DevSuite.View
         private readonly ScrollView _cliTooltipScrollView;
         private bool _isPointerOverTooltip;
         private bool _cliInputFocused;
+        private int _cliHistoryIndex = -1;
+        private string _cliDraftText = string.Empty;
 
         private int _ordinaryCount, _warningCount, _errorCount;
 
@@ -49,6 +51,7 @@ namespace Ff.DevSuite.View
             uxml.CloneTree(this);
             styleSheets.Add(uss);
 
+            style.flexGrow = 1;
             AddToClassList("ff-panel");
 
             var root = this.Q<VisualElement>("logs-panel-root") ?? this;
@@ -125,6 +128,22 @@ namespace Ff.DevSuite.View
                     {
                         evt.StopImmediatePropagation();
                         HandleCliSend();
+                    }
+                    else if (evt.keyCode == KeyCode.UpArrow)
+                    {
+                        if (NavigateCliHistory(-1))
+                        {
+                            evt.StopImmediatePropagation();
+                            evt.PreventDefault();
+                        }
+                    }
+                    else if (evt.keyCode == KeyCode.DownArrow)
+                    {
+                        if (NavigateCliHistory(1))
+                        {
+                            evt.StopImmediatePropagation();
+                            evt.PreventDefault();
+                        }
                     }
                 });
             }
@@ -293,6 +312,9 @@ namespace Ff.DevSuite.View
 
         private void HandleCliSend()
         {
+            _cliHistoryIndex = -1;
+            _cliDraftText = string.Empty;
+
             if (_context == null || _cliInputField == null)
                 return;
 
@@ -304,6 +326,68 @@ namespace Ff.DevSuite.View
             _cliInputField.SetValueWithoutNotify(string.Empty);
             _cliGhostField?.SetValueWithoutNotify(string.Empty);
             HideCliTooltip();
+        }
+
+        private bool NavigateCliHistory(int direction)
+        {
+            if (_context == null || _cliInputField == null)
+                return false;
+
+            var history = _context.GetCliCommandHistory();
+            if (history == null || history.Count == 0)
+                return false;
+
+            if (direction < 0) // UpArrow: older command
+            {
+                if (_cliHistoryIndex == -1)
+                {
+                    _cliDraftText = _cliInputField.value ?? string.Empty;
+                    _cliHistoryIndex = history.Count - 1;
+                }
+                else if (_cliHistoryIndex > 0)
+                {
+                    _cliHistoryIndex--;
+                }
+                else
+                {
+                    return true;
+                }
+
+                SetCliInputFromHistory(history[_cliHistoryIndex]);
+                return true;
+            }
+            else if (direction > 0) // DownArrow: newer command
+            {
+                if (_cliHistoryIndex == -1)
+                {
+                    return false;
+                }
+
+                if (_cliHistoryIndex < history.Count - 1)
+                {
+                    _cliHistoryIndex++;
+                    SetCliInputFromHistory(history[_cliHistoryIndex]);
+                }
+                else
+                {
+                    _cliHistoryIndex = -1;
+                    SetCliInputFromHistory(_cliDraftText);
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        private void SetCliInputFromHistory(string text)
+        {
+            if (_cliInputField == null)
+                return;
+
+            _cliInputField.value = text;
+            _cliInputField.SelectRange(text.Length, text.Length);
+            UpdateCliGhost(text);
+            UpdateCliTooltip(text);
         }
 
         private void HandleCliInputChanged(string newText)
@@ -439,6 +523,8 @@ namespace Ff.DevSuite.View
                 evt.StopImmediatePropagation();
                 if (_cliInputField != null)
                 {
+                    _cliHistoryIndex = -1;
+                    _cliDraftText = string.Empty;
                     var pastedText = cmd.CliCommand + " ";
                     _cliInputField.value = pastedText;
                     _cliInputField.focusable = true;
