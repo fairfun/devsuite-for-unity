@@ -67,8 +67,10 @@ DevSuite serves as a modern, 100% free, and open-source alternative to popular U
 - 🌐 **Cross-Platform**: Supports running in the **Editor**, as well as **Desktop**, **Mobile**, and **WebGL** builds.
 - 📱 **Responsive Design**: Modern UI Toolkit-based interface that works seamlessly across different screen sizes.
 - 🏷️ **Commands with Extensive Attributes**: Highly customizable through attributes, allowing you to expose debug commands and data with minimal code.
+- ⚙️ **Auto-Parameterized Command Buttons**: Methods with parameters annotated with `[CommandButton]` automatically generate inline editable inputs (fields, sliders, dropdowns) for their arguments without boilerplate.
+- 💻 **In-Game CLI (Command Line Interface)**: Integrated terminal at the bottom of the Logs console (`Ctrl+`` shortcut) with autocompletion, real-time ghost parameter placeholders, persistent command history (Up/Down arrows), and execution.
 - 📊 **Performance Monitor**: Integrated graphs and statistics for real-time performance tracking (FPS, memory, etc.), can add your own custom stats too.
-- 📜 **Logs Panel**: Full-featured in-game console for viewing and filtering logs, saving logs to a file.
+- 📜 **Logs Panel**: Full-featured in-game console for viewing and filtering logs, copying call stacks, and saving logs to a file.
 - 📌 **Pinned Commands**: A dedicated panel for your most frequently used debug actions for quick access.
 - 🌳 **Hierarchy Panel**: Browse the live scene hierarchy at runtime - search, filter, select, toggle active state, and copy the full tree as text.
 - 🔍 **Inspector Panel**: Inspect selected GameObjects at runtime - view all components, toggle MonoBehaviour enabled state, and copy all property values to clipboard.
@@ -109,9 +111,9 @@ openupm add com.ff.devsuite
    ```text
    https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite
    ```
-   To pin a specific version, append the tag (e.g. `#0.3.1`):
+   To pin a specific version, append the tag (e.g. `#0.4.0`):
    ```text
-   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.3.1
+   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.4.0
    ```
 ## Getting Started
 
@@ -317,7 +319,51 @@ namespace Ff.DevSuite
 }
 ```
 
-### 3. More Usage Examples
+### 3. Auto-Parameterized Command Buttons
+
+Methods with parameters decorated with `[CommandButton]` automatically generate matching editable input fields (or dropdowns for enums and types with values providers) right beside the execute button. When clicked, the method is invoked with the current parameter values:
+
+```csharp
+using System;
+using Ff.DevSuite.Commands.Attributes;
+using UnityEngine;
+
+namespace Ff.DevSuite
+{
+    [CommandCategory("Player")]
+    public static class PlayerCommands
+    {
+        // Automatically creates editable input fields for each parameter!
+        [CommandButton(Title = "Give Items")]
+        private static void GiveItems(string itemId = "gold_coin", int count = 100, bool notifyUser = true)
+        {
+            Debug.Log($"Gave {count}x {itemId} (notify: {notifyUser})");
+        }
+
+        // Enums automatically become dropdowns
+        [CommandButton(Title = "Set Schedule")]
+        private static void SetSchedule(DayOfWeek day = DayOfWeek.Monday, float? durationHours = 2.5f)
+        {
+            Debug.Log($"Scheduled for {day}, duration: {durationHours}h");
+        }
+    }
+}
+```
+
+### 4. In-Game CLI (Command Line Interface)
+
+DevSuite includes a terminal CLI at the bottom of the **Logs Panel**. Press <kbd>Ctrl</kbd>+<kbd>`</kbd> to open DevSuite, expand the Logs panel, and focus the CLI input field immediately.
+
+- **Auto-Completion Suggestions**: As you type, matching commands are displayed in `category/group/commandId/cliCommand` hierarchy format. Clicking any suggestion pastes it into the input field.
+- **Ghost Parameter Placeholders**: Shows parameter types, names, and defaults in real time in a dimmed font behind your cursor. As you type values, matching placeholders disappear.
+- **Command History**: Cycle through the last 20 executed commands using the <kbd>Up Arrow</kbd> and <kbd>Down Arrow</kbd> keys.
+- **Custom CLI Command Name**: By default, buttons use their sanitized title/method name as the CLI command. You can set a custom command using `[CommandButton(CliCommand = "my_cmd")]`.
+- **Toggle CLI Availability**: By default, `CliEnabled` is `true`. To exclude specific buttons from the CLI while keeping them in the UI, set `[CommandButton(CliEnabled = false)]`.
+- **Built-in CLI Commands**:
+  - Type `help` (or click **Show Cli Commands** under the `Dev Suite` group) to print all available commands, parameter types/defaults, and descriptions to the console.
+  - Click the **📋** copy icon button beside it to copy the full list to your clipboard.
+
+### 5. More Usage Examples
 
 Check the built-in [`CommonCommands.cs`](DevSuite/Assets/DevSuite/Runtime/Utilities/CommonCommands.cs) and [`DevSuiteCommandsTesting.cs`](DevSuite/Assets/DevSuite/Examples/DevSuiteCommandsTesting.cs) for comprehensive usage examples covering categories, groups, commands, values, buttons, saved prefs, adapters, and more.
 
