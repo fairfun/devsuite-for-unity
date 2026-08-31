@@ -298,12 +298,11 @@ namespace Ff.DevSuite
         [CommandButton(nameof(ForceGC), Title = "GarbageCollector.CollectIncremental", Flex = 0f)]
         private static void ForceGCIncremental() => GarbageCollector.CollectIncremental();
 
-        [Command(DisplayName = "Test Log"), CommandButton(Title = "Log", Flex = 1f)]
-        private static void LogMessageLog() => Debug.Log("Test Log");
-        [CommandButton(nameof(LogMessageLog), Title = "Warning", Flex = 1f)]
-        private static void LogMessageWarning() => Debug.LogWarning("Test Log");
-        [CommandButton(nameof(LogMessageLog), Title = "Error", Flex = 1f)]
-        private static void LogMessageError() => Debug.LogError("Test Log");
+        [Command(DisplayName = "Test Log"), CommandButton(Title = "Send Log")]
+        private static void SendLogMessage(LogType logType)
+        {
+            Debug.LogFormat(logType, LogOption.None, null, "Test Log");
+        }
 
         [Command(DisplayName = "Test Exception"), CommandButton(Title = "Throw", Color = ColorOrange, SuppressExceptions = false)]
         private static void ThrowException() => throw new Exception("DevSuite: Forced Exception");
