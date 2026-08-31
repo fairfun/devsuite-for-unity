@@ -1480,7 +1480,7 @@ namespace Ff.DevSuite
 
                 foreach (var unit in command.Units)
                 {
-                    if (unit is CommandUnitButton button && CheckUnitAvailability(button) && seen.Add(button))
+                    if (unit is CommandUnitButton button && button.CliEnabled && CheckUnitAvailability(button) && seen.Add(button))
                     {
                         var cliCmd = button.CliCommand;
                         if (string.IsNullOrEmpty(cliCmd))

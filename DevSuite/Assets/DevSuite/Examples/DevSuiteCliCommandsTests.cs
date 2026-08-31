@@ -54,6 +54,11 @@ namespace Ff.DevSuite
                 LastBoolVal = flag;
                 LastFloatVal = num;
             }
+
+            [CommandButton(CliEnabled = false)]
+            public static void TestDisabledCli()
+            {
+            }
         }
 
         private class TestMemorySavedPrefs : ISavedPrefs
@@ -133,6 +138,7 @@ namespace Ff.DevSuite
             Assert(activeCommands.Any(c => c.CliCommand == "explicit_cli"), "Found explicit_cli command");
             Assert(activeCommands.Any(c => c.CliCommand == "TestStrings"), "Found TestStrings command");
             Assert(activeCommands.Any(c => c.CliCommand == "TestVarious"), "Found TestVarious command");
+            Assert(!activeCommands.Any(c => c.CliCommand == "TestDisabledCli"), "CliEnabled = false is excluded from active CLI commands");
 
             // Collect log messages
             var logs = new List<string>();

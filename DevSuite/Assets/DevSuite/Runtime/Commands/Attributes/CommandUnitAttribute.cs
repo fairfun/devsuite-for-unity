@@ -63,6 +63,7 @@ namespace Ff.DevSuite.Commands.Attributes
         public string Title;
         public string CliCommand;
         public Key[] Shortcut;
+        public bool CliEnabled = true;
 
         public CommandButtonAttribute(string commandId = null, [CallerLineNumber] int lineNumber = 0) : base(commandId, lineNumber)
         {

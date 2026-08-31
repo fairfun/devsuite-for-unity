@@ -357,7 +357,8 @@ namespace Ff.DevSuite.Commands.Attributes
                                     button.Flex,
                                     ParseColor(button.Color),
                                     button.FontResource,
-                                    cliCommand
+                                    cliCommand,
+                                    button.CliEnabled
                                 );
                                 buttonUnit.LineNumber = button.LineNumber;
 
@@ -419,7 +420,8 @@ namespace Ff.DevSuite.Commands.Attributes
                                     button.Flex,
                                     ParseColor(button.Color),
                                     button.FontResource,
-                                    cliCommand
+                                    cliCommand,
+                                    button.CliEnabled
                                 ).WithLineNumber(button.LineNumber);
 
                                 _commandsForUnits[attributeCommandUnit] = associatedCommand;
