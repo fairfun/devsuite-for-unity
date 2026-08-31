@@ -256,6 +256,7 @@ namespace Ff.DevSuite.View
             _context.OnLogMessagesChanged += HandleLogMessagesChanged;
             _context.OnLogMessagesMessageAdded += HandleLogMessagesMessageAdded;
             _context.OnLogMessagesVisibilityChanged += HandleLogMessagesVisibilityChanged;
+            _context.OnFocusCliRequested += FocusCliInput;
 
             _copyButton.text = "\uf0c5";
             _saveButton.text = "\uf0c7";
@@ -264,6 +265,34 @@ namespace Ff.DevSuite.View
 
             _filterField.SetValueWithoutNotify(_context.LogsPattern);
             UpdateView();
+        }
+
+        public void FocusCliInput()
+        {
+            void DoFocus()
+            {
+                if (_cliInputField != null)
+                {
+                    _cliInputField.focusable = true;
+                    var input = _cliInputField.Q("unity-text-input");
+                    if (input != null)
+                    {
+                        input.focusable = true;
+                        input.Focus();
+                    }
+                    else
+                    {
+                        _cliInputField.Focus();
+                    }
+                    var len = _cliInputField.value?.Length ?? 0;
+                    _cliInputField.SelectRange(len, len);
+                    _cliInputFocused = true;
+                    ShowCliTooltip();
+                }
+            }
+
+            DoFocus();
+            schedule.Execute(DoFocus).StartingIn(50);
         }
 
         private void UpdateSeverityButtons()
@@ -297,6 +326,7 @@ namespace Ff.DevSuite.View
                 _context.OnLogMessagesMessageAdded -= HandleLogMessagesMessageAdded;
                 _context.OnLogMessagesChanged -= HandleLogMessagesChanged;
                 _context.OnLogMessagesVisibilityChanged -= HandleLogMessagesVisibilityChanged;
+                _context.OnFocusCliRequested -= FocusCliInput;
                 _context = null;
             }
             _cliInputField?.SetValueWithoutNotify(string.Empty);

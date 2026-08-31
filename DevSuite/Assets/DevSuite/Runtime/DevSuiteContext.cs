@@ -121,6 +121,9 @@ namespace Ff.DevSuite
         internal event Action<LogMessageData> OnLogMessagesMessageAdded;
         internal event Action OnLogMessagesVisibilityChanged;
         internal event Action OnHierarchyChanged;
+        internal event Action OnFocusCliRequested;
+        internal void RequestFocusCli() => OnFocusCliRequested?.Invoke();
+
         private readonly BlockableDispatcher _apiCalledDispatcher;
         private readonly BlockableDispatcher _onChangedDispatcher;
         private readonly BlockableDispatcher _onEveryFrameDispatcher;

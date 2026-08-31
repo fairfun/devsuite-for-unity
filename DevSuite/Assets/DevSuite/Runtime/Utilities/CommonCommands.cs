@@ -321,7 +321,13 @@ namespace Ff.DevSuite
         )]
         private static void TogglePanel()
         {
-            DevSuiteContext.DefaultInternal.PanelExpanded = !DevSuiteContext.DefaultInternal.PanelExpanded;
+            var context = DevSuiteContext.DefaultInternal;
+            context.PanelExpanded = !context.PanelExpanded;
+            if (context.PanelExpanded)
+            {
+                context.LogsVisible = true;
+                context.RequestFocusCli();
+            }
         }
 
         [CommandValue(nameof(SavedPrefs))]
