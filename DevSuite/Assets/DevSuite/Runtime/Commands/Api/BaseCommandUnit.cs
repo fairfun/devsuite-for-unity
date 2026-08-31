@@ -58,7 +58,7 @@ namespace Ff.DevSuite.Commands
 
             if (cmp == 0)
             {
-                cmp = (this is CommandUnitButtonParameter ? 1 : 0).CompareTo(other is CommandUnitButtonParameter ? 1 : 0);
+                cmp = (this is CommandUnitButtonParameter ? 0 : 1).CompareTo(other is CommandUnitButtonParameter ? 0 : 1);
                 if (cmp == 0 && this is CommandUnitButtonParameter paramThis && other is CommandUnitButtonParameter paramOther)
                 {
                     cmp = paramThis.ParameterIndex.CompareTo(paramOther.ParameterIndex);
