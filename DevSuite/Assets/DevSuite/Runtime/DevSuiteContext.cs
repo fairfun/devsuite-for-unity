@@ -2894,6 +2894,9 @@ namespace Ff.DevSuite
         public Command Command { get; }
         public IReadOnlyList<CommandUnitButtonParameter> Parameters { get; }
         public float Priority => Button?.Priority ?? 0f;
+        public string CategoryName => Command?.AssignedToGroup?.AssignedToCategory?.DisplayName ?? (Command?.CategoryId != null ? DevSuiteUtils.TrimName(Command.CategoryId) : "Default");
+        public string GroupName => Command?.AssignedToGroup?.DisplayName ?? (Command?.GroupId != null ? DevSuiteUtils.TrimName(Command.GroupId) : "Default");
+        public string CommandId => !string.IsNullOrEmpty(Command?.DisplayName) ? Command.DisplayName : (!string.IsNullOrEmpty(Command?.Id) ? DevSuiteUtils.TrimName(Command.Id) : "Default");
 
         public CliCommandData(string cliCommand, string title, string description, CommandUnitButton button, Command command, IReadOnlyList<CommandUnitButtonParameter> parameters)
         {

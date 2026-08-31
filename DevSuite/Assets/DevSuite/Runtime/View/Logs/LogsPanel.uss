@@ -250,8 +250,14 @@
     margin-right: 4px;
 }
 
-.logs-cli-field {
+.logs-cli-field-container {
     flex-grow: 1;
+    position: relative;
+    height: 16px;
+    justify-content: center;
+}
+
+.logs-cli-field {
     background-color: rgba(40, 40, 40, 0);
     border-width: 0;
     padding: 0;
@@ -260,10 +266,36 @@
     --unity-cursor-color: rgb(180, 180, 180);
 }
 
-.logs-cli-field .unity-base-text-field__input {
+.logs-cli-ghost-field {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.logs-cli-ghost-field .unity-base-text-field__input {
     background-color: rgba(40, 40, 40, 0);
     border-width: 0;
     padding: 0;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.28);
+    font-size: 12px;
+}
+
+.logs-cli-foreground-field {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.logs-cli-foreground-field .unity-base-text-field__input {
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    padding: 0;
+    margin: 0;
     color: rgb(255, 255, 255);
     font-size: 12px;
 }
@@ -327,15 +359,29 @@
     align-items: center;
     flex-wrap: wrap;
     margin: 1px;
+    margin-left: 0;
     padding: 1px;
+    padding-left: 0;
+}
+
+.logs-cli-tooltip-path {
+    color: rgb(136, 136, 136);
+    font-size: 11px;
+    margin: 1px;
+    margin-left: 0;
+    padding: 1px;
+    padding-left: 0;
+    margin-right: 0px;
 }
 
 .logs-cli-tooltip-cmd {
     color: rgb(128, 200, 255);
     font-size: 11px;
     margin: 1px;
+    margin-left: 0;
     margin-right: 4px;
     padding: 1px;
+    padding-left: 0;
     -unity-font-style: bold;
 }
 
@@ -350,7 +396,9 @@
     color: rgb(136, 136, 136);
     font-size: 9.5px;
     margin: 1px;
+    margin-left: 0;
     margin-top: 0px;
     padding: 1px;
+    padding-left: 0;
     white-space: normal;
 }

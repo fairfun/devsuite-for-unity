@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Ff.DevSuite.Commands;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -30,6 +31,7 @@ namespace Ff.DevSuite.View
         private readonly ScrollView _scrollView;
 
         private readonly TextField _cliInputField;
+        private readonly TextField _cliGhostField;
         private readonly Button _cliSendButton;
         private readonly VisualElement _cliTooltipContainer;
         private readonly ScrollView _cliTooltipScrollView;
@@ -92,6 +94,7 @@ namespace Ff.DevSuite.View
             _scrollView.verticalScroller.valueChanged += _ => ClearHovers();
 
             _cliInputField = root.Q<TextField>("cliInputField");
+            _cliGhostField = root.Q<TextField>("cliGhostField");
             _cliSendButton = root.Q<Button>("cliSendButton");
             _cliTooltipContainer = root.Q<VisualElement>("cliTooltipContainer");
             _cliTooltipScrollView = root.Q<ScrollView>("cliTooltipScrollView");
@@ -278,6 +281,7 @@ namespace Ff.DevSuite.View
                 _context = null;
             }
             _cliInputField?.SetValueWithoutNotify(string.Empty);
+            _cliGhostField?.SetValueWithoutNotify(string.Empty);
             HideCliTooltip();
             _scrollView.Clear();
             _allMessageElements.Clear();
@@ -298,11 +302,13 @@ namespace Ff.DevSuite.View
 
             _context.ExecuteCliCommand(text);
             _cliInputField.SetValueWithoutNotify(string.Empty);
+            _cliGhostField?.SetValueWithoutNotify(string.Empty);
             HideCliTooltip();
         }
 
         private void HandleCliInputChanged(string newText)
         {
+            UpdateCliGhost(newText);
             if (_cliInputFocused)
             {
                 UpdateCliTooltip(newText);
@@ -356,6 +362,7 @@ namespace Ff.DevSuite.View
                     .Select(c =>
                     {
                         int rank = int.MaxValue;
+                        var fullPath = $"{c.CategoryName}/{c.GroupName}/{c.CommandId}/{c.CliCommand}";
                         if (string.Equals(c.CliCommand, cmdQuery, StringComparison.OrdinalIgnoreCase))
                             rank = 0;
                         else if (c.CliCommand.StartsWith(cmdQuery, StringComparison.OrdinalIgnoreCase))
@@ -364,8 +371,10 @@ namespace Ff.DevSuite.View
                             rank = 2;
                         else if (smartRegex.IsMatch(c.CliCommand))
                             rank = 3;
-                        else if (!string.IsNullOrEmpty(c.Description) && c.Description.IndexOf(cmdQuery, StringComparison.OrdinalIgnoreCase) >= 0)
+                        else if (fullPath.IndexOf(cmdQuery, StringComparison.OrdinalIgnoreCase) >= 0 || smartRegex.IsMatch(fullPath))
                             rank = 4;
+                        else if (!string.IsNullOrEmpty(c.Description) && c.Description.IndexOf(cmdQuery, StringComparison.OrdinalIgnoreCase) >= 0)
+                            rank = 5;
                         return (cmd: c, rank: rank);
                     })
                     .Where(x => x.rank < int.MaxValue)
@@ -399,6 +408,11 @@ namespace Ff.DevSuite.View
 
             var header = new VisualElement();
             header.AddToClassList("logs-cli-tooltip-header");
+
+            var pathPrefix = $"{cmd.CategoryName}/{cmd.GroupName}/{cmd.CommandId}/";
+            var pathLabel = new Label(pathPrefix);
+            pathLabel.AddToClassList("logs-cli-tooltip-path");
+            header.Add(pathLabel);
 
             var cmdLabel = new Label(cmd.CliCommand);
             cmdLabel.AddToClassList("logs-cli-tooltip-cmd");
@@ -440,6 +454,7 @@ namespace Ff.DevSuite.View
                     }
                     _cliInputField.SelectRange(pastedText.Length, pastedText.Length);
                     _cliInputFocused = true;
+                    UpdateCliGhost(pastedText);
                     UpdateCliTooltip(pastedText);
 
                     schedule.Execute(() =>
@@ -465,6 +480,100 @@ namespace Ff.DevSuite.View
             });
 
             return item;
+        }
+
+        private void UpdateCliGhost(string currentText)
+        {
+            if (_cliGhostField == null)
+                return;
+
+            if (string.IsNullOrEmpty(currentText) || _context == null)
+            {
+                _cliGhostField.SetValueWithoutNotify(string.Empty);
+                return;
+            }
+
+            var allCommands = _context.GetActiveCliCommands();
+            if (allCommands == null || allCommands.Count == 0)
+            {
+                _cliGhostField.SetValueWithoutNotify(string.Empty);
+                return;
+            }
+
+            var trimmed = currentText.TrimStart();
+            var spaceIdx = trimmed.IndexOf(' ');
+
+            if (spaceIdx < 0)
+            {
+                var cmdQuery = trimmed;
+                var matched = allCommands.FirstOrDefault(c => string.Equals(c.CliCommand, cmdQuery, StringComparison.OrdinalIgnoreCase))
+                           ?? allCommands.FirstOrDefault(c => c.CliCommand.StartsWith(cmdQuery, StringComparison.OrdinalIgnoreCase));
+
+                if (matched != null)
+                {
+                    var remainingCmd = matched.CliCommand.Length > cmdQuery.Length 
+                        ? matched.CliCommand.Substring(cmdQuery.Length) 
+                        : string.Empty;
+
+                    var paramPlaceholders = FormatParameterPlaceholders(matched.Parameters, 0);
+                    var ghostSuffix = remainingCmd;
+                    if (!string.IsNullOrEmpty(paramPlaceholders))
+                    {
+                        ghostSuffix += (string.IsNullOrEmpty(ghostSuffix) ? " " : " ") + paramPlaceholders;
+                    }
+
+                    _cliGhostField.SetValueWithoutNotify(currentText + ghostSuffix);
+                }
+                else
+                {
+                    _cliGhostField.SetValueWithoutNotify(currentText);
+                }
+            }
+            else
+            {
+                var cmdName = trimmed.Substring(0, spaceIdx);
+                var matched = allCommands.FirstOrDefault(c => string.Equals(c.CliCommand, cmdName, StringComparison.OrdinalIgnoreCase));
+
+                if (matched != null && matched.Parameters != null && matched.Parameters.Count > 0)
+                {
+                    var tokens = DevSuiteUtils.TokenizeCommandLine(trimmed);
+                    var userArgsCount = Math.Max(0, tokens.Count - 1);
+                    var endsWithSpace = currentText.EndsWith(" ");
+
+                    var nextParamIdx = userArgsCount;
+                    var remainingPlaceholders = FormatParameterPlaceholders(matched.Parameters, nextParamIdx);
+                    if (!string.IsNullOrEmpty(remainingPlaceholders))
+                    {
+                        var separator = endsWithSpace ? string.Empty : " ";
+                        _cliGhostField.SetValueWithoutNotify(currentText + separator + remainingPlaceholders);
+                    }
+                    else
+                    {
+                        _cliGhostField.SetValueWithoutNotify(currentText);
+                    }
+                }
+                else
+                {
+                    _cliGhostField.SetValueWithoutNotify(currentText);
+                }
+            }
+        }
+
+        private static string FormatParameterPlaceholders(IReadOnlyList<CommandUnitButtonParameter> parameters, int startIndex)
+        {
+            if (parameters == null || startIndex >= parameters.Count)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string>();
+            for (var i = startIndex; i < parameters.Count; i++)
+            {
+                var p = parameters[i];
+                var typeName = GetFriendlyTypeName(p.Type);
+                parts.Add($"<{typeName} {p.ParameterName}>");
+            }
+            return string.Join(" ", parts);
         }
 
         private static string FormatParameters(CliCommandData cmd)
