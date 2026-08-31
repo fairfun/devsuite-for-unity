@@ -364,8 +364,10 @@
     padding-left: 0;
 }
 
+.ff-panel .logs-cli-tooltip-path,
+.logs-cli-tooltip-item .logs-cli-tooltip-path,
 .logs-cli-tooltip-path {
-    color: rgb(136, 136, 136);
+    color: rgba(255, 255, 255, 0.32) !important;
     font-size: 11px;
     margin: 1px;
     margin-left: 0;
@@ -374,8 +376,10 @@
     margin-right: 0px;
 }
 
+.ff-panel .logs-cli-tooltip-cmd,
+.logs-cli-tooltip-item .logs-cli-tooltip-cmd,
 .logs-cli-tooltip-cmd {
-    color: rgb(128, 200, 255);
+    color: var(--text-color) !important;
     font-size: 11px;
     margin: 1px;
     margin-left: 0;
@@ -385,15 +389,19 @@
     -unity-font-style: bold;
 }
 
+.ff-panel .logs-cli-tooltip-params,
+.logs-cli-tooltip-item .logs-cli-tooltip-params,
 .logs-cli-tooltip-params {
-    color: rgb(180, 180, 180);
+    color: rgb(180, 180, 180) !important;
     font-size: 10px;
     margin: 1px;
     padding: 1px;
 }
 
+.ff-panel .logs-cli-tooltip-desc,
+.logs-cli-tooltip-item .logs-cli-tooltip-desc,
 .logs-cli-tooltip-desc {
-    color: rgb(136, 136, 136);
+    color: rgb(136, 136, 136) !important;
     font-size: 9.5px;
     margin: 1px;
     margin-left: 0;
