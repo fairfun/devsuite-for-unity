@@ -159,13 +159,36 @@ namespace Ff.DevSuite.View
                 });
                 _cliInputField.RegisterCallback<KeyDownEvent>(evt =>
                 {
-                    if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
+                    var isEnter = evt.keyCode == KeyCode.Return
+                               || evt.keyCode == KeyCode.KeypadEnter
+                               || evt.character == '\n'
+                               || evt.character == '\r';
+
+                    var isTab = evt.keyCode == KeyCode.Tab
+                             || evt.character == '\t'
+                             || (int)evt.character == 9;
+
+                    var isUp = evt.keyCode == KeyCode.UpArrow;
+                    var isDown = evt.keyCode == KeyCode.DownArrow;
+
+#if ENABLE_INPUT_SYSTEM
+                    if (UnityEngine.InputSystem.Keyboard.current != null)
+                    {
+                        var kb = UnityEngine.InputSystem.Keyboard.current;
+                        isEnter |= kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame;
+                        isTab |= kb.tabKey.wasPressedThisFrame;
+                        isUp |= kb.upArrowKey.wasPressedThisFrame;
+                        isDown |= kb.downArrowKey.wasPressedThisFrame;
+                    }
+#endif
+
+                    if (isEnter)
                     {
                         evt.StopImmediatePropagation();
                         evt.PreventDefault();
                         HandleCliSend();
                     }
-                    else if (evt.keyCode == KeyCode.UpArrow)
+                    else if (isUp)
                     {
                         if (NavigateCliHistory(-1))
                         {
@@ -173,7 +196,7 @@ namespace Ff.DevSuite.View
                             evt.PreventDefault();
                         }
                     }
-                    else if (evt.keyCode == KeyCode.DownArrow)
+                    else if (isDown)
                     {
                         if (NavigateCliHistory(1))
                         {
@@ -181,18 +204,45 @@ namespace Ff.DevSuite.View
                             evt.PreventDefault();
                         }
                     }
-                    else if (evt.keyCode == KeyCode.Tab)
+                    else if (isTab)
                     {
                         evt.StopImmediatePropagation();
                         evt.PreventDefault();
                         HandleCliTab();
                     }
                 }, TrickleDown.TrickleDown);
+
                 _cliInputField.RegisterCallback<NavigationSubmitEvent>(evt =>
                 {
                     evt.StopImmediatePropagation();
                     evt.PreventDefault();
                     HandleCliSend();
+                }, TrickleDown.TrickleDown);
+
+                _cliInputField.RegisterCallback<NavigationMoveEvent>(evt =>
+                {
+                    if (evt.direction == NavigationMoveEvent.Direction.Up)
+                    {
+                        if (NavigateCliHistory(-1))
+                        {
+                            evt.StopImmediatePropagation();
+                            evt.PreventDefault();
+                        }
+                    }
+                    else if (evt.direction == NavigationMoveEvent.Direction.Down)
+                    {
+                        if (NavigateCliHistory(1))
+                        {
+                            evt.StopImmediatePropagation();
+                            evt.PreventDefault();
+                        }
+                    }
+                    else if (evt.direction == NavigationMoveEvent.Direction.Next)
+                    {
+                        evt.StopImmediatePropagation();
+                        evt.PreventDefault();
+                        HandleCliTab();
+                    }
                 }, TrickleDown.TrickleDown);
             }
 
@@ -399,6 +449,10 @@ namespace Ff.DevSuite.View
                 return;
 
             var text = _cliInputField.value;
+            if (text != null)
+            {
+                text = text.TrimEnd('\r', '\n');
+            }
             _isSendingCli = true;
             try
             {
@@ -502,6 +556,12 @@ namespace Ff.DevSuite.View
 
         private void HandleCliInputChanged(string newText)
         {
+            if (newText != null && (newText.Contains('\n') || newText.Contains('\r')))
+            {
+                var cleaned = newText.Replace("\r", "").Replace("\n", "");
+                _cliInputField.SetValueWithoutNotify(cleaned);
+                newText = cleaned;
+            }
             UpdateCliGhost(newText);
             if (_cliInputFocused)
             {
