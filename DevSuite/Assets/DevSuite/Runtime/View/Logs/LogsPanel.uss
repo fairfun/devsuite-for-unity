@@ -80,7 +80,23 @@
     color: rgb(136, 136, 136);
     flex-direction: row;
     align-items: center;
+    justify-content: center;
+    -unity-text-align: middle-center;
     font-size: 13px;
+}
+
+.logs-severity-btn:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.ff-panel .logs-severity-btn,
+.ff-panel .logs-severity-btn Label,
+.ff-panel .logs-severity-btn .unity-label,
+.logs-severity-btn,
+.logs-severity-btn Label,
+.logs-severity-btn .logs-severity-icon,
+.logs-severity-btn .logs-severity-count {
+    color: rgb(136, 136, 136);
 }
 
 .logs-severity-btn.active {
@@ -88,23 +104,65 @@
     color: rgb(255, 255, 255);
 }
 
+.logs-severity-btn.active:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.ff-panel .logs-regex-btn.active,
+.ff-panel .logs-regex-btn.active Label,
+.ff-panel .logs-regex-btn.active .unity-label,
+.logs-regex-btn.active,
+.logs-regex-btn.active Label {
+    color: rgb(255, 255, 255);
+}
+
 .logs-severity-icon {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     -unity-text-generator: standard;
     font-size: 12px;
+    margin: 0;
+    margin-top: 1px;
     margin-right: 4px;
     padding: 0;
+    -unity-text-align: middle-center;
 }
 
 .logs-severity-count {
     font-size: 12px;
     padding: 0;
     margin: 0;
+    -unity-text-align: middle-left;
 }
 
-.logs-severity-btn.ordinary.active { color: rgb(128, 200, 255); }
-.logs-severity-btn.warning.active { color: rgb(255, 200, 0); }
-.logs-severity-btn.error.active { color: rgb(255, 100, 100); }
+.ff-panel .logs-severity-btn.ordinary.active,
+.ff-panel .logs-severity-btn.ordinary.active Label,
+.ff-panel .logs-severity-btn.ordinary.active .unity-label,
+.logs-severity-btn.ordinary.active,
+.logs-severity-btn.ordinary.active Label,
+.logs-severity-btn.ordinary.active .logs-severity-icon,
+.logs-severity-btn.ordinary.active .logs-severity-count {
+    color: rgb(128, 200, 255) !important;
+}
+
+.ff-panel .logs-severity-btn.warning.active,
+.ff-panel .logs-severity-btn.warning.active Label,
+.ff-panel .logs-severity-btn.warning.active .unity-label,
+.logs-severity-btn.warning.active,
+.logs-severity-btn.warning.active Label,
+.logs-severity-btn.warning.active .logs-severity-icon,
+.logs-severity-btn.warning.active .logs-severity-count {
+    color: rgb(255, 200, 0) !important;
+}
+
+.ff-panel .logs-severity-btn.error.active,
+.ff-panel .logs-severity-btn.error.active Label,
+.ff-panel .logs-severity-btn.error.active .unity-label,
+.logs-severity-btn.error.active,
+.logs-severity-btn.error.active Label,
+.logs-severity-btn.error.active .logs-severity-icon,
+.logs-severity-btn.error.active .logs-severity-count {
+    color: rgb(255, 100, 100) !important;
+}
 
 .logs-icon-btn {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
@@ -118,6 +176,9 @@
     background-color: rgba(40, 40, 40, 0);
     border-width: 0;
     border-radius: 4px;
+    -unity-text-align: middle-center;
+    align-items: center;
+    justify-content: center;
 }
 
 .logs-icon-btn:hover {
@@ -173,8 +234,9 @@
     margin-right: 2px;
 }
 
+.ff-panel .log-item-time,
 .log-item-time {
-    color: rgb(136, 136, 136);
+    color: rgb(136, 136, 136) !important;
     margin: 0px;
     padding: 0px;
     margin-right: 4px;
@@ -199,11 +261,12 @@
     color: rgb(255, 255, 255);
 }
 
+.ff-panel .log-item-callstack,
 .log-item-callstack {
     white-space: normal;
     flex-shrink: 1;
     min-width: 0;
-    color: rgb(136, 136, 136);
+    color: rgb(136, 136, 136) !important;
     margin-top: 0px;
     margin-left: 4px;
     margin-bottom: 4px;
@@ -346,7 +409,12 @@
     margin-bottom: 1px;
 }
 
-.logs-cli-tooltip-item:hover {
+.logs-cli-tooltip-item.highlighted {
+    background-color: rgba(255, 255, 255, 0.032);
+}
+
+.logs-cli-tooltip-item:hover,
+.logs-cli-tooltip-item.highlighted:hover {
     background-color: rgba(255, 255, 255, 0.08);
 }
 

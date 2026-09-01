@@ -619,38 +619,61 @@ namespace Ff.DevSuite.View
                 return;
             }
 
-            var query = (currentText ?? "").TrimStart();
-            var spaceIdx = query.IndexOf(' ');
-            var cmdQuery = spaceIdx >= 0 ? query.Substring(0, spaceIdx) : query;
+            var trimmed = (currentText ?? "").TrimStart();
+            var spaceIdx = trimmed.IndexOf(' ');
+
+            CliCommandData ghostCmd = null;
+            if (!string.IsNullOrEmpty(trimmed))
+            {
+                if (spaceIdx < 0)
+                {
+                    var cmdQuery = trimmed;
+                    ghostCmd = allCommands.FirstOrDefault(c => string.Equals(c.CliCommand, cmdQuery, StringComparison.OrdinalIgnoreCase))
+                            ?? allCommands.FirstOrDefault(c => c.CliCommand.StartsWith(cmdQuery, StringComparison.OrdinalIgnoreCase));
+                }
+                else
+                {
+                    var cmdName = trimmed.Substring(0, spaceIdx);
+                    ghostCmd = allCommands.FirstOrDefault(c => string.Equals(c.CliCommand, cmdName, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
+            var cmdQueryStr = spaceIdx >= 0 ? trimmed.Substring(0, spaceIdx) : trimmed;
 
             List<CliCommandData> matches;
-            if (string.IsNullOrEmpty(cmdQuery))
+            if (string.IsNullOrEmpty(cmdQueryStr))
             {
                 matches = allCommands
-                    .OrderBy(x => x.CliCommand, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(x => ghostCmd != null && x == ghostCmd ? 0 : 1)
+                    .ThenBy(x => x.CliCommand, StringComparer.OrdinalIgnoreCase)
                     .ThenByDescending(x => x.Priority)
                     .ToList();
             }
             else
             {
-                var smartRegex = DevSuiteUtils.GetSmartSearchRegex(cmdQuery);
+                var smartRegex = DevSuiteUtils.GetSmartSearchRegex(cmdQueryStr);
                 matches = allCommands
                     .Select(c =>
                     {
                         int rank = int.MaxValue;
-                        var fullPath = $"{c.CategoryName}/{c.GroupName}/{c.CommandId}/{c.CliCommand}";
-                        if (string.Equals(c.CliCommand, cmdQuery, StringComparison.OrdinalIgnoreCase))
+                        if (ghostCmd != null && c == ghostCmd)
+                            rank = -1;
+                        else if (string.Equals(c.CliCommand, cmdQueryStr, StringComparison.OrdinalIgnoreCase))
                             rank = 0;
-                        else if (c.CliCommand.StartsWith(cmdQuery, StringComparison.OrdinalIgnoreCase))
+                        else if (c.CliCommand.StartsWith(cmdQueryStr, StringComparison.OrdinalIgnoreCase))
                             rank = 1;
-                        else if (c.CliCommand.IndexOf(cmdQuery, StringComparison.OrdinalIgnoreCase) >= 0)
+                        else if (c.CliCommand.IndexOf(cmdQueryStr, StringComparison.OrdinalIgnoreCase) >= 0)
                             rank = 2;
                         else if (smartRegex.IsMatch(c.CliCommand))
                             rank = 3;
-                        else if (fullPath.IndexOf(cmdQuery, StringComparison.OrdinalIgnoreCase) >= 0 || smartRegex.IsMatch(fullPath))
-                            rank = 4;
-                        else if (!string.IsNullOrEmpty(c.Description) && c.Description.IndexOf(cmdQuery, StringComparison.OrdinalIgnoreCase) >= 0)
-                            rank = 5;
+                        else
+                        {
+                            var fullPath = $"{c.CategoryName}/{c.GroupName}/{c.CommandId}/{c.CliCommand}";
+                            if (fullPath.IndexOf(cmdQueryStr, StringComparison.OrdinalIgnoreCase) >= 0 || smartRegex.IsMatch(fullPath))
+                                rank = 4;
+                            else if (!string.IsNullOrEmpty(c.Description) && c.Description.IndexOf(cmdQueryStr, StringComparison.OrdinalIgnoreCase) >= 0)
+                                rank = 5;
+                        }
                         return (cmd: c, rank: rank);
                     })
                     .Where(x => x.rank < int.MaxValue)
@@ -659,6 +682,11 @@ namespace Ff.DevSuite.View
                     .ThenByDescending(x => x.cmd.Priority)
                     .Select(x => x.cmd)
                     .ToList();
+
+                if (ghostCmd != null && !matches.Contains(ghostCmd))
+                {
+                    matches.Insert(0, ghostCmd);
+                }
             }
 
             if (matches.Count == 0)
@@ -670,17 +698,23 @@ namespace Ff.DevSuite.View
             _cliTooltipScrollView.Clear();
             foreach (var cmd in matches)
             {
-                var item = CreateCliSuggestionItem(cmd);
+                var isGhost = ghostCmd != null && cmd == ghostCmd;
+                var item = CreateCliSuggestionItem(cmd, isGhost);
                 _cliTooltipScrollView.Add(item);
             }
 
+            _cliTooltipScrollView.scrollOffset = Vector2.zero;
             _cliTooltipContainer.style.display = DisplayStyle.Flex;
         }
 
-        private VisualElement CreateCliSuggestionItem(CliCommandData cmd)
+        private VisualElement CreateCliSuggestionItem(CliCommandData cmd, bool isHighlighted = false)
         {
             var item = new VisualElement();
             item.AddToClassList("logs-cli-tooltip-item");
+            if (isHighlighted)
+            {
+                item.AddToClassList("highlighted");
+            }
 
             var header = new VisualElement();
             header.AddToClassList("logs-cli-tooltip-header");
