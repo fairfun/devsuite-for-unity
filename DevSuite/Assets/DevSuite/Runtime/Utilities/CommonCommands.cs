@@ -335,7 +335,7 @@ namespace Ff.DevSuite
         }
 
         private static float? _pausedGameSpeed;
-        [Command(DisplayName = "Game Speed", Scope = AttributeScope.Continuous), CommandButton(Title = "Game Speed", CliCommand = "timescale", Description = "Set game speed (Time.timeScale)")]
+        [Command(DisplayName = "Set Game Speed", Scope = AttributeScope.Continuous), CommandButton(Title = "Game Speed", CliCommand = "timescale", Description = "Set game speed (Time.timeScale)")]
         public static void GameSpeed(float speed = 1f)
         {
             if (_originalGameSpeed == null && Time.timeScale > 0f)

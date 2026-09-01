@@ -439,14 +439,27 @@ namespace Ff.DevSuite.View
         }
 
         private bool _isSendingCli;
+        private int _lastSendFrame = -1;
+        private float _lastSendTime = -1f;
+        private int _lastTabFrame = -1;
+        private float _lastTabTime = -1f;
 
         private void HandleCliSend()
         {
-            _cliHistoryIndex = -1;
-            _cliDraftText = string.Empty;
-
             if (_context == null || _cliInputField == null)
                 return;
+
+            var currentFrame = Time.frameCount;
+            var currentTime = Time.realtimeSinceStartup;
+            if (_lastSendFrame == currentFrame && Math.Abs(currentTime - _lastSendTime) < 0.05f)
+            {
+                return;
+            }
+            _lastSendFrame = currentFrame;
+            _lastSendTime = currentTime;
+
+            _cliHistoryIndex = -1;
+            _cliDraftText = string.Empty;
 
             var text = _cliInputField.value;
             if (text != null)
@@ -540,6 +553,15 @@ namespace Ff.DevSuite.View
             {
                 return;
             }
+
+            var currentFrame = Time.frameCount;
+            var currentTime = Time.realtimeSinceStartup;
+            if (_lastTabFrame == currentFrame && Math.Abs(currentTime - _lastTabTime) < 0.05f)
+            {
+                return;
+            }
+            _lastTabFrame = currentFrame;
+            _lastTabTime = currentTime;
 
             var currentText = _cliInputField.value ?? string.Empty;
             var allCommands = _context.GetActiveCliCommands();

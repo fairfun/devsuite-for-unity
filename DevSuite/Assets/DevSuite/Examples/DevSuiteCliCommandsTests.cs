@@ -254,13 +254,33 @@ namespace Ff.DevSuite
                 var tab8 = DevSuiteUtils.TryGetCliTabCompletion("", allCliCmds, out _);
                 Assert(!tab8, "Tab does nothing on empty input");
 
-                // Test 14: GameSpeed, Pause, Unpause CLI Commands
-                Assert(allCliCmds.Any(c => c.CliCommand == "gamespeed"), "Found gamespeed CLI command");
+                // 13i: Step-by-step sequential tab completion (command, then param0, param1, param2, param3)
+                var step0 = "TestV";
+                var ok1 = DevSuiteUtils.TryGetCliTabCompletion(step0, allCliCmds, out var step1);
+                Assert(ok1 && step1 == "TestVarious ", "Step 1 Tab completes only command name");
+
+                var ok2 = DevSuiteUtils.TryGetCliTabCompletion(step1, allCliCmds, out var step2);
+                Assert(ok2 && step2 == "TestVarious 42 ", "Step 2 Tab completes only parameter 0");
+
+                var ok3 = DevSuiteUtils.TryGetCliTabCompletion(step2, allCliCmds, out var step3);
+                Assert(ok3 && step3 == "TestVarious 42 Friday ", "Step 3 Tab completes only parameter 1");
+
+                var ok4 = DevSuiteUtils.TryGetCliTabCompletion(step3, allCliCmds, out var step4);
+                Assert(ok4 && step4 == "TestVarious 42 Friday true ", "Step 4 Tab completes only parameter 2");
+
+                var ok5 = DevSuiteUtils.TryGetCliTabCompletion(step4, allCliCmds, out var step5);
+                Assert(ok5 && step5 == "TestVarious 42 Friday true 3.14 ", "Step 5 Tab completes only parameter 3");
+
+                var ok6 = DevSuiteUtils.TryGetCliTabCompletion(step5, allCliCmds, out _);
+                Assert(!ok6, "Step 6 Tab does nothing after all parameters completed");
+
+                // Test 14: Timescale, Pause, Unpause CLI Commands
+                Assert(allCliCmds.Any(c => c.CliCommand == "timescale"), "Found timescale CLI command");
                 Assert(allCliCmds.Any(c => c.CliCommand == "pause"), "Found pause CLI command");
                 Assert(allCliCmds.Any(c => c.CliCommand == "unpause"), "Found unpause CLI command");
 
-                var tabGameSpeed = DevSuiteUtils.TryGetCliTabCompletion("gamesp", allCliCmds, out var compGameSpeed);
-                Assert(tabGameSpeed && compGameSpeed == "gamespeed ", "Tab completes gamespeed command");
+                var tabTimescale = DevSuiteUtils.TryGetCliTabCompletion("times", allCliCmds, out var compTimescale);
+                Assert(tabTimescale && compTimescale == "timescale ", "Tab completes timescale command");
 
                 var tabPause = DevSuiteUtils.TryGetCliTabCompletion("pau", allCliCmds, out var compPause);
                 Assert(tabPause && compPause == "pause ", "Tab completes pause command");
@@ -268,25 +288,13 @@ namespace Ff.DevSuite
                 var tabUnpause = DevSuiteUtils.TryGetCliTabCompletion("unp", allCliCmds, out var compUnpause);
                 Assert(tabUnpause && compUnpause == "unpause ", "Tab completes unpause command");
 
-                var originalTimeScale = Time.timeScale;
                 try
                 {
-                    context.ExecuteCliCommand("gamespeed 2.5");
-                    Assert(Mathf.Approximately(Time.timeScale, 2.5f) && Mathf.Approximately(CommonCommands.TimeScale.Value ?? 0f, 2.5f), "gamespeed 2.5 sets timescale to 2.5");
-
-                    context.ExecuteCliCommand("pause");
-                    Assert(Mathf.Approximately(Time.timeScale, 0f) && Mathf.Approximately(CommonCommands.TimeScale.Value ?? -1f, 0f), "pause sets timescale to 0");
-
-                    context.ExecuteCliCommand("unpause");
-                    Assert(Mathf.Approximately(Time.timeScale, 2.5f) && Mathf.Approximately(CommonCommands.TimeScale.Value ?? 0f, 2.5f), "unpause restores timescale to 2.5");
-
-                    context.ExecuteCliCommand("gamespeed 1");
-                    Assert(Mathf.Approximately(Time.timeScale, 1f), "gamespeed 1 sets timescale to 1");
+                    TestTimeScaleCommands(context, Assert);
                 }
-                finally
+                catch (System.Security.SecurityException)
                 {
-                    Time.timeScale = originalTimeScale;
-                    CommonCommands.TimeScale.Value = null;
+                    // Standalone test harness without Unity native engine
                 }
             }
             finally
@@ -305,6 +313,31 @@ namespace Ff.DevSuite
 
             Debug.Log($"[DevSuite Tests] CLI Commands Tests Completed. Passed: {passed}");
             return passed;
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void TestTimeScaleCommands(DevSuiteContext context, System.Action<bool, string> assert)
+        {
+            var originalTimeScale = Time.timeScale;
+            try
+            {
+                context.ExecuteCliCommand("gamespeed 2.5");
+                assert(Mathf.Approximately(Time.timeScale, 2.5f) && Mathf.Approximately(CommonCommands.TimeScale.Value ?? 0f, 2.5f), "gamespeed 2.5 sets timescale to 2.5");
+
+                context.ExecuteCliCommand("pause");
+                assert(Mathf.Approximately(Time.timeScale, 0f) && Mathf.Approximately(CommonCommands.TimeScale.Value ?? -1f, 0f), "pause sets timescale to 0");
+
+                context.ExecuteCliCommand("unpause");
+                assert(Mathf.Approximately(Time.timeScale, 2.5f) && Mathf.Approximately(CommonCommands.TimeScale.Value ?? 0f, 2.5f), "unpause restores timescale to 2.5");
+
+                context.ExecuteCliCommand("gamespeed 1");
+                assert(Mathf.Approximately(Time.timeScale, 1f), "gamespeed 1 sets timescale to 1");
+            }
+            finally
+            {
+                Time.timeScale = originalTimeScale;
+                CommonCommands.TimeScale.Value = null;
+            }
         }
     }
 }
