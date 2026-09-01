@@ -212,13 +212,6 @@ namespace Ff.DevSuite.View
                     }
                 }, TrickleDown.TrickleDown);
 
-                _cliInputField.RegisterCallback<NavigationSubmitEvent>(evt =>
-                {
-                    evt.StopImmediatePropagation();
-                    evt.PreventDefault();
-                    HandleCliSend();
-                }, TrickleDown.TrickleDown);
-
                 _cliInputField.RegisterCallback<NavigationMoveEvent>(evt =>
                 {
                     if (evt.direction == NavigationMoveEvent.Direction.Up)
