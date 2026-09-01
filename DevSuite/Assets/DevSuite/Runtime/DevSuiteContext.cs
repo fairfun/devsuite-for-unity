@@ -13,6 +13,7 @@ using MessagePack;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Threading;
 using UnityEngine;
 
 #if ENABLE_INPUT_SYSTEM
@@ -58,17 +59,37 @@ namespace Ff.DevSuite
         public static bool Enabled { get; set; } = true; // global kill-switch
 
 #if UNITY_EDITOR
+        private static volatile bool _isEditorPlaying;
+
         static DevSuiteContext()
         {
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            _mainSyncContext = SynchronizationContext.Current;
+            _isEditorPlaying = UnityEditor.EditorApplication.isPlaying;
             UnityEditor.EditorApplication.playModeStateChanged += m =>
             {
+                _isEditorPlaying = m == UnityEditor.PlayModeStateChange.EnteredPlayMode;
                 if (m is UnityEditor.PlayModeStateChange.ExitingEditMode or UnityEditor.PlayModeStateChange.ExitingPlayMode)
                 {
                     ResetStatic();
                 }
             };
         }
+
+        public static bool IsPlaying => _isEditorPlaying;
+#else
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void InitRuntime()
+        {
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            _mainSyncContext = SynchronizationContext.Current;
+        }
+
+        public static bool IsPlaying => true;
 #endif
+
+        private static int _mainThreadId;
+        private static SynchronizationContext _mainSyncContext;
 
         private static void ResetStatic()
         {
@@ -385,6 +406,15 @@ namespace Ff.DevSuite
 
         public DevSuiteContext()
         {
+            if (_mainThreadId == 0 && Thread.CurrentThread.ManagedThreadId != 0)
+            {
+                _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            }
+            if (_mainSyncContext == null && SynchronizationContext.Current != null)
+            {
+                _mainSyncContext = SynchronizationContext.Current;
+            }
+
             _apiCalledDispatcher = new BlockableDispatcher(Block, () => OnApiCalled?.Invoke());
             _onChangedDispatcher = new BlockableDispatcher(Block, () => OnChanged?.Invoke());
             _onEveryFrameDispatcher = new BlockableDispatcher(Block, () => OnEveryFrame?.Invoke());
@@ -430,6 +460,14 @@ namespace Ff.DevSuite
             OnPickModeChanged = null;
             OnApiCalled = null;
             OnChanged = null;
+            OnEveryFrame = null;
+            OnPerformancePanelChanged = null;
+            OnPerformanceGraphCollapsedChanged = null;
+            OnLogMessagesChanged = null;
+            OnLogMessagesMessageAdded = null;
+            OnLogMessagesVisibilityChanged = null;
+            OnHierarchyChanged = null;
+            OnFocusCliRequested = null;
 
             Unsubscribe();
             Reset();
@@ -453,6 +491,12 @@ namespace Ff.DevSuite
             if (_initialized)
             {
                 throw new Exception("Already initialized. If you need to reinitialize call Reset() before.");
+            }
+
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            if (SynchronizationContext.Current != null)
+            {
+                _mainSyncContext = SynchronizationContext.Current;
             }
 
             _initialized = true;
@@ -2455,7 +2499,7 @@ namespace Ff.DevSuite
 
         private void HandleUnityLog(string message, string stackTrace, LogType type)
         {
-            if (!Application.isPlaying)
+            if (!IsPlaying)
             {
                 return;
             }
@@ -2466,7 +2510,22 @@ namespace Ff.DevSuite
             {
                 _allLogMessages.Add(msg);
             }
-            OnLogMessagesMessageAdded?.Invoke(msg);
+
+            if (Thread.CurrentThread.ManagedThreadId == _mainThreadId || _mainSyncContext == null)
+            {
+                OnLogMessagesMessageAdded?.Invoke(msg);
+            }
+            else
+            {
+                _mainSyncContext.Post(state =>
+                {
+                    if (Disposed)
+                    {
+                        return;
+                    }
+                    OnLogMessagesMessageAdded?.Invoke((LogMessageData)state);
+                }, msg);
+            }
         }
 
         public string GetAllLogsText()
@@ -2483,7 +2542,22 @@ namespace Ff.DevSuite
             {
                 _allLogMessages.Clear();
             }
-            OnLogMessagesChanged?.Invoke();
+
+            if (Thread.CurrentThread.ManagedThreadId == _mainThreadId || _mainSyncContext == null)
+            {
+                OnLogMessagesChanged?.Invoke();
+            }
+            else
+            {
+                _mainSyncContext.Post(_ =>
+                {
+                    if (Disposed)
+                    {
+                        return;
+                    }
+                    OnLogMessagesChanged?.Invoke();
+                }, null);
+            }
         }
 
         public void ClearSettings()
