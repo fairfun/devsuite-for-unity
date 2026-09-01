@@ -253,6 +253,41 @@ namespace Ff.DevSuite
 
                 var tab8 = DevSuiteUtils.TryGetCliTabCompletion("", allCliCmds, out _);
                 Assert(!tab8, "Tab does nothing on empty input");
+
+                // Test 14: GameSpeed, Pause, Unpause CLI Commands
+                Assert(allCliCmds.Any(c => c.CliCommand == "gamespeed"), "Found gamespeed CLI command");
+                Assert(allCliCmds.Any(c => c.CliCommand == "pause"), "Found pause CLI command");
+                Assert(allCliCmds.Any(c => c.CliCommand == "unpause"), "Found unpause CLI command");
+
+                var tabGameSpeed = DevSuiteUtils.TryGetCliTabCompletion("gamesp", allCliCmds, out var compGameSpeed);
+                Assert(tabGameSpeed && compGameSpeed == "gamespeed ", "Tab completes gamespeed command");
+
+                var tabPause = DevSuiteUtils.TryGetCliTabCompletion("pau", allCliCmds, out var compPause);
+                Assert(tabPause && compPause == "pause ", "Tab completes pause command");
+
+                var tabUnpause = DevSuiteUtils.TryGetCliTabCompletion("unp", allCliCmds, out var compUnpause);
+                Assert(tabUnpause && compUnpause == "unpause ", "Tab completes unpause command");
+
+                var originalTimeScale = Time.timeScale;
+                try
+                {
+                    context.ExecuteCliCommand("gamespeed 2.5");
+                    Assert(Mathf.Approximately(Time.timeScale, 2.5f) && Mathf.Approximately(CommonCommands.TimeScale.Value ?? 0f, 2.5f), "gamespeed 2.5 sets timescale to 2.5");
+
+                    context.ExecuteCliCommand("pause");
+                    Assert(Mathf.Approximately(Time.timeScale, 0f) && Mathf.Approximately(CommonCommands.TimeScale.Value ?? -1f, 0f), "pause sets timescale to 0");
+
+                    context.ExecuteCliCommand("unpause");
+                    Assert(Mathf.Approximately(Time.timeScale, 2.5f) && Mathf.Approximately(CommonCommands.TimeScale.Value ?? 0f, 2.5f), "unpause restores timescale to 2.5");
+
+                    context.ExecuteCliCommand("gamespeed 1");
+                    Assert(Mathf.Approximately(Time.timeScale, 1f), "gamespeed 1 sets timescale to 1");
+                }
+                finally
+                {
+                    Time.timeScale = originalTimeScale;
+                    CommonCommands.TimeScale.Value = null;
+                }
             }
             finally
             {

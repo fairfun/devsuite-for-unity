@@ -334,6 +334,57 @@ namespace Ff.DevSuite
             }
         }
 
+        private static float? _pausedGameSpeed;
+        [Command(DisplayName = "Game Speed", Scope = AttributeScope.Continuous), CommandButton(Title = "Game Speed", CliCommand = "timescale", Description = "Set game speed (Time.timeScale)")]
+        public static void GameSpeed(float speed = 1f)
+        {
+            if (_originalGameSpeed == null && Time.timeScale > 0f)
+            {
+                _originalGameSpeed = Time.timeScale;
+            }
+
+            speed = Mathf.Max(0f, speed);
+            if (speed > 0f)
+            {
+                _pausedGameSpeed = null;
+            }
+            else if (Time.timeScale > 0f)
+            {
+                _pausedGameSpeed = Time.timeScale;
+            }
+
+            Time.timeScale = speed;
+        }
+
+        [CommandButton(nameof(GameSpeed), Title = "Pause", CliCommand = "pause", Description = "Pause the game")]
+        public static void Pause()
+        {
+            if (_originalGameSpeed == null && Time.timeScale > 0f)
+            {
+                _originalGameSpeed = Time.timeScale;
+            }
+
+            if (Time.timeScale > 0f)
+            {
+                _pausedGameSpeed = Time.timeScale;
+            }
+
+            Time.timeScale = 0f;
+        }
+
+        [CommandButton(nameof(GameSpeed), Title = "Unpause", CliCommand = "unpause", Description = "Unpause the game")]
+        public static void Unpause()
+        {
+            var targetSpeed = _pausedGameSpeed ?? _originalGameSpeed ?? 1f;
+            if (targetSpeed <= 0f)
+            {
+                targetSpeed = 1f;
+            }
+
+            Time.timeScale = targetSpeed;
+            _pausedGameSpeed = null;
+        }
+
         [Command(DisplayName = "CLI Commands"), CommandButton(Title = "Show Cli Commands", CliCommand = "help")]
         public static void ShowCliCommands()
         {
