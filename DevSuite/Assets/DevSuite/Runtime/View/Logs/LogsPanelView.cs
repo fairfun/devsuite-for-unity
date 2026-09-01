@@ -104,7 +104,38 @@ namespace Ff.DevSuite.View
 
             if (_cliInputField != null)
             {
-                DevSuiteUtils.SetupInputFieldFocus(_cliInputField);
+                _cliInputField.focusable = true;
+                _cliInputField.tabIndex = -1;
+
+                var textInput = _cliInputField.Q("unity-text-input");
+                if (textInput != null)
+                {
+                    textInput.focusable = true;
+                    textInput.tabIndex = -1;
+                }
+                else
+                {
+                    _cliInputField.RegisterCallback<AttachToPanelEvent>(_ =>
+                    {
+                        var ti = _cliInputField.Q("unity-text-input");
+                        if (ti != null)
+                        {
+                            ti.focusable = true;
+                            ti.tabIndex = -1;
+                        }
+                    });
+                }
+
+                _cliInputField.RegisterCallback<PointerDownEvent>(_ =>
+                {
+                    _cliInputField.focusable = true;
+                    var ti = _cliInputField.Q("unity-text-input");
+                    if (ti != null)
+                    {
+                        ti.focusable = true;
+                    }
+                });
+
                 _cliInputField.RegisterValueChangedCallback(evt => HandleCliInputChanged(evt.newValue));
                 _cliInputField.RegisterCallback<FocusInEvent>(_ =>
                 {
@@ -113,6 +144,10 @@ namespace Ff.DevSuite.View
                 });
                 _cliInputField.RegisterCallback<FocusOutEvent>(_ =>
                 {
+                    if (_isSendingCli)
+                    {
+                        return;
+                    }
                     _cliInputFocused = false;
                     schedule.Execute(() =>
                     {
@@ -127,6 +162,7 @@ namespace Ff.DevSuite.View
                     if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
                     {
                         evt.StopImmediatePropagation();
+                        evt.PreventDefault();
                         HandleCliSend();
                     }
                     else if (evt.keyCode == KeyCode.UpArrow)
@@ -145,7 +181,19 @@ namespace Ff.DevSuite.View
                             evt.PreventDefault();
                         }
                     }
-                });
+                    else if (evt.keyCode == KeyCode.Tab)
+                    {
+                        evt.StopImmediatePropagation();
+                        evt.PreventDefault();
+                        HandleCliTab();
+                    }
+                }, TrickleDown.TrickleDown);
+                _cliInputField.RegisterCallback<NavigationSubmitEvent>(evt =>
+                {
+                    evt.StopImmediatePropagation();
+                    evt.PreventDefault();
+                    HandleCliSend();
+                }, TrickleDown.TrickleDown);
             }
 
             if (_cliSendButton != null)
@@ -340,6 +388,8 @@ namespace Ff.DevSuite.View
             UpdateSeverityButtons();
         }
 
+        private bool _isSendingCli;
+
         private void HandleCliSend()
         {
             _cliHistoryIndex = -1;
@@ -349,13 +399,23 @@ namespace Ff.DevSuite.View
                 return;
 
             var text = _cliInputField.value;
-            if (string.IsNullOrWhiteSpace(text))
-                return;
+            _isSendingCli = true;
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    _context.ExecuteCliCommand(text);
+                }
+                _cliInputField.SetValueWithoutNotify(string.Empty);
+                _cliGhostField?.SetValueWithoutNotify(string.Empty);
+                HideCliTooltip();
+            }
+            finally
+            {
+                _isSendingCli = false;
+            }
 
-            _context.ExecuteCliCommand(text);
-            _cliInputField.SetValueWithoutNotify(string.Empty);
-            _cliGhostField?.SetValueWithoutNotify(string.Empty);
-            HideCliTooltip();
+            FocusCliInput();
         }
 
         private bool NavigateCliHistory(int direction)
@@ -418,6 +478,26 @@ namespace Ff.DevSuite.View
             _cliInputField.SelectRange(text.Length, text.Length);
             UpdateCliGhost(text);
             UpdateCliTooltip(text);
+        }
+
+        internal void HandleCliTab()
+        {
+            if (_context == null || _cliInputField == null)
+            {
+                return;
+            }
+
+            var currentText = _cliInputField.value ?? string.Empty;
+            var allCommands = _context.GetActiveCliCommands();
+            if (DevSuiteUtils.TryGetCliTabCompletion(currentText, allCommands, out var completedText))
+            {
+                _cliInputField.value = completedText;
+                _cliInputField.SelectRange(completedText.Length, completedText.Length);
+                UpdateCliGhost(completedText);
+                UpdateCliTooltip(completedText);
+            }
+
+            FocusCliInput();
         }
 
         private void HandleCliInputChanged(string newText)

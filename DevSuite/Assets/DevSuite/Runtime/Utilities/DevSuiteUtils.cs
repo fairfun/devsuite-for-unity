@@ -8,6 +8,7 @@ namespace Ff.DevSuite
 {
     using System;
     using System.Collections.Generic;
+    using Ff.DevSuite.Commands;
 
     internal static class DevSuiteUtils
     {
@@ -1096,6 +1097,142 @@ namespace Ff.DevSuite
             if (t == typeof(byte)) return "byte";
             if (t == typeof(short)) return "short";
             return t.Name;
+        }
+
+        public static bool TryGetCliTabCompletion(string currentText, IReadOnlyList<CliCommandData> allCommands, out string completedText)
+        {
+            completedText = null;
+            if (allCommands == null || allCommands.Count == 0 || string.IsNullOrEmpty(currentText))
+            {
+                return false;
+            }
+
+            var leadingSpacesLen = currentText.Length - currentText.TrimStart().Length;
+            var leadingSpaces = leadingSpacesLen > 0 ? currentText.Substring(0, leadingSpacesLen) : string.Empty;
+            var trimmed = currentText.TrimStart();
+            var spaceIdx = trimmed.IndexOf(' ');
+
+            if (spaceIdx < 0)
+            {
+                var cmdQuery = trimmed;
+                var matched = allCommands.FirstOrDefault(c => string.Equals(c.CliCommand, cmdQuery, StringComparison.OrdinalIgnoreCase))
+                           ?? allCommands.FirstOrDefault(c => c.CliCommand.StartsWith(cmdQuery, StringComparison.OrdinalIgnoreCase));
+
+                if (matched != null)
+                {
+                    var newText = $"{leadingSpaces}{matched.CliCommand} ";
+                    if (!string.Equals(currentText, newText, StringComparison.Ordinal))
+                    {
+                        completedText = newText;
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            var cmdName = trimmed.Substring(0, spaceIdx);
+            var matchedCmd = allCommands.FirstOrDefault(c => string.Equals(c.CliCommand, cmdName, StringComparison.OrdinalIgnoreCase));
+            if (matchedCmd == null || matchedCmd.Parameters == null || matchedCmd.Parameters.Count == 0)
+            {
+                return false;
+            }
+
+            var tokens = TokenizeCommandLine(trimmed);
+            var endsWithSpace = currentText.EndsWith(" ");
+
+            if (endsWithSpace)
+            {
+                var nextParamIdx = Math.Max(0, tokens.Count - 1);
+                if (nextParamIdx < matchedCmd.Parameters.Count)
+                {
+                    var param = matchedCmd.Parameters[nextParamIdx];
+                    var val = param.GetValue?.Invoke();
+                    var valStr = FormatParameterValueForCli(val, param.Type);
+                    if (!string.IsNullOrEmpty(valStr))
+                    {
+                        completedText = $"{currentText}{valStr} ";
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            var currentParamIdx = Math.Max(0, tokens.Count - 2);
+            if (currentParamIdx < matchedCmd.Parameters.Count && tokens.Count > 1)
+            {
+                var param = matchedCmd.Parameters[currentParamIdx];
+                var partialToken = tokens[tokens.Count - 1];
+                var completedValue = AutoCompleteParameterToken(partialToken, param);
+                if (!string.IsNullOrEmpty(completedValue))
+                {
+                    var lastTokenIdx = currentText.LastIndexOf(partialToken, StringComparison.Ordinal);
+                    if (lastTokenIdx >= 0)
+                    {
+                        completedText = currentText.Substring(0, lastTokenIdx) + completedValue + " ";
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        public static string FormatParameterValueForCli(object val, Type targetType)
+        {
+            if (val == null)
+            {
+                return null;
+            }
+            if (val is string s)
+            {
+                return s.Contains(" ") ? $"\"{s}\"" : s;
+            }
+            if (val is bool b)
+            {
+                return b ? "true" : "false";
+            }
+            return val.ToString();
+        }
+
+        public static string AutoCompleteParameterToken(string partialToken, CommandUnitButtonParameter param)
+        {
+            if (string.IsNullOrEmpty(partialToken) || param == null)
+            {
+                return null;
+            }
+
+            var nonNullable = Nullable.GetUnderlyingType(param.Type) ?? param.Type;
+            if (nonNullable.IsEnum)
+            {
+                var names = Enum.GetNames(nonNullable);
+                var match = names.FirstOrDefault(n => n.StartsWith(partialToken, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                {
+                    return match;
+                }
+            }
+            else if (nonNullable == typeof(bool))
+            {
+                if ("true".StartsWith(partialToken, StringComparison.OrdinalIgnoreCase))
+                {
+                    return "true";
+                }
+                if ("false".StartsWith(partialToken, StringComparison.OrdinalIgnoreCase))
+                {
+                    return "false";
+                }
+            }
+            else
+            {
+                var val = param.GetValue?.Invoke();
+                var valStr = FormatParameterValueForCli(val, param.Type);
+                if (!string.IsNullOrEmpty(valStr) && valStr.StartsWith(partialToken, StringComparison.OrdinalIgnoreCase))
+                {
+                    return valStr;
+                }
+            }
+
+            return null;
         }
     }
 }

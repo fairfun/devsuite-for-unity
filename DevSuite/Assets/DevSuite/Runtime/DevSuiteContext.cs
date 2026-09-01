@@ -65,6 +65,19 @@ namespace Ff.DevSuite
         {
             _mainThreadId = Thread.CurrentThread.ManagedThreadId;
             _mainSyncContext = SynchronizationContext.Current;
+            try
+            {
+                InitEditorApplication();
+            }
+            catch
+            {
+                // Standalone test harness without Unity native engine
+            }
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void InitEditorApplication()
+        {
             _isEditorPlaying = UnityEditor.EditorApplication.isPlaying;
             UnityEditor.EditorApplication.playModeStateChanged += m =>
             {

@@ -32,7 +32,7 @@
                 <ui:Label text="&gt;" class="logs-cli-icon" picking-mode="Ignore"/>
                 <ui:VisualElement class="logs-cli-field-container">
                     <ui:TextField name="cliGhostField" class="logs-cli-field logs-cli-ghost-field" tabindex="-1" focusable="false" picking-mode="Ignore"/>
-                    <ui:TextField name="cliInputField" class="logs-cli-field logs-cli-foreground-field" tabindex="-1" focusable="false"/>
+                    <ui:TextField name="cliInputField" class="logs-cli-field logs-cli-foreground-field" tabindex="-1" focusable="true"/>
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:Button name="cliSendButton" text="Send" class="logs-cli-send-btn" tooltip="Send cheat command"/>

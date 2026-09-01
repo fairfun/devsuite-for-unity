@@ -227,6 +227,32 @@ namespace Ff.DevSuite
                 var helpLog = logs.FirstOrDefault(l => l.Contains("Available CLI Commands"));
                 Assert(helpLog != null, "Help command logs available CLI commands list");
                 Assert(helpLog.Contains("    CliTests/Default/TestMultilineDesc/TestMultilineDesc\n        Line 1 of description\n        Line 2 of description"), "Command and parameters on line 1, descriptions on subsequent lines");
+
+                // Test 13: Tab completion
+                var allCliCmds = context.GetActiveCliCommands();
+                var tab1 = DevSuiteUtils.TryGetCliTabCompletion("TestP", allCliCmds, out var comp1);
+                Assert(tab1 && comp1 == "TestParameterless ", "Tab completes command name from prefix");
+
+                var tab2 = DevSuiteUtils.TryGetCliTabCompletion("Multi", allCliCmds, out var comp2);
+                Assert(tab2 && comp2 == "MultiWordButton ", "Tab completes multi-word title command");
+
+                var tab3 = DevSuiteUtils.TryGetCliTabCompletion("exp", allCliCmds, out var comp3);
+                Assert(tab3 && comp3 == "explicit_cli ", "Tab completes explicit_cli command");
+
+                var tab4 = DevSuiteUtils.TryGetCliTabCompletion("TestStrings hello ", allCliCmds, out var comp4);
+                Assert(tab4 && comp4 == "TestStrings hello \"foo bar\" ", "Tab completes current value for second parameter");
+
+                var tab5 = DevSuiteUtils.TryGetCliTabCompletion("TestVarious 42 Fri", allCliCmds, out var comp5);
+                Assert(tab5 && comp5 == "TestVarious 42 Friday ", "Tab completes Enum value from partial text");
+
+                var tab6 = DevSuiteUtils.TryGetCliTabCompletion("TestVarious 42 Friday t", allCliCmds, out var comp6);
+                Assert(tab6 && comp6 == "TestVarious 42 Friday true ", "Tab completes bool value from partial text");
+
+                var tab7 = DevSuiteUtils.TryGetCliTabCompletion("unknown_cmd", allCliCmds, out _);
+                Assert(!tab7, "Tab does nothing on unknown command prefix");
+
+                var tab8 = DevSuiteUtils.TryGetCliTabCompletion("", allCliCmds, out _);
+                Assert(!tab8, "Tab does nothing on empty input");
             }
             finally
             {
