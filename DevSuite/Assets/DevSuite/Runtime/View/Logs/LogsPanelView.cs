@@ -214,27 +214,12 @@ namespace Ff.DevSuite.View
 
                 _cliInputField.RegisterCallback<NavigationMoveEvent>(evt =>
                 {
-                    if (evt.direction == NavigationMoveEvent.Direction.Up)
-                    {
-                        if (NavigateCliHistory(-1))
-                        {
-                            evt.StopImmediatePropagation();
-                            evt.PreventDefault();
-                        }
-                    }
-                    else if (evt.direction == NavigationMoveEvent.Direction.Down)
-                    {
-                        if (NavigateCliHistory(1))
-                        {
-                            evt.StopImmediatePropagation();
-                            evt.PreventDefault();
-                        }
-                    }
-                    else if (evt.direction == NavigationMoveEvent.Direction.Next)
+                    if (evt.direction == NavigationMoveEvent.Direction.Up
+                     || evt.direction == NavigationMoveEvent.Direction.Down
+                     || evt.direction == NavigationMoveEvent.Direction.Next)
                     {
                         evt.StopImmediatePropagation();
                         evt.PreventDefault();
-                        HandleCliTab();
                     }
                 }, TrickleDown.TrickleDown);
             }
@@ -436,6 +421,8 @@ namespace Ff.DevSuite.View
         private float _lastSendTime = -1f;
         private int _lastTabFrame = -1;
         private float _lastTabTime = -1f;
+        private int _lastHistoryFrame = -1;
+        private float _lastHistoryTime = -1f;
 
         private void HandleCliSend()
         {
@@ -482,6 +469,15 @@ namespace Ff.DevSuite.View
         {
             if (_context == null || _cliInputField == null)
                 return false;
+
+            var currentFrame = Time.frameCount;
+            var currentTime = Time.realtimeSinceStartup;
+            if (_lastHistoryFrame == currentFrame && Math.Abs(currentTime - _lastHistoryTime) < 0.05f)
+            {
+                return true;
+            }
+            _lastHistoryFrame = currentFrame;
+            _lastHistoryTime = currentTime;
 
             var history = _context.GetCliCommandHistory();
             if (history == null || history.Count == 0)

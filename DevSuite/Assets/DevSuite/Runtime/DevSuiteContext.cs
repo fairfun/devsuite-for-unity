@@ -1680,6 +1680,8 @@ namespace Ff.DevSuite
                 return;
             }
 
+            AddCliCommandToHistory(input);
+
             var tokens = DevSuiteUtils.TokenizeCommandLine(input);
             if (tokens.Count == 0)
             {
@@ -1712,7 +1714,6 @@ namespace Ff.DevSuite
                 try
                 {
                     ExecuteButton(button);
-                    AddCliCommandToHistory(input);
                     Debug.Log($"executed command '{match.CliCommand}'");
                 }
                 catch (Exception e)
@@ -1771,7 +1772,6 @@ namespace Ff.DevSuite
             try
             {
                 ExecuteButton(button);
-                AddCliCommandToHistory(input);
 
                 if (userArgs.Count > 0)
                 {
