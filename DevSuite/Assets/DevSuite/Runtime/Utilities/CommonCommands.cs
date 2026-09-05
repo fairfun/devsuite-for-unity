@@ -228,7 +228,7 @@ namespace Ff.DevSuite
 
         private static string DisplayInfo()
         {
-            var displayInfo = $"{Screen.width}x{Screen.height} @ {DevSuiteUtils.DisplayFrameRate:F0}Hz, dpi {Screen.dpi:F0}, {Screen.fullScreenMode}, {Screen.orientation}, {Display.displays.Length} displays";
+            var displayInfo = $"{Screen.width}x{Screen.height} @ {DevSuiteUtils.DisplayFrameRate:F0}Hz, dpi {Screen.dpi:F0}, fullscreen {Screen.fullScreenMode}, {Screen.orientation}, {Display.displays.Length} displays";
             if (Screen.safeArea is { width: var safeW, height: var safeH } && (safeW != Screen.width || safeH != Screen.height))
                 displayInfo += $", Safe Area: {Screen.safeArea}";
             return displayInfo;

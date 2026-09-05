@@ -123,7 +123,7 @@ namespace Ff.DevSuite.View
                 _lastToggleTime = Time.unscaledTime;
                 ToggleContextValue(ctx => ctx.PanelExpanded = true);
             }
-            else if (_activationMode == DevSuitePanelActivationMode.FiveClicks)
+            else if (_activationMode == DevSuitePanelActivationMode.MultiClick)
             {
                 _clickCount++;
                 _clickResetTask?.Pause();
@@ -146,10 +146,10 @@ namespace Ff.DevSuite.View
 
         private void HandleHoldStart()
         {
-            if (_context.PanelExpanded || _activationMode != DevSuitePanelActivationMode.HoldThreeSeconds)
+            if (_context.PanelExpanded || _activationMode != DevSuitePanelActivationMode.Hold)
                 return;
 
-            if (Time.unscaledTime - _lastToggleTime < 1.0f)
+            if (Time.unscaledTime - _lastToggleTime < 0.5f)
             {
                 ShowCooldownFeedback();
                 return;
@@ -161,7 +161,7 @@ namespace Ff.DevSuite.View
                 _lastToggleTime = Time.unscaledTime;
                 ToggleContextValue(ctx => ctx.PanelExpanded = true);
                 _holdTask = null;
-            }).StartingIn(3000);
+            }).StartingIn(2000);
         }
 
         private void HandleHoldStop()
@@ -384,8 +384,8 @@ namespace Ff.DevSuite.View
     internal enum DevSuitePanelActivationMode
     {
         SingleClick,
-        FiveClicks,
-        HoldThreeSeconds,
+        MultiClick,
+        Hold,
     }
 
     internal enum ControlPanelExpandButtonVisibility
