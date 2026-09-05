@@ -237,7 +237,8 @@ namespace DevSuite.Runtime.Utilities
                 }
                 catch { }
             }
-            else if (targetGroup == UnityEditor.BuildTargetGroup.Standalone)
+            else if (targetGroup == UnityEditor.BuildTargetGroup.Standalone &&
+                     UnityEditor.EditorUserBuildSettings.activeBuildTarget == UnityEditor.BuildTarget.StandaloneOSX)
             {
                 try
                 {
