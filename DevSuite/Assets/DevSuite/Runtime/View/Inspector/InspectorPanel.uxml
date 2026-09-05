@@ -2,12 +2,12 @@
     <ui:VisualElement name="inspector-panel-root" class="inspector-panel-container">
         <!-- Top Toolbar / Header Row -->
         <ui:VisualElement class="inspector-toolbar">
-            <ui:Button name="refreshBtn" class="inspector-btn inspector-icon-btn" tooltip="Refresh inspected object values"/>
-            <ui:Button name="autoRefreshBtn" text="Auto" class="inspector-btn inspector-text-btn inspector-auto-btn" tooltip="Auto-refresh: continuously update inspected values every frame"/>
-            <ui:Button name="autoPauseBtn" text="Auto Pause" class="inspector-btn inspector-text-btn inspector-auto-pause-btn" tooltip="Auto-pause: pause game when an object is selected in DevSuite"/>
-            <ui:Button name="unselectAllBtn" text="Unselect All" class="inspector-btn inspector-text-btn inspector-unselect-all-btn" tooltip="Unselect all selected GameObjects to resume playing"/>
+            <ui:Button name="refreshBtn" class="inspector-btn inspector-icon-btn" tooltip="Refresh inspected object values.&#10;&#10;Re-reads all serialized fields, public fields, and properties of components on the selected GameObject(s)."/>
+            <ui:Button name="autoRefreshBtn" text="Auto" class="inspector-btn inspector-text-btn inspector-auto-btn" tooltip="Auto-Refresh mode.&#10;&#10;Continuously polls and updates reflected property values every frame via DevSuiteContext.OnEveryFrame."/>
+            <ui:Button name="autoPauseBtn" text="Auto Pause" class="inspector-btn inspector-text-btn inspector-auto-pause-btn" tooltip="Auto-Pause mode.&#10;&#10;Automatically pauses the game (Time.timeScale = 0) when an object is selected via Hierarchy or Pick mode, allowing inspection of frozen state."/>
+            <ui:Button name="unselectAllBtn" text="Unselect All" class="inspector-btn inspector-text-btn inspector-unselect-all-btn" tooltip="Unselect all GameObjects.&#10;&#10;Clears current selection and restores original game speed if Auto-Pause was active."/>
             <ui:VisualElement style="flex-grow: 1;"/>
-            <ui:Button name="copyBtn" class="inspector-btn inspector-icon-btn" tooltip="Copy inspected components and property values to clipboard"/>
+            <ui:Button name="copyBtn" class="inspector-btn inspector-icon-btn" tooltip="Copy component properties to clipboard.&#10;&#10;Exports all reflected components, fields, and properties of the selected GameObject as formatted text."/>
         </ui:VisualElement>
 
         <!-- Title and top info -->
@@ -16,7 +16,7 @@
                 <ui:Label name="selectedObjectLabel" text="None selected" class="inspector-selected-object"/>
                 <ui:Label name="selectedObjectPathLabel" text="" class="inspector-selected-object-path"/>
             </ui:VisualElement>
-            <ui:Toggle name="goActivityToggle" class="ff-toggle inspector-go-activity-toggle" tooltip="Toggle active state" style="display: none;"/>
+            <ui:Toggle name="goActivityToggle" class="ff-toggle inspector-go-activity-toggle" tooltip="Toggle GameObject active state (GameObject.SetActive)." style="display: none;"/>
         </ui:VisualElement>
 
         <!-- Scrollable Property List -->

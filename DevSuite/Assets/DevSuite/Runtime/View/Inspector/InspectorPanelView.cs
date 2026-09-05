@@ -422,7 +422,7 @@ namespace Ff.DevSuite.View
                 {
                     name = "monoEnabledToggle",
                     value = mono.enabled,
-                    tooltip = "Toggle enabled state"
+                    tooltip = "Enable or disable this component at runtime (MonoBehaviour.enabled)."
                 };
                 enabledToggle.AddToClassList("ff-toggle");
                 enabledToggle.AddToClassList("inspector-mono-toggle");

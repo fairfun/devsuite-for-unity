@@ -398,8 +398,34 @@
     overflow: hidden;
 }
 
+.logs-cli-tooltip-top-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 3px 6px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+    margin-bottom: 2px;
+}
+
+.logs-cli-tooltip-top-header-title {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    -unity-font-style: bold;
+    margin: 0;
+    padding: 0;
+}
+
+.logs-cli-tooltip-top-header-hint {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0;
+    padding: 0;
+}
+
 .logs-cli-tooltip-scroll {
-    max-height: 268px;
+    max-height: 246px;
 }
 
 .logs-cli-tooltip-item {

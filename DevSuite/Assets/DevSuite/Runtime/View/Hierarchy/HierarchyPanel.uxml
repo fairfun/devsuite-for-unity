@@ -4,22 +4,22 @@
         <ui:VisualElement class="hierarchy-toolbar">
             <ui:VisualElement class="hierarchy-filter-container">
                 <ui:Label text="&#xf002;" class="hierarchy-filter-icon"/>
-                <ui:TextField name="filterField" class="hierarchy-filter-field" tabindex="-1" focusable="false"/>
+                <ui:TextField name="filterField" class="hierarchy-filter-field" tabindex="-1" focusable="false" tooltip="Search scene hierarchy.&#10;&#10;Supports Smart Search (camelCase abbreviation). Can match GameObject names, attached Component types, or regular expressions."/>
             </ui:VisualElement>
             <ui:Button name="prevBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Previous search result"/>
             <ui:Button name="nextBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Next search result"/>
-            <ui:Button name="regexBtn" class="hierarchy-btn hierarchy-regex-btn" tooltip="Toggle Regex Search"/>
-            <ui:Button name="nameBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Toggle Search by Name"/>
-            <ui:Button name="typeBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Toggle Search by Type"/>
-            <ui:Button name="dimBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Toggle Filter Mode"/>
+            <ui:Button name="regexBtn" class="hierarchy-btn hierarchy-regex-btn" tooltip="Toggle Regex Search mode.&#10;&#10;When enabled, the search query is evaluated as a C# regular expression."/>
+            <ui:Button name="nameBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Filter by GameObject Name.&#10;&#10;Matches the search query against GameObject names."/>
+            <ui:Button name="typeBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Filter by Component Type.&#10;&#10;Matches the search query against attached Component types (e.g. &quot;BoxCollider&quot;, &quot;Light&quot;, &quot;Camera&quot;)."/>
+            <ui:Button name="dimBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Toggle Dim / Hide filter mode.&#10;&#10;When active, non-matching GameObjects are dimmed instead of hidden, preserving parent-child tree structure."/>
         </ui:VisualElement>
 
         <!-- Title and top actions -->
         <ui:VisualElement class="hierarchy-header-row">
-            <ui:Button name="refreshBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Refresh scene objects"/>
-            <ui:Button name="pickBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Pick mode: Click an object in the Game View to select it"/>
+            <ui:Button name="refreshBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Refresh hierarchy.&#10;&#10;Rescans all active scenes and rebuilds the hierarchy tree."/>
+            <ui:Button name="pickBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Pick mode: Raycast and select objects in Game View.&#10;&#10;Clicking an object selects it in Hierarchy and Inspector, and syncs with Unity Editor selection."/>
             <ui:VisualElement style="flex-grow: 1;"/>
-            <ui:Button name="copyBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Copy entire hierarchy tree to clipboard"/>
+            <ui:Button name="copyBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Copy scene hierarchy to clipboard.&#10;&#10;Exports the entire loaded scene hierarchy as an indented text tree."/>
         </ui:VisualElement>
 
         <!-- Scrollable Scene Tree -->

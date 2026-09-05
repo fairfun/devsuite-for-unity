@@ -233,6 +233,8 @@ namespace Ff.DevSuite.View
             {
                 _cliTooltipContainer.RegisterCallback<PointerEnterEvent>(_ => _isPointerOverTooltip = true);
                 _cliTooltipContainer.RegisterCallback<PointerLeaveEvent>(_ => _isPointerOverTooltip = false);
+                var cliTooltipHeader = _cliTooltipContainer.Q<VisualElement>("cliTooltipHeader");
+                cliTooltipHeader.RegisterCallback<PointerDownEvent>(evt => evt.StopImmediatePropagation());
             }
 
             DevSuiteUtils.SetupTooltips(this);

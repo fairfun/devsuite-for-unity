@@ -3,36 +3,40 @@
         <ui:VisualElement class="logs-toolbar" style="flex-direction: row;">
             <ui:VisualElement class="logs-filter-container">
                 <ui:Label text="&#xf0b0;" class="logs-filter-icon"/>
-                <ui:TextField name="filterField" class="logs-filter-field" tabindex="-1" focusable="false"/>
+                <ui:TextField name="filterField" class="logs-filter-field" tabindex="-1" focusable="false" tooltip="Filter log messages and stack traces.&#10;&#10;Supports Smart Search (e.g. &quot;NRE&quot; matches NullReferenceException) or exact substrings. Toggle &quot;.*&quot; for Regex mode."/>
             </ui:VisualElement>
-            <ui:Button name="regexButton" text=".*" class="logs-severity-btn logs-regex-btn" tooltip="Toggle Regex filter mode"/>
-            <ui:Button name="ordinaryButton" class="logs-severity-btn ordinary" tooltip="Toggle Info logs visibility">
+            <ui:Button name="regexButton" text=".*" class="logs-severity-btn logs-regex-btn" tooltip="Toggle Regex filter mode.&#10;&#10;When enabled, the search query is evaluated as a C# regular expression against message text and stack traces."/>
+            <ui:Button name="ordinaryButton" class="logs-severity-btn ordinary" tooltip="Toggle Info logs visibility.&#10;&#10;Click to show/hide. Badge displays message count.">
                 <ui:Label text="&#xf4ad;" class="logs-severity-icon" picking-mode="Ignore"/>
                 <ui:Label name="ordinaryCount" text="0" class="logs-severity-count" picking-mode="Ignore"/>
             </ui:Button>
-            <ui:Button name="warningButton" class="logs-severity-btn warning" tooltip="Toggle Warning logs visibility">
+            <ui:Button name="warningButton" class="logs-severity-btn warning" tooltip="Toggle Warning logs visibility.&#10;&#10;Click to show/hide. Badge displays message count.">
                 <ui:Label text="&#xf071;" class="logs-severity-icon" picking-mode="Ignore"/>
                 <ui:Label name="warningCount" text="0" class="logs-severity-count" picking-mode="Ignore"/>
             </ui:Button>
-            <ui:Button name="errorButton" class="logs-severity-btn error" tooltip="Toggle Error logs visibility">
+            <ui:Button name="errorButton" class="logs-severity-btn error" tooltip="Toggle Error logs visibility.&#10;&#10;Click to show/hide. Badge displays message count. When Error logs are hidden, incoming errors trigger an alert blink on the expand button.">
                 <ui:Label text="&#xf06a;" class="logs-severity-icon" picking-mode="Ignore"/>
                 <ui:Label name="errorCount" text="0" class="logs-severity-count" picking-mode="Ignore"/>
             </ui:Button>
-            <ui:Button name="copyButton" class="logs-icon-btn" tooltip="Copy logs to clipboard"/>
-            <ui:Button name="saveButton" class="logs-icon-btn" tooltip="Save logs to text file"/>
-            <ui:Button name="folderButton" class="logs-icon-btn" tooltip="Open log save folder"/>
-            <ui:Button name="clearButton" class="logs-icon-btn clear-btn" tooltip="Clear all logs"/>
+            <ui:Button name="copyButton" class="logs-icon-btn" tooltip="Copy filtered logs to clipboard"/>
+            <ui:Button name="saveButton" class="logs-icon-btn" tooltip="Save filtered logs to a text file.&#10;&#10;Saved into Application.persistentDataPath/logger_panel/Log_yyyyMMdd_HHmmss.log."/>
+            <ui:Button name="folderButton" class="logs-icon-btn" tooltip="Open log folder in OS file explorer.&#10;&#10;Opens Application.persistentDataPath/logger_panel."/>
+            <ui:Button name="clearButton" class="logs-icon-btn clear-btn" tooltip="Clear all logs.&#10;&#10;Clear logs in code via &lt;b&gt;&lt;color=#ffc800&gt;DevSuiteContext.Default.ClearLogs()&lt;/color&gt;&lt;/b&gt;."/>
         </ui:VisualElement>
         <ui:ScrollView name="logsScrollView" class="logs-list-view"/>
         <ui:VisualElement name="cliContainer" class="logs-cli-container">
             <ui:VisualElement name="cliTooltipContainer" class="logs-cli-tooltip" style="display: none;">
+                <ui:VisualElement name="cliTooltipHeader" class="logs-cli-tooltip-top-header" tooltip="CLI Commands list.&#10;&#10;&lt;b&gt;&lt;i&gt;Hint: &lt;/i&gt;&lt;/b&gt;Add CLI commands with &lt;b&gt;&lt;color=#ffc800&gt;static [CommandButton]&lt;/color&gt;&lt;/b&gt; methods in code. Parameters become CLI arguments. Check &lt;b&gt;&lt;color=#ffc800&gt;CommonCommands&lt;/color&gt;&lt;/b&gt; for examples.">
+                    <ui:Label text="CLI Commands" class="logs-cli-tooltip-top-header-title" picking-mode="Ignore"/>
+                    <ui:Label text="Add via static [CommandButton]" class="logs-cli-tooltip-top-header-hint" picking-mode="Ignore"/>
+                </ui:VisualElement>
                 <ui:ScrollView name="cliTooltipScrollView" class="logs-cli-tooltip-scroll"/>
             </ui:VisualElement>
             <ui:VisualElement class="logs-cli-input-wrapper">
                 <ui:Label text="&gt;" class="logs-cli-icon" picking-mode="Ignore"/>
                 <ui:VisualElement class="logs-cli-field-container">
                     <ui:TextField name="cliGhostField" class="logs-cli-field logs-cli-ghost-field" tabindex="-1" focusable="false" picking-mode="Ignore"/>
-                    <ui:TextField name="cliInputField" class="logs-cli-field logs-cli-foreground-field" tabindex="-1" focusable="true"/>
+                    <ui:TextField name="cliInputField" class="logs-cli-field logs-cli-foreground-field" tabindex="-1" focusable="true" tooltip="CLI input field.&#10;&#10;• Tab: Autocomplete ghost suggestion&#10;• Up / Down: Command history&#10;• Enter: Execute command&#10;&#10;&lt;b&gt;&lt;i&gt;Hint: &lt;/i&gt;&lt;/b&gt;Add CLI commands with &lt;b&gt;&lt;color=#ffc800&gt;static [CommandButton]&lt;/color&gt;&lt;/b&gt; methods in code. Parameters become CLI arguments. Check &lt;b&gt;&lt;color=#ffc800&gt;CommonCommands&lt;/color&gt;&lt;/b&gt; for examples."/>
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:Button name="cliSendButton" text="Send" class="logs-cli-send-btn" tooltip="Send cheat command"/>

@@ -768,6 +768,7 @@ namespace Ff.DevSuite
         public static void SetupTooltips(VisualElement root)
         {
             var tooltipLabel = new Label();
+            tooltipLabel.enableRichText = true;
             tooltipLabel.AddToClassList("ff-tooltip");
             tooltipLabel.style.position = Position.Absolute;
             tooltipLabel.pickingMode = PickingMode.Ignore;

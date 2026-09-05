@@ -228,7 +228,7 @@ namespace Ff.DevSuite
 
         private readonly Dictionary<Type, GraphDataProviderSettings> _performanceGraphSettings = new();
 
-        public Func<string> BuildVersionToDisplay { get; set; } = () => "v" + Application.version;
+        public Func<string> BuildVersionToDisplay { get; set; } = () => $"v{Application.version}";
 
         private readonly List<GameObject> _selectedGameObjects = new();
         public IReadOnlyList<GameObject> SelectedGameObjects => _selectedGameObjects;

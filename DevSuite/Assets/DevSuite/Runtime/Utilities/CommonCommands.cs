@@ -19,7 +19,7 @@ using Key =
 
 namespace Ff.DevSuite
 {
-    [CommandCategory(CategoryCommon, Priority = 100, Description = "Check the CommonCommands class implementation for hints on how to use the API.")]
+    [CommandCategory(CategoryCommon, Priority = 100, Description = "Common commands.\n\n<b><i>Hint: </i></b>Check the <b><color=#ffc800>CommonCommands</color></b> class implementation for hints on how to use the Attributes and API.")]
     public static class CommonCommands
     {
         public static Func<string, string> ModifySystemInfo { get; set; }
@@ -38,7 +38,7 @@ namespace Ff.DevSuite
         //Game
 
         private static float? _originalGameSpeed;
-        [CommandGroup(GroupGame, Scope = AttributeScope.Continuous), Command(DisplayName = "Time Scale", Scope = AttributeScope.Continuous), CommandValue(MinValue = 0.01f, MaxValue = 100f, ScaleType = ScaleType.Logarithmic)]
+        [CommandGroup(GroupGame, Scope = AttributeScope.Continuous), Command(DisplayName = "Time Scale", Scope = AttributeScope.Continuous, Description = "Adjust game time scale.\n\nControls <b><color=#ffc800>Time.timeScale</color></b> in code."), CommandValue(MinValue = 0.01f, MaxValue = 100f, ScaleType = ScaleType.Logarithmic)]
         public static SavedPrefsProperty<float?> TimeScale = new(nameof(TimeScale), null, onTouch: t =>
         {
             _originalGameSpeed ??= Time.timeScale;
@@ -46,18 +46,18 @@ namespace Ff.DevSuite
                 Time.timeScale = t.Value ?? _originalGameSpeed ?? 1f;
         });
 
-        [CommandValue(Flex = 0.2f)]
+        [CommandValue(Flex = 0.2f, Description = "Current game time scale.\n\nReturns <b><color=#ffc800>Time.timeScale</color></b> in code.")]
         private static float ActualGameSpeed => Time.timeScale;
 
         //Data
 
-        [CommandGroup(GroupData, Scope = AttributeScope.Continuous), Command(nameof(PlayerPrefsPath), DisplayName = "PlayerPrefs"), CommandValue(nameof(PlayerPrefsPath))]
+        [CommandGroup(GroupData, Scope = AttributeScope.Continuous), Command(nameof(PlayerPrefsPath), DisplayName = "PlayerPrefs", Description = "PlayerPrefs storage path.\n\nValues are accessed via <b><color=#ffc800>PlayerPrefs</color></b> in code."), CommandValue(nameof(PlayerPrefsPath))]
         private static string PlayerPrefsPath => GetPlayerPrefsPath();
 
-        [CommandButton(nameof(PlayerPrefsPath), Title = "Clear", Flex = 0f, Color = ColorRed, CliEnabled = false)]
+        [CommandButton(nameof(PlayerPrefsPath), Title = "Clear", Flex = 0f, Color = ColorRed, CliEnabled = false, Description = "Delete all PlayerPrefs keys.\n\nExecutes <b><color=#ffc800>PlayerPrefs.DeleteAll()</color></b> in code.")]
         private static void PlayerPrefs_DeleteAll() => PlayerPrefs.DeleteAll();
 
-        [CommandButton(nameof(PlayerPrefsPath), Title = "Open", Flex = 0f, CliEnabled = false)]
+        [CommandButton(nameof(PlayerPrefsPath), Title = "Open", Flex = 0f, CliEnabled = false, Description = "Open PlayerPrefs storage location in file manager / registry.")]
         private static void PlayerPrefs_Open()
         {
             var path = GetPlayerPrefsPath();
@@ -96,13 +96,13 @@ namespace Ff.DevSuite
         }
 
 #if UNITY_EDITOR
-        [Command(nameof(EditorPrefs), "EditorPrefs")][CommandValue(nameof(EditorPrefs))]
+        [Command(nameof(EditorPrefs), "EditorPrefs", Description = "EditorPrefs storage path.\n\nValues are accessed via <b><color=#ffc800>EditorPrefs</color></b> in code.")][CommandValue(nameof(EditorPrefs))]
         private static string EditorPrefs => GetEditorPrefsPath();
 
-        [CommandButton(nameof(EditorPrefs), Title = "Clear", Flex = 0f, Color = ColorRed, CliEnabled = false)]
+        [CommandButton(nameof(EditorPrefs), Title = "Clear", Flex = 0f, Color = ColorRed, CliEnabled = false, Description = "Delete all EditorPrefs keys.\n\nExecutes <b><color=#ffc800>EditorPrefs.DeleteAll()</color></b> in code.")]
         private static void EditorPrefs_Clear() => UnityEditor.EditorPrefs.DeleteAll();
 
-        [CommandButton(nameof(EditorPrefs), Title = "Open", Flex = 0f, CliEnabled = false)]
+        [CommandButton(nameof(EditorPrefs), Title = "Open", Flex = 0f, CliEnabled = false, Description = "Open EditorPrefs storage location in file manager / registry.")]
         private static void EditorPrefs_Open()
         {
             var path = GetEditorPrefsPath();
@@ -135,45 +135,45 @@ namespace Ff.DevSuite
 
 #if !UNITY_WEBGL || UNITY_EDITOR
         private static string _cachingPath; // to avoid allocations of calling Caching.currentCacheForWriting.path
-        [Command(DisplayName = "Asset Bundles (Caching)"), CommandValue(nameof(AssetBundles))]
+        [Command(DisplayName = "Asset Bundles (Caching)", Description = "AssetBundles cache directory.\n\nReturns <b><color=#ffc800>Caching.currentCacheForWriting.path</color></b> in code."), CommandValue(nameof(AssetBundles))]
         private static string AssetBundles => _cachingPath ??= Caching.currentCacheForWriting.path;
-        [CommandButton(nameof(AssetBundles), Title = "Clear", Flex = 0f, Color = ColorRed, CliEnabled = false)]
+        [CommandButton(nameof(AssetBundles), Title = "Clear", Flex = 0f, Color = ColorRed, CliEnabled = false, Description = "Clear AssetBundles cache.\n\nExecutes <b><color=#ffc800>Caching.ClearCache()</color></b> in code.")]
         private static void AssetBundles_ClearCache() => Caching.ClearCache();
-        [CommandButton(nameof(AssetBundles), Title = "Open", Flex = 0f, CliEnabled = false)]
+        [CommandButton(nameof(AssetBundles), Title = "Open", Flex = 0f, CliEnabled = false, Description = "Open AssetBundles cache directory in file manager.")]
         private static void AssetBundles_Open() => Application.OpenURL($"file://{AssetBundles}");
 #endif
 
         private static string _persistentDataPath; // to avoid allocations of calling Application.persistentDataPath
-        [CommandValue(nameof(Persistent))]
+        [Command(nameof(Persistent), DisplayName = "Persistent", Description = "Persistent data directory.\n\nReturns <b><color=#ffc800>Application.persistentDataPath</color></b> in code."), CommandValue(nameof(Persistent))]
         private static string Persistent => _persistentDataPath ??= Application.persistentDataPath;
-        [CommandButton(nameof(Persistent), Title = "Clear", Flex = 0f, Color = ColorRed, CliEnabled = false)]
+        [CommandButton(nameof(Persistent), Title = "Clear", Flex = 0f, Color = ColorRed, CliEnabled = false, Description = "Delete persistent data directory.\n\nDeletes files in <b><color=#ffc800>Application.persistentDataPath</color></b> in code.")]
         private static void PersistentDataPath_Delete() => Directory.Delete(Persistent, true);
-        [CommandButton(nameof(Persistent), Title = "Open", Flex = 0f, CliEnabled = false)]
+        [CommandButton(nameof(Persistent), Title = "Open", Flex = 0f, CliEnabled = false, Description = "Open persistent data directory in file manager.")]
         private static void PersistentDataPath_Open() => Application.OpenURL($"file://{Persistent}");
 
         private static string _dataPath; // to avoid allocations of calling Application.dataPath
-        [CommandValue(nameof(Data))]
+        [Command(nameof(Data), DisplayName = "Data", Description = "Application data path.\n\nReturns <b><color=#ffc800>Application.dataPath</color></b> in code."), CommandValue(nameof(Data))]
         private static string Data => _dataPath ??= Application.dataPath;
-        [CommandButton(nameof(Data), Title = "Open", Flex = 0f, CliEnabled = false)]
+        [CommandButton(nameof(Data), Title = "Open", Flex = 0f, CliEnabled = false, Description = "Open application data directory in file manager.")]
         private static void DataPath_Open() => Application.OpenURL($"file://{Data}");
 
         private static string _streamingAssetsPath; // to avoid allocations of calling Application.streamingAssetsPath
-        [CommandValue(nameof(Streaming))]
+        [Command(nameof(Streaming), DisplayName = "Streaming", Description = "Streaming assets path.\n\nReturns <b><color=#ffc800>Application.streamingAssetsPath</color></b> in code."), CommandValue(nameof(Streaming))]
         private static string Streaming => _streamingAssetsPath ??= Application.streamingAssetsPath;
-        [CommandButton(nameof(Streaming), Title = "Open", Flex = 0f, CliEnabled = false)]
+        [CommandButton(nameof(Streaming), Title = "Open", Flex = 0f, CliEnabled = false, Description = "Open streaming assets directory in file manager.")]
         private static void StreamingAssetsPath_Open() => Application.OpenURL($"file://{Streaming}");
 
         private static string _temporaryCachePath; // to avoid allocations of calling Application.temporaryCachePath
-        [CommandValue(nameof(Temporary))]
+        [Command(nameof(Temporary), DisplayName = "Temporary", Description = "Temporary cache path.\n\nReturns <b><color=#ffc800>Application.temporaryCachePath</color></b> in code."), CommandValue(nameof(Temporary))]
         private static string Temporary => _temporaryCachePath ??= Application.temporaryCachePath;
-        [CommandButton(nameof(Temporary), Title = "Open", Flex = 0f, CliEnabled = false)]
+        [CommandButton(nameof(Temporary), Title = "Open", Flex = 0f, CliEnabled = false, Description = "Open temporary cache directory in file manager.")]
         private static void TemporaryCachePath_Open() => Application.OpenURL($"file://{Temporary}");
 
         //System
 
         private static string _systemInfoText;
         [CommandGroup(GroupSystem, Scope = AttributeScope.Continuous),
-         Command(DisplayName = "", HeightMultiplier = 9f, Description = "You can change the information here by assigning CommonCommands.ModifySystemInfo. Compiler defines are not guaranteed to be 100% accurate. For adding custom build-time data use CommonCommands.CustomSystemInfoBuildTimeData."),
+         Command(DisplayName = "", HeightMultiplier = 9f, Description = "Application and system information.\n\nCompiler defines are not guaranteed to be 100% accurate.\n\n<b><i>Hint: </i></b>Change the information here by assigning <b><color=#ffc800>CommonCommands.ModifySystemInfo</color></b>.\n\n<b><i>Hint: </i></b>For adding custom build-time data use <b><color=#ffc800>CommonCommands.CustomSystemInfoBuildTimeData</color></b>."),
          CommandValue]
         private static string SystemInfoText
         {
@@ -220,7 +220,7 @@ namespace Ff.DevSuite
             }
         }
 
-        [CommandButton(nameof(SystemInfoText), Title = "\uf021", Flex = 0f, FontResource = "Font Awesome 7 Free-Solid-900 SDF", CliEnabled = false)]
+        [CommandButton(nameof(SystemInfoText), Title = "\uf021", Flex = 0f, FontResource = "Font Awesome 7 Free-Solid-900 SDF", CliEnabled = false, Description = "Reset system info.\n\nClears cached system info text.")]
         public static void SystemInfoReset()
         {
             _systemInfoText = null;
@@ -263,7 +263,7 @@ namespace Ff.DevSuite
         }
 
         private static int? _originalTargetFPS;
-        [Command(nameof(TargetFPS)), CommandValue("Target FPS", MinValue = 0f, MaxValue = 2000f, ScaleType = ScaleType.Logarithmic)]
+        [Command(nameof(TargetFPS), Description = "Set target frame rate.\n\nControls <b><color=#ffc800>Application.targetFrameRate</color></b> in code."), CommandValue("Target FPS", MinValue = 0f, MaxValue = 2000f, ScaleType = ScaleType.Logarithmic)]
         public static SavedPrefsProperty<int?> TargetFPS = new(nameof(TargetFPS), null, onTouch: t =>
         {
             _originalTargetFPS ??= Application.targetFrameRate;
@@ -274,11 +274,11 @@ namespace Ff.DevSuite
                 t.SetValue(_originalTargetFPS);
         });
 
-        [Command(nameof(TargetFPS)), CommandValue(Flex = 0.2f)]
+        [Command(nameof(TargetFPS)), CommandValue(Flex = 0.2f, Description = "Current target frame rate.\n\nReturns <b><color=#ffc800>Application.targetFrameRate</color></b> in code.")]
         private static float ActualTargetFps => Application.targetFrameRate;
 
         private static int? _originalVSyncCount;
-        [Command(nameof(VSyncCount)), CommandValue("vSyncCount", MinValue = 0, MaxValue = 4)]
+        [Command(nameof(VSyncCount), Description = "Set vertical sync count.\n\nControls <b><color=#ffc800>QualitySettings.vSyncCount</color></b> in code."), CommandValue("vSyncCount", MinValue = 0, MaxValue = 4)]
         public static SavedPrefsProperty<int?> VSyncCount = new(nameof(VSyncCount), null, onTouch: t =>
         {
             _originalVSyncCount ??= QualitySettings.vSyncCount;
@@ -290,29 +290,29 @@ namespace Ff.DevSuite
                 t.SetValue(_originalVSyncCount);
         });
 
-        [Command(nameof(VSyncCount)), CommandValue(Flex = 0.2f)]
+        [Command(nameof(VSyncCount)), CommandValue(Flex = 0.2f, Description = "Current vertical sync count.\n\nReturns <b><color=#ffc800>QualitySettings.vSyncCount</color></b> in code.")]
         private static float ActualVSyncCount => QualitySettings.vSyncCount;
 
-        [Command(DisplayName = "GC"), CommandButton(Title = "System.GC.Collect", Flex = 1f, CliEnabled = false)]
+        [Command(DisplayName = "GC", Description = "Garbage collection controls."), CommandButton(Title = "System.GC.Collect", Flex = 1f, CliEnabled = false, Description = "Force garbage collection.\n\nExecutes <b><color=#ffc800>System.GC.Collect()</color></b> in code.")]
         private static void ForceGC() => GC.Collect();
-        [CommandButton(nameof(ForceGC), Title = "GarbageCollector.CollectIncremental", Flex = 0f, CliEnabled = false)]
+        [CommandButton(nameof(ForceGC), Title = "GarbageCollector.CollectIncremental", Flex = 0f, CliEnabled = false, Description = "Run incremental garbage collection.\n\nExecutes <b><color=#ffc800>GarbageCollector.CollectIncremental()</color></b> in code.")]
         private static void ForceGCIncremental() => GarbageCollector.CollectIncremental();
 
-        [Command(DisplayName = "Test Log"), CommandButton(Title = "Send Log", CliEnabled = false)]
+        [Command(DisplayName = "Test Log", Description = "Send a test log message to Unity console.\n\nExecutes <b><color=#ffc800>Debug.LogFormat()</color></b> in code."), CommandButton(Title = "Send Log", CliEnabled = false, Description = "Send a test log message to Unity console.\n\nExecutes <b><color=#ffc800>Debug.LogFormat()</color></b> in code.")]
         private static void SendLogMessage(LogType logType = LogType.Error)
         {
             Debug.LogFormat(logType, LogOption.None, null, "Test Log");
         }
 
-        [Command(DisplayName = "Test Exception"), CommandButton(Title = "Throw", Color = ColorOrange, SuppressExceptions = false, CliEnabled = false)]
+        [Command(DisplayName = "Test Exception", Description = "Testing utilities for exceptions and crashes."), CommandButton(Title = "Throw", Color = ColorOrange, SuppressExceptions = false, CliEnabled = false, Description = "Throw a test exception.\n\nThrows <b><color=#ffc800>System.Exception</color></b> in code.")]
         private static void ThrowException() => throw new Exception("DevSuite: Forced Exception");
-        [CommandButton(nameof(ThrowException), Title = "Quit", Color = ColorRed, SuppressExceptions = false, CliEnabled = false)]
+        [CommandButton(nameof(ThrowException), Title = "Quit", Color = ColorRed, SuppressExceptions = false, CliEnabled = false, Description = "Force application quit.\n\nExecutes <b><color=#ffc800>Application.Quit(1)</color></b> in code.")]
         private static void ForceQuit() => Application.Quit(1);
-        [CommandButton(nameof(ThrowException), Title = "Crash", Color = ColorRed, SuppressExceptions = false, CliEnabled = false)]
+        [CommandButton(nameof(ThrowException), Title = "Crash", Color = ColorRed, SuppressExceptions = false, CliEnabled = false, Description = "Force crash application.\n\nExecutes <b><color=#ffc800>UnityEngine.Diagnostics.Utils.ForceCrash()</color></b> in code.")]
         private static void ForceCrash() => UnityEngine.Diagnostics.Utils.ForceCrash(UnityEngine.Diagnostics.ForcedCrashCategory.AccessViolation);
 
         //DevSuite
-        [CommandGroup(GroupDevSuite, Scope = AttributeScope.Continuous), Command(DisplayName = "Toggle Dev Suite Panel"), CommandButton(Title = "Toggle", Flex = 1f, CliEnabled = false,
+        [CommandGroup(GroupDevSuite, Scope = AttributeScope.Continuous), Command(DisplayName = "Toggle Dev Suite Panel", Description = "Toggle DevSuite panel visibility.\n\nControls <b><color=#ffc800>DevSuiteContext.Default.PanelExpanded</color></b> in code."), CommandButton(Title = "Toggle", Flex = 1f, CliEnabled = false, Description = "Toggle DevSuite panel visibility.\n\nControls <b><color=#ffc800>DevSuiteContext.Default.PanelExpanded</color></b> in code.",
 #if ENABLE_INPUT_SYSTEM
             Shortcut = new[] { Key.LeftCtrl, Key.Backquote }
 #else
@@ -335,7 +335,7 @@ namespace Ff.DevSuite
         }
 
         private static float? _pausedGameSpeed;
-        [Command(DisplayName = "Set Game Speed", Scope = AttributeScope.Continuous), CommandButton(Title = "Game Speed", CliCommand = "timescale", Description = "Set game speed (Time.timeScale)")]
+        [Command(DisplayName = "Set Game Speed", Scope = AttributeScope.Continuous, Description = "Set game speed.\n\nControls <b><color=#ffc800>Time.timeScale</color></b> in code."), CommandButton(Title = "Game Speed", CliCommand = "timescale", Description = "Set game speed.\n\nControls <b><color=#ffc800>Time.timeScale</color></b> in code.")]
         public static void GameSpeed(float speed = 1f)
         {
             if (_originalGameSpeed == null && Time.timeScale > 0f)
@@ -356,7 +356,7 @@ namespace Ff.DevSuite
             Time.timeScale = speed;
         }
 
-        [CommandButton(nameof(GameSpeed), Title = "Pause", CliCommand = "pause", Description = "Pause the game")]
+        [CommandButton(nameof(GameSpeed), Title = "Pause", CliCommand = "pause", Description = "Pause the game.\n\nSets <b><color=#ffc800>Time.timeScale = 0</color></b> in code.")]
         public static void Pause()
         {
             if (_originalGameSpeed == null && Time.timeScale > 0f)
@@ -372,7 +372,7 @@ namespace Ff.DevSuite
             Time.timeScale = 0f;
         }
 
-        [CommandButton(nameof(GameSpeed), Title = "Unpause", CliCommand = "unpause", Description = "Unpause the game")]
+        [CommandButton(nameof(GameSpeed), Title = "Unpause", CliCommand = "unpause", Description = "Unpause the game.\n\nRestores <b><color=#ffc800>Time.timeScale</color></b> in code.")]
         public static void Unpause()
         {
             var targetSpeed = _pausedGameSpeed ?? _originalGameSpeed ?? 1f;
@@ -385,14 +385,14 @@ namespace Ff.DevSuite
             _pausedGameSpeed = null;
         }
 
-        [Command(DisplayName = "CLI Commands"), CommandButton(Title = "Show Cli Commands", CliCommand = "help")]
+        [Command(DisplayName = "CLI Commands", Description = "Available CLI commands.\n\nType <b><color=#ffc800>help</color></b> in CLI to execute."), CommandButton(Title = "Show Cli Commands", CliCommand = "help", Description = "Show available CLI commands in console.\n\nType <b><color=#ffc800>help</color></b> in CLI to execute.")]
         public static void ShowCliCommands()
         {
             var commands = DevSuiteContext.DefaultInternal.GetActiveCliCommands();
             Debug.Log(FormatCliCommands(commands));
         }
 
-        [CommandButton(nameof(ShowCliCommands), Title = "\uf0c5", Flex = 0f, FontResource = "Font Awesome 7 Free-Solid-900 SDF", Description = "Copy CLI commands to clipboard", CliEnabled = false)]
+        [CommandButton(nameof(ShowCliCommands), Title = "\uf0c5", Flex = 0f, FontResource = "Font Awesome 7 Free-Solid-900 SDF", Description = "Copy CLI commands to clipboard.\n\nCopies formatted command list via <b><color=#ffc800>DevSuiteUtils.CopyToClipboard()</color></b>.", CliEnabled = false)]
         public static void CopyCliCommands()
         {
             var commands = DevSuiteContext.DefaultInternal.GetActiveCliCommands();
@@ -447,28 +447,28 @@ namespace Ff.DevSuite
             return sb.ToString().TrimEnd();
         }
 
-        [CommandValue(nameof(SavedPrefs))]
+        [Command(nameof(SavedPrefs), DisplayName = "SavedPrefs", Description = "DevSuite SavedPrefs file path.\n\nValues are accessed via <b><color=#ffc800>SavedPrefs.Default</color></b> in code."), CommandValue(nameof(SavedPrefs))]
         private static string SavedPrefs => Prefs.SavedPrefs.Default.FilePath;
-        [CommandButton(nameof(SavedPrefs), Title = "Clear", Flex = 0f, Color = ColorRed, CliEnabled = false)]
+        [CommandButton(nameof(SavedPrefs), Title = "Clear", Flex = 0f, Color = ColorRed, CliEnabled = false, Description = "Clear saved preferences file.\n\nExecutes <b><color=#ffc800>SavedPrefs.Default.Clear()</color></b> in code.")]
         private static void SavedPrefs_Clear() => Prefs.SavedPrefs.Default.Clear();
-        [CommandButton(nameof(SavedPrefs), Title = "Open", Flex = 0f, CliEnabled = false)]
+        [CommandButton(nameof(SavedPrefs), Title = "Open", Flex = 0f, CliEnabled = false, Description = "Open SavedPrefs directory in file manager.")]
         private static void SavedPrefs_Open() => Application.OpenURL($"file://{SavedPrefs}");
 
-        [Command(DisplayName = "Destroy DevSuite"), CommandButton(Title = "All", Color = ColorOrange, Flex = 0.5f, CliEnabled = false)]
+        [Command(DisplayName = "Destroy DevSuite", Description = "Destroy DevSuite panel and context.\n\nDestroys <b><color=#ffc800>DevSuitePanelUI</color></b> and resets <b><color=#ffc800>DevSuiteContext.Default</color></b> in code."), CommandButton(Title = "All", Color = ColorOrange, Flex = 0.5f, CliEnabled = false, Description = "Destroy DevSuite panel and context.\n\nDestroys <b><color=#ffc800>DevSuitePanelUI</color></b> and resets <b><color=#ffc800>DevSuiteContext.Default</color></b> in code.")]
         private static void DestroyDevSuite()
         {
             DestroyDevSuitePanel();
             DestroyDevSuiteContext();
         }
 
-        [CommandButton(nameof(DestroyDevSuite), Title = "Panel", Color = ColorOrange, Flex = 0.5f, CliEnabled = false)]
+        [CommandButton(nameof(DestroyDevSuite), Title = "Panel", Color = ColorOrange, Flex = 0.5f, CliEnabled = false, Description = "Destroy DevSuite UI panel.\n\nDestroys <b><color=#ffc800>DevSuitePanelUI</color></b> GameObject in code.")]
         private static void DestroyDevSuitePanel()
         {
             var panel = UnityEngine.Object.FindAnyObjectByType<View.DevSuitePanelUI>();
             UnityEngine.Object.Destroy(panel.gameObject);
         }
 
-        [CommandButton(nameof(DestroyDevSuite), Title = "Context.Default", Color = ColorOrange, CliEnabled = false)]
+        [CommandButton(nameof(DestroyDevSuite), Title = "Context.Default", Color = ColorOrange, CliEnabled = false, Description = "Reset DevSuite context.\n\nResets <b><color=#ffc800>DevSuiteContext.Default</color></b> in code.")]
         private static void DestroyDevSuiteContext()
         {
             DevSuiteContext.Default?.Reset();
@@ -581,13 +581,13 @@ namespace Ff.DevSuite
             {
                 var prefix = isPackage ? "Packages: " : "Project: ";
                 displayName = prefix + $"<i>{sceneName}</i>";
-                command.WithDescription($"Editor-only scene\n{scenePath}");
+                command.WithDescription($"Editor-only scene\n{scenePath}\n\nFound via <b><color=#ffc800>AssetDatabase.FindAssets(\"t:Scene\")</color></b> in Editor.");
             }
             else
             {
                 var buildIndex = buildIndices[sceneName];
                 displayName = $"{buildIndex}: {sceneName}";
-                command.WithDescription($"Build settings scene\n{scenePath}");
+                command.WithDescription($"Build settings scene ({buildIndex})\n{scenePath}\n\nConfigured in Unity <b><color=#ffc800>EditorBuildSettings</color></b>.");
             }
 
             command.WithDisplayName(displayName);
@@ -596,16 +596,16 @@ namespace Ff.DevSuite
 
             var commandKey = new CommandKey(sceneName, GroupScenes, CategoryCommon, null);
 
-            var countUnit = new CommandUnitValue(typeof(int), () => GetSceneInstanceCount(sceneName));
+            var countUnit = new CommandUnitValue(typeof(int), () => GetSceneInstanceCount(sceneName), description: "Number of currently loaded instances of this scene.\n\nEvaluated via <b><color=#ffc800>SceneManager.GetSceneAt()</color></b> in code.");
             api.AttachCommandUnit(commandKey, countUnit);
 
-            var unloadUnit = new CommandUnitButton("Unload", () => UnloadLastSceneInstance(sceneName), flex: 0f, cliEnabled: false);
+            var unloadUnit = new CommandUnitButton("Unload", () => UnloadLastSceneInstance(sceneName), flex: 0f, cliEnabled: false, description: "Unload the last loaded instance of this scene.\n\nExecutes <b><color=#ffc800>SceneManager.UnloadSceneAsync()</color></b> in code.");
             api.AttachCommandUnit(commandKey, unloadUnit);
 
-            var loadNormalUnit = new CommandUnitButton("Load", () => LoadSceneNormal(sceneName), flex: 0f, cliEnabled: false);
+            var loadNormalUnit = new CommandUnitButton("Load", () => LoadSceneNormal(sceneName), flex: 0f, cliEnabled: false, description: "Load this scene (Single mode).\n\nExecutes <b><color=#ffc800>SceneManager.LoadScene(sceneName, LoadSceneMode.Single)</color></b> in code.");
             api.AttachCommandUnit(commandKey, loadNormalUnit);
 
-            var loadAdditiveUnit = new CommandUnitButton("Load Additive", () => LoadSceneAdditive(sceneName), flex: 0f, cliEnabled: false);
+            var loadAdditiveUnit = new CommandUnitButton("Load Additive", () => LoadSceneAdditive(sceneName), flex: 0f, cliEnabled: false, description: "Load this scene additively (Additive mode).\n\nExecutes <b><color=#ffc800>SceneManager.LoadScene(sceneName, LoadSceneMode.Additive)</color></b> in code.");
             api.AttachCommandUnit(commandKey, loadAdditiveUnit);
         }
 
