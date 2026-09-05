@@ -122,7 +122,7 @@ There are several ways to use DevSuite depending on your needs:
 ### 1. Runtime UI (Simplest)
 Add an instance of <a href="DevSuite/Assets/DevSuite/Runtime/DevSuitePanel.prefab"><code>DevSuitePanel.prefab</code></a> to your scene. This automatically initializes the suite and provides an overlay to access all tools during gameplay, as long as <strong>Auto Initialize</strong> is set to true. Some panel settings are available under the <strong>Settings</strong> section of the prefab instance.
 
-Open the example scene [`DevSuite/Assets/DevSuite/Examples/ExampleAutoInitialization.unity`](DevSuite/Assets/DevSuite/Examples/ExampleAutoInitialization.unity) to see this setup in action.
+Open the example scene [`DevSuite/Assets/DevSuite/Examples/ExampleAutoInitialization.unity`](DevSuite/Assets/DevSuite/Examples/ExampleAutoInitialization.unity) to see this setup in action *(needs to be copied into the `Assets` folder to be opened if imported as a package)*.
 
 ### 2. Editor Windows
 You can open individual DevSuite tools directly in the Unity Editor without entering Play Mode:
@@ -145,7 +145,10 @@ public class MyGameInitializer : MonoBehaviour
 }
 ```
 
-Open the example scene [`DevSuite/Assets/DevSuite/Examples/ExampleManualInitialization.unity`](DevSuite/Assets/DevSuite/Examples/ExampleManualInitialization.unity) to see this setup in action.
+> [!NOTE]
+> Make sure to disable **Auto Initialize** on the <a href="DevSuite/Assets/DevSuite/Runtime/View/Panel/DevSuitePanelUI.cs"><code>DevSuitePanelUI</code></a> component in the Inspector.
+
+Open the example scene [`DevSuite/Assets/DevSuite/Examples/ExampleManualInitialization.unity`](DevSuite/Assets/DevSuite/Examples/ExampleManualInitialization.unity) to see this setup in action *(needs to be copied into the `Assets` folder to be opened if imported as a package)*.
 
 ### 4. Disabling DevSuite
 - **Compile-time**: Define the scripting symbol `DEVSUITE_DISABLED` (e.g. in **Player Settings > Other Settings > Scripting Define Symbols**) to completely disable DevSuite.
@@ -170,16 +173,16 @@ Refer to the documentation or sample scenes for more detailed configuration and 
       <td style="padding: 10px; border: 1px solid #88888855; width: 33%;">
         <p><strong>Automatic (prefab)</strong></p>
         <p>Add <a href="DevSuite/Assets/DevSuite/Runtime/DevSuitePanel.prefab"><code>DevSuitePanel.prefab</code></a> to a scene. <a href="DevSuite/Assets/DevSuite/Runtime/View/Panel/DevSuitePanelUI.cs"><code>DevSuitePanelUI</code></a> calls <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.Default.Initialize(this)</code></a> on Start when <strong>Auto Initialize</strong> is enabled.</p>
-        <p>See example scene: <a href="DevSuite/Assets/DevSuite/Examples/ExampleAutoInitialization.unity"><code>ExampleAutoInitialization.unity</code></a></p>
+        <p>See example scene: <a href="DevSuite/Assets/DevSuite/Examples/ExampleAutoInitialization.unity"><code>ExampleAutoInitialization.unity</code></a> <em>(needs to be copied into the <code>Assets</code> folder to be opened if imported as a package)</em></p>
         <p><strong>Manual</strong></p>
-        <p>Call <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.Default.Initialize(monoBehaviour)</code></a> from your bootstrap code (e.g. <code>Awake</code>). Optional arguments:</p>
+        <p>Call <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.Default.Initialize(monoBehaviour)</code></a> from your bootstrap code (e.g. <code>Awake</code>). <em>Note: disable <strong>Auto Initialize</strong> on <a href="DevSuite/Assets/DevSuite/Runtime/View/Panel/DevSuitePanelUI.cs"><code>DevSuitePanelUI</code></a> in this case.</em> Optional arguments:</p>
         <ul>
           <li><code>staticCommandsAssemblies</code> - limit command scanning to specific assemblies</li>
           <li><code>savedPrefs</code> - custom <a href="DevSuite/Assets/DevSuite/Runtime/Prefs/SavedPrefs.cs"><code>ISavedPrefs</code></a> for panel/settings persistence</li>
           <li><code>registerCommonCommands: false</code> - skip built-in <a href="DevSuite/Assets/DevSuite/Runtime/Utilities/CommonCommands.cs"><code>CommonCommands</code></a></li>
           <li><code>DevSuiteContext.Default.BuildVersionToDisplay</code> - override the version string shown in the UI (default: <code>"v" + Application.version</code> with bundle number if available) - see <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.cs</code></a></li>
         </ul>
-        <p>See example scene: <a href="DevSuite/Assets/DevSuite/Examples/ExampleManualInitialization.unity"><code>ExampleManualInitialization.unity</code></a></p>
+        <p>See example scene: <a href="DevSuite/Assets/DevSuite/Examples/ExampleManualInitialization.unity"><code>ExampleManualInitialization.unity</code></a> <em>(needs to be copied into the <code>Assets</code> folder to be opened if imported as a package)</em></p>
         <p><strong>Editor</strong></p>
         <p>Open panels via <strong>Tools &gt; DevSuite</strong>; the context initializes automatically when you enter Play Mode.</p>
         <p><strong>Runtime registration</strong></p>
