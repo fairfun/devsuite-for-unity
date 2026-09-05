@@ -38,7 +38,7 @@ namespace Ff.DevSuite
         //Game
 
         private static float? _originalGameSpeed;
-        [CommandGroup(GroupGame, Scope = AttributeScope.Continuous), Command(DisplayName = "Time Scale", Scope = AttributeScope.Continuous, Description = "Adjust game time scale.\n\nControls <b><color=#ffc800>Time.timeScale</color></b> in code."), CommandValue(MinValue = 0.01f, MaxValue = 100f, ScaleType = ScaleType.Logarithmic)]
+        [CommandGroup(GroupGame, Scope = AttributeScope.Continuous), Command(DisplayName = "Time Scale", Scope = AttributeScope.Continuous, Description = "Adjust game time scale.\n\nControls <b><color=#ffc800>Time.timeScale</color></b> in code."), CommandValue(MinValue = 0f, MaxValue = 100f, ScaleType = ScaleType.Logarithmic)]
         public static SavedPrefsProperty<float?> TimeScale = new(nameof(TimeScale), null, onTouch: t =>
         {
             _originalGameSpeed ??= Time.timeScale;
