@@ -1,7 +1,7 @@
 @import "../Common.uss";
 
-:root {
-    --text-color: rgb(210, 210, 210);
+:root,
+.inspector-panel-container {
     --divider-color: rgba(51, 51, 51, 0.8);
     --item-hover-bg: rgba(255, 255, 255, 0.02);
 }
@@ -94,7 +94,7 @@
 
 .inspector-component-name {
     -unity-font-style: bold;
-    color: rgb(230, 230, 230);
+    color: var(--text-color);
     font-size: 12px;
 }
 
@@ -122,9 +122,10 @@
     background-color: var(--item-hover-bg);
 }
 
-.inspector-property-name {
+.inspector-property-name,
+.inspector-property-row .inspector-property-name {
     width: 45%;
-    color: rgb(180, 180, 180);
+    color: var(--text-label-color);
     font-size: 11px;
     padding-right: 4px;
     margin: 0;
@@ -133,14 +134,14 @@
 
 .inspector-property-value {
     width: 55%;
-    color: rgb(240, 240, 240);
+    color: var(--text-color);
     font-size: 11px;
     margin: 0;
     overflow: hidden;
 }
 
 .inspector-property-row.serializable .inspector-property-name {
-    color: rgb(210, 210, 210);
+    color: var(--text-color);
     -unity-font-style: bold;
 }
 

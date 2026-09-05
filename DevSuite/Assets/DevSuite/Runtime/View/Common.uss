@@ -1,13 +1,29 @@
-:root {
+:root,
+.ff-panel {
     --panel-bg-color: rgba(40, 40, 40, 0.95); /* is overwritten at DevSuitePanelUI */
     --panel-border-color: rgba(255, 255, 255, 0.25); /* is overwritten at DevSuitePanelUI */
     --panel-border-width: 1px;
     --panel-border-radius: 8px;
     --toolbar-bg: rgba(30, 30, 30, 0.55);
-    --text-color: rgb(220, 220, 220);
-    --text-label-color: rgb(170, 170, 170);
-    --text-color-semi: rgba(220, 220, 220, 0.5);
+    --text-color: rgb(190, 190, 190);
+    --text-label-color: rgb(148, 148, 148);
+    --text-color-semi: rgba(190, 190, 190, 0.5);
     --accent-color: rgb(128, 200, 255);
+    --unity-colors-label-text: var(--text-color);
+    --unity-colors-default-text: var(--text-color);
+}
+
+.editor,
+.ff-panel.editor,
+.editor .ff-panel {
+    --text-color: rgb(250, 250, 250);
+    --text-label-color: rgb(200, 200, 200);
+    --text-color-semi: rgba(250, 250, 250, 0.5);
+    --unity-colors-label-text: var(--text-color);
+    --unity-colors-default-text: var(--text-color);
+    background-color: transparent !important;
+    border-width: 0 !important;
+    border-radius: 0 !important;
 }
 
 .ff-panel {
@@ -20,15 +36,11 @@
 
 .ff-panel Label,
 .ff-panel .unity-label,
-.ff-panel .unity-text-field__input {
+.ff-panel .unity-text-field__input,
+.editor Label,
+.editor .unity-label,
+.editor .unity-text-field__input {
     color: var(--text-color);
-}
-
-.ff-panel.editor,
-.editor .ff-panel {
-    background-color: transparent !important;
-    border-width: 0 !important;
-    border-radius: 0 !important;
 }
 
 .unity-light-theme .ff-panel.editor,

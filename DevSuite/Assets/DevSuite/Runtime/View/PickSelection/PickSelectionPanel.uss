@@ -68,7 +68,7 @@
 .pick-selection-popup-name {
     flex-grow: 1;
     font-size: 11px;
-    color: rgb(220, 220, 220);
+    color: var(--text-color);
     overflow: hidden;
     text-overflow: ellipsis;
     -unity-text-align: middle-left;

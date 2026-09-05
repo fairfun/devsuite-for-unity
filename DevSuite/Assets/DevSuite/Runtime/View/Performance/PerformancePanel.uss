@@ -1,6 +1,7 @@
 @import "../Common.uss";
 
-:root {
+:root,
+.panel-root {
     --counter-bg-color: rgba(42, 42, 42, 0.7);
     --text-value-color: rgb(225, 183, 116);
     --graph-color-good: rgb(121, 175, 85);

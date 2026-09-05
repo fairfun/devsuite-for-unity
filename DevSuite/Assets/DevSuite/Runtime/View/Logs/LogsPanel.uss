@@ -1,7 +1,7 @@
 @import "../Common.uss";
 
-:root {
-    --text-color: rgb(210, 210, 210);
+:root,
+.logs-panel-container {
     --divider-color: rgba(51, 51, 51, 0.8);
     --item-hover-bg: rgba(255, 255, 255, 0.03);
 }
@@ -370,7 +370,7 @@
     border-width: 1px;
     border-color: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
-    color: rgb(220, 220, 220);
+    color: var(--text-color);
     font-size: 12px;
     flex-direction: row;
     align-items: center;

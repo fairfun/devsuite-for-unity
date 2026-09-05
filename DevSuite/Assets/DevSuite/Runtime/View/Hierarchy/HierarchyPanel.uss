@@ -1,7 +1,7 @@
 @import "../Common.uss";
 
-:root {
-    --text-color: rgb(210, 210, 210);
+:root,
+.hierarchy-panel-container {
     --divider-color: rgba(51, 51, 51, 0.8);
     --item-hover-bg: rgba(255, 255, 255, 0.04);
     --selected-bg: rgba(255, 255, 255, 0.08);
@@ -46,7 +46,8 @@
     flex-grow: 1;
 }
 
-.hierarchy-filter-icon {
+.hierarchy-filter-icon,
+.hierarchy-filter-container .hierarchy-filter-icon {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     -unity-text-generator: standard;
     color: var(--text-label-color);
@@ -173,7 +174,7 @@
 }
 
 .hierarchy-object-row .hierarchy-item-label {
-    color: rgb(230, 230, 230);
+    color: var(--text-color);
 }
 
 .hierarchy-object-row.inactive .hierarchy-item-label {
