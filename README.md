@@ -177,7 +177,7 @@ Refer to the documentation or sample scenes for more detailed configuration and 
           <li><code>staticCommandsAssemblies</code> - limit command scanning to specific assemblies</li>
           <li><code>savedPrefs</code> - custom <a href="DevSuite/Assets/DevSuite/Runtime/Prefs/SavedPrefs.cs"><code>ISavedPrefs</code></a> for panel/settings persistence</li>
           <li><code>registerCommonCommands: false</code> - skip built-in <a href="DevSuite/Assets/DevSuite/Runtime/Utilities/CommonCommands.cs"><code>CommonCommands</code></a></li>
-          <li><code>DevSuiteContext.Default.BuildVersionToDisplay</code> - override the version string shown in the UI (default: <code>"v" + Application.version</code>) - see <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.cs</code></a></li>
+          <li><code>DevSuiteContext.Default.BuildVersionToDisplay</code> - override the version string shown in the UI (default: <code>"v" + Application.version</code> with bundle number if available) - see <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.cs</code></a></li>
         </ul>
         <p>See example scene: <a href="DevSuite/Assets/DevSuite/Examples/ExampleManualInitialization.unity"><code>ExampleManualInitialization.unity</code></a></p>
         <p><strong>Editor</strong></p>

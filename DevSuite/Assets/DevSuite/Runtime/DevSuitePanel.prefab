@@ -64,7 +64,7 @@ MonoBehaviour:
   _autoInitialize: 1
   _panelSide: 0
   _layoutMode: 0
-  _controlWidth: 350
+  _controlWidth: 370
   _commandsWidth: 500
   _uiScale: 1
   _panelBackgroundColor: {r: 0.15686275, g: 0.15686275, b: 0.15686275, a: 0.93}
@@ -88,4 +88,3 @@ MonoBehaviour:
   _inspectorUxml: {fileID: 9197481963319205126, guid: a4603957be84451093a7eb2db0d21053, type: 3}
   _inspectorUss: {fileID: 7433441132597879392, guid: d9426f8aae8a491893a7eb2db0d21054, type: 3}
   _pickSelectionUss: {fileID: 7433441132597879392, guid: 44a11cb5e3c1743bcbe4c4b28e5cff9c, type: 3}
-

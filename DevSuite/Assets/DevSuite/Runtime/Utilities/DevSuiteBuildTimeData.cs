@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace DevSuite.Runtime.Utilities
 {
@@ -13,7 +14,8 @@ namespace DevSuite.Runtime.Utilities
         [SerializeField] private List<string> _compilerDefinesOther = new();
         [SerializeField] private List<string> _compilerDefinesExplicit = new();
         [SerializeField] private List<string> _playerSettings = new();
-        [SerializeField] private string _buildNumber;
+        [SerializeField] private string _buildVersion;
+        [SerializeField] private string _buildBundleVersion;
         [SerializeField] private List<string> _dependencies = new();
         [SerializeField] private List<string> _nugetDependencies = new();
         [SerializeField] private List<string> _buildSettingsScenes = new();
@@ -23,7 +25,8 @@ namespace DevSuite.Runtime.Utilities
         public IReadOnlyList<string> CompilerDefinesExplicit => _compilerDefinesExplicit;
 
         public IReadOnlyList<string> PlayerSettings => _playerSettings;
-        public string BuildNumber => _buildNumber;
+        public string BuildVersion => _buildVersion;
+        public string BuildBundleVersion => _buildBundleVersion;
         public IReadOnlyList<string> Dependencies => _dependencies;
         public IReadOnlyList<string> NugetDependencies => _nugetDependencies;
         public IReadOnlyList<string> BuildSettingsScenes => _buildSettingsScenes;
@@ -128,7 +131,8 @@ namespace DevSuite.Runtime.Utilities
             }
 
             var settings = new List<string>();
-            var buildNum = string.Empty;
+            var buildVersion = UnityEditor.PlayerSettings.bundleVersion;
+            var bundleVersion = "";
 
             try
             {
@@ -139,7 +143,7 @@ namespace DevSuite.Runtime.Utilities
 #endif
                 settings.Add($"Scripting Backend: {scriptingBackend}");
             }
-            catch {}
+            catch { }
 
             try
             {
@@ -150,14 +154,14 @@ namespace DevSuite.Runtime.Utilities
 #endif
                 settings.Add($"API Compatibility: {apiCompat}");
             }
-            catch {}
+            catch { }
 
             try
             {
                 var apis = UnityEditor.PlayerSettings.GetGraphicsAPIs(UnityEditor.EditorUserBuildSettings.activeBuildTarget);
                 settings.Add($"Graphics APIs: {string.Join(", ", apis)}");
             }
-            catch {}
+            catch { }
 
             try
             {
@@ -168,35 +172,35 @@ namespace DevSuite.Runtime.Utilities
 #endif
                 settings.Add($"Managed Stripping: {strippingLevel}");
             }
-            catch {}
+            catch { }
 
             try
             {
                 var stripEngine = UnityEditor.PlayerSettings.stripEngineCode;
                 settings.Add($"Strip Engine Code: {stripEngine}");
             }
-            catch {}
+            catch { }
 
             try
             {
                 var colorSpace = UnityEditor.PlayerSettings.colorSpace;
                 settings.Add($"Color Space: {colorSpace}");
             }
-            catch {}
+            catch { }
 
             try
             {
                 var mtRendering = UnityEditor.PlayerSettings.MTRendering;
                 settings.Add($"Multithreaded Rendering: {mtRendering}");
             }
-            catch {}
+            catch { }
 
             try
             {
                 var graphicsJobs = UnityEditor.PlayerSettings.graphicsJobs;
                 settings.Add($"Graphics Jobs: {graphicsJobs}");
             }
-            catch {}
+            catch { }
 
             if (targetGroup == UnityEditor.BuildTargetGroup.Android)
             {
@@ -205,19 +209,19 @@ namespace DevSuite.Runtime.Utilities
                     var targetArch = UnityEditor.PlayerSettings.Android.targetArchitectures;
                     settings.Add($"Android Architectures: {targetArch}");
                 }
-                catch {}
+                catch { }
                 try
                 {
                     var minSdk = UnityEditor.PlayerSettings.Android.minSdkVersion;
                     var targetSdk = UnityEditor.PlayerSettings.Android.targetSdkVersion;
                     settings.Add($"Android SDK: Min={minSdk}, Target={targetSdk}");
                 }
-                catch {}
+                catch { }
                 try
                 {
-                    buildNum = UnityEditor.PlayerSettings.Android.bundleVersionCode.ToString();
+                    bundleVersion = UnityEditor.PlayerSettings.Android.bundleVersionCode.ToString();
                 }
-                catch {}
+                catch { }
             }
             else if (targetGroup == UnityEditor.BuildTargetGroup.iOS)
             {
@@ -226,12 +230,20 @@ namespace DevSuite.Runtime.Utilities
                     var targetOS = UnityEditor.PlayerSettings.iOS.targetOSVersionString;
                     settings.Add($"iOS Target OS: {targetOS}");
                 }
-                catch {}
+                catch { }
                 try
                 {
-                    buildNum = UnityEditor.PlayerSettings.iOS.buildNumber;
+                    bundleVersion = UnityEditor.PlayerSettings.iOS.buildNumber;
                 }
-                catch {}
+                catch { }
+            }
+            else if (targetGroup == UnityEditor.BuildTargetGroup.Standalone)
+            {
+                try
+                {
+                    bundleVersion = UnityEditor.PlayerSettings.macOS.buildNumber;
+                }
+                catch { }
             }
 
             var dependencies = new List<string>();
@@ -302,7 +314,8 @@ namespace DevSuite.Runtime.Utilities
             _compilerDefinesOther = common;
             _compilerDefinesExplicit = custom;
             _playerSettings = settings;
-            _buildNumber = buildNum;
+            _buildVersion = buildVersion;
+            _buildBundleVersion = bundleVersion;
             _dependencies = dependencies;
             _nugetDependencies = nugetDependencies;
             _buildSettingsScenes = buildSettingsScenes;

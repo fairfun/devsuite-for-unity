@@ -15,7 +15,8 @@ MonoBehaviour:
   _compilerDefinesOther:
   _compilerDefinesExplicit:
   _playerSettings:
-  _buildNumber: 
+  _buildVersion:
+  _buildBundleVersion:
   _dependencies:
   _nugetDependencies:
   _buildSettingsScenes:

@@ -96,7 +96,8 @@ namespace Ff.DevSuite
         }
 
 #if UNITY_EDITOR
-        [Command(nameof(EditorPrefs), "EditorPrefs", Description = "EditorPrefs storage path.\n\nValues are accessed via <b><color=#ffc800>EditorPrefs</color></b> in code.")][CommandValue(nameof(EditorPrefs))]
+        [Command(nameof(EditorPrefs), "EditorPrefs", Description = "EditorPrefs storage path.\n\nValues are accessed via <b><color=#ffc800>EditorPrefs</color></b> in code.")]
+        [CommandValue(nameof(EditorPrefs))]
         private static string EditorPrefs => GetEditorPrefsPath();
 
         [CommandButton(nameof(EditorPrefs), Title = "Clear", Flex = 0f, Color = ColorRed, CliEnabled = false, Description = "Delete all EditorPrefs keys.\n\nExecutes <b><color=#ffc800>EditorPrefs.DeleteAll()</color></b> in code.")]
@@ -183,13 +184,7 @@ namespace Ff.DevSuite
                 {
                     var sb = new StringBuilder();
                     sb.AppendLine($"Product: {Application.identifier} ({Application.productName}, {Application.companyName})");
-                    var versionStr = DevSuiteContext.Default?.BuildVersionToDisplay?.Invoke();
-                    var buildNum = DevSuiteBuildTimeData.Default.BuildNumber;
-                    if (!string.IsNullOrEmpty(buildNum))
-                    {
-                        versionStr = $"{versionStr} ({buildNum})";
-                    }
-                    sb.AppendLine($"Build: {versionStr} {(Debug.isDebugBuild ? "Debug" : "Release")}");
+                    sb.AppendLine($"Build: {DevSuiteContext.Default?.BuildVersionToDisplay?.Invoke()}");
                     sb.AppendLine($"Unity: {Application.unityVersion}");
                     sb.AppendLine($"Platform: {Application.platform}, {SystemInfo.operatingSystem}, {Application.systemLanguage}");
                     sb.AppendLine($"Processor: {SystemInfo.processorType} ({SystemInfo.processorCount} cores)");

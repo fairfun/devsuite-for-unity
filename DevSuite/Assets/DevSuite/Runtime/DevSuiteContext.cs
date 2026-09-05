@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using DevSuite.Runtime.Utilities;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -228,7 +229,24 @@ namespace Ff.DevSuite
 
         private readonly Dictionary<Type, GraphDataProviderSettings> _performanceGraphSettings = new();
 
-        public Func<string> BuildVersionToDisplay { get; set; } = () => $"v{Application.version}";
+        public Func<string> BuildVersionToDisplay { get; set; } = GetDefaultBuildVersionToDisplay;
+
+        private static string GetDefaultBuildVersionToDisplay()
+        {
+            var version = $"v{Application.version}";
+            var bv = DevSuiteBuildTimeData.Default?.BuildVersion;
+            var buv = DevSuiteBuildTimeData.Default?.BuildBundleVersion;
+            if (!string.IsNullOrEmpty(bv) && Application.version != bv)
+            {
+                version += $"#{bv}";
+            }
+            if (!string.IsNullOrEmpty(buv))
+            {
+                version += $" ({buv})";
+            }
+            version += $" {(Debug.isDebugBuild ? "debug" : "release")}";
+            return version;
+        }
 
         private readonly List<GameObject> _selectedGameObjects = new();
         public IReadOnlyList<GameObject> SelectedGameObjects => _selectedGameObjects;

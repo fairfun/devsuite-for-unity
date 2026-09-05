@@ -4,6 +4,7 @@ using System.Linq;
 using Ff.DevSuite.Commands;
 using Ff.DevSuite.Commands.Attributes;
 using Ff.Prefs;
+using DevSuite.Runtime.Utilities;
 using UnityEngine;
 
 namespace Ff.DevSuite
@@ -296,6 +297,25 @@ namespace Ff.DevSuite
                 {
                     // Standalone test harness without Unity native engine
                 }
+
+                // Test 15: BuildVersionToDisplay and BundleNumber
+                var buildTimeData = DevSuiteBuildTimeData.Default;
+                var bundleNumber = buildTimeData?.BuildBundleVersion;
+                var displayVersion = context.BuildVersionToDisplay?.Invoke();
+                var expectedVersion = $"v{Application.version}";
+                if (buildTimeData != null && !string.IsNullOrEmpty(buildTimeData.BuildVersion) && Application.version != buildTimeData.BuildVersion)
+                {
+                    expectedVersion += $"#{buildTimeData.BuildVersion}";
+                }
+                if (!string.IsNullOrEmpty(bundleNumber))
+                {
+                    expectedVersion += $" ({bundleNumber})";
+                }
+                expectedVersion += $" {(Debug.isDebugBuild ? "debug" : "release")}";
+                Assert(displayVersion == expectedVersion, "BuildVersionToDisplay matches default format");
+
+                context.BuildVersionToDisplay = () => "custom_version";
+                Assert(context.BuildVersionToDisplay() == "custom_version", "Custom BuildVersionToDisplay override works");
             }
             finally
             {
