@@ -24,11 +24,11 @@ namespace Ff.DevSuite
     {
         public static void RegisterAll(IDevSuiteContext context)
         {
-            context.CommandsApi.RegisterAdapter(new DelegateCommandValueAdapterToString<CultureInfo>(
+            context.CommandsApi?.RegisterAdapter(new DelegateCommandValueAdapterToString<CultureInfo>(
                 a => a?.Name,
                 (b, _, _) => b == null ? null : CultureInfo.GetCultureInfo(b)
             ));
-            context.CommandsApi.RegisterValuesProvider(new CommandValuesProvider(typeof(CultureInfo), _ => CultureInfo.GetCultures(CultureTypes.AllCultures).Take(50).ToArray()));
+            context.CommandsApi?.RegisterValuesProvider(new CommandValuesProvider(typeof(CultureInfo), _ => CultureInfo.GetCultures(CultureTypes.AllCultures).Take(50).ToArray()));
 
             var all = new[]
             {
@@ -57,22 +57,22 @@ namespace Ff.DevSuite
             };
             foreach (var type in all)
             {
-                context.AttributesParser.RegisterStatic(type);
+                context.AttributesParser?.RegisterStatic(type);
             }
 
-            context.CommandsApi.RegisterTargetForFunctionsProvider(new CommandFunctionsSourceProvider(typeof(DevSuiteCommandsTesting)));
+            context.CommandsApi?.RegisterTargetForFunctionsProvider(new CommandFunctionsSourceProvider(typeof(DevSuiteCommandsTesting)));
             var visibilityInstance = new VisibilityTestInstance();
-            context.CommandsApi.RegisterTargetForFunctionsProvider(new CommandFunctionsSourceProvider(visibilityInstance, new HashSet<string>() { "IsVisiblePropertyFromInstance" } ));
+            context.CommandsApi?.RegisterTargetForFunctionsProvider(new CommandFunctionsSourceProvider(visibilityInstance, new HashSet<string>() { "IsVisiblePropertyFromInstance" } ));
 
             var inst1 = new DevSuiteTestingCategoryInstanceBased();
-            context.AttributesParser.RegisterInstance(inst1);
+            context.AttributesParser?.RegisterInstance(inst1);
 
             var inst2 = new DevSuiteTestingCategoryInstanceBased();
-            context.AttributesParser.RegisterInstance(inst2);
+            context.AttributesParser?.RegisterInstance(inst2);
 
             var inst3 = new DevSuiteTestingCategoryInstanceBased();
-            context.AttributesParser.RegisterInstance(inst3);
-            context.AttributesParser.UnregisterInstance(inst3);
+            context.AttributesParser?.RegisterInstance(inst3);
+            context.AttributesParser?.UnregisterInstance(inst3);
         }
 
         private static bool IsVisibleMethod()

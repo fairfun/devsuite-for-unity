@@ -3,7 +3,7 @@
         <ui:Button name="reset-btn" text="" class="ff-control-panel-btn" tooltip="Reset DevSuite settings"/>
         <ui:VisualElement name="divider" class="ff-control-panel-divider"/>
         <ui:VisualElement name="spacer" class="ff-control-panel-spacer">
-            <ui:Label name="version-lbl" class="ff-control-panel-version"/>
+            <ui:Label name="version-lbl" class="ff-control-panel-version" tooltip="Application build version (default: &quot;v&quot; + Application.version).&#10;&#10;Modify it via DevSuiteContext.Default.BuildVersionToDisplay."/>
         </ui:VisualElement>
         <ui:Button name="logs-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Logs panel"/>
         <ui:Button name="hierarchy-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Hierarchy panel"/>
@@ -11,6 +11,6 @@
         <ui:Button name="metrics-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Performance panel.&#10;&#10;Check DevSuiteContext.Default.RegisterPerformancePanelGraph and SetPerformanceGraphSettings.&#10;&#10;Inherit BaseGraphDataProvider to implement custom graphs."/>
         <ui:Button name="commands-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Commands panel.&#10;&#10;Check the CommonCommands class implementation for hints on how to use the API.&#10;&#10;Check DevSuiteContext.Default.AttributesParser and DevSuiteContext.Default.CommandsApi for advanced control."/>
         <ui:Button name="pinned-commands-btn" text="" class="ff-control-panel-btn" tooltip="Toggle Pinned Commands panel"/>
-        <ui:Button name="expand-btn" text="" class="ff-control-panel-btn" tooltip="Expand/Collapse DevSuite"/>
+        <ui:Button name="expand-btn" text="" class="ff-control-panel-btn" tooltip="Expand/Collapse DevSuite.&#10;&#10;Configure button settings (Activation Mode, Expand Button Visibility) in the DevSuitePanel prefab Settings.&#10;&#10;To disable the panel, define the scripting symbol DEVSUITE_DISABLED, or set DevSuiteContext.Enabled = false before DevSuitePanelUI.Awake (order -99)."/>
     </ui:VisualElement>
 </ui:UXML>

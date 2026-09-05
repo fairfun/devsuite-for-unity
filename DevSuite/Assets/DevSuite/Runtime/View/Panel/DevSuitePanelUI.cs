@@ -85,8 +85,16 @@ namespace Ff.DevSuite.View
 
         private DevSuiteContext _context;
 
+        internal static DevSuitePanelUI Instance { get; set; }
+
         private void Awake()
         {
+            if (Instance != null)
+            {
+                throw new Exception($"{nameof(DevSuitePanelUI)} already exists. Many instances of {nameof(DevSuitePanelUI)} are not supported");
+            }
+            Instance = this;
+
             if (!DevSuiteContext.Enabled)
             {
                 Debug.Log($"Initializing {nameof(DevSuitePanelUI)} is skipped because {nameof(DevSuiteContext)}.{nameof(DevSuiteContext.Enabled)}=false");
@@ -172,6 +180,7 @@ namespace Ff.DevSuite.View
 
         private void OnDestroy()
         {
+            Instance = null;
             Reset();
         }
 

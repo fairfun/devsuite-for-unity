@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Ff.DevSuite.Commands;
 using Ff.DevSuite.Commands.Attributes;
 using Ff.DevSuite.Performance;
+using Ff.DevSuite.View;
 using Ff.Prefs;
 using MemoryPack;
 using MessagePack;
@@ -56,7 +57,35 @@ namespace Ff.DevSuite
 #endif
     public class DevSuiteContext : IDevSuiteContext
     {
-        public static bool Enabled { get; set; } = true; // global kill-switch
+        private static bool _enabled = true;
+
+        public static bool Enabled
+        {
+            get
+            {
+                return
+                #if DEVSUITE_DISABLED
+                    false;
+                #else
+                    _enabled;
+                #endif
+            }
+            set
+            {
+                if (_enabled && !value)
+                {
+                    if ((Default as DevSuiteContext)?._initialized == true)
+                    {
+                        Debug.LogError("Disabling DevSuite after its initialization is not supported");
+                    }
+                    if (DevSuitePanelUI.Instance != null)
+                    {
+                        Debug.LogError("Disabling DevSuite after DevSuitePanelUI is created is not supported");
+                    }
+                }
+                _enabled = value;
+            }
+        }
 
 #if UNITY_EDITOR
         private static volatile bool _isEditorPlaying;
