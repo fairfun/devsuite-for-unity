@@ -391,7 +391,7 @@ namespace DevSuite.Runtime.Utilities
 
         private static void OnPlayModeStateChanged(UnityEditor.PlayModeStateChange state)
         {
-            if (state == UnityEditor.PlayModeStateChange.EnteredPlayMode)
+            if (state == UnityEditor.PlayModeStateChange.ExitingEditMode)
             {
                 var data = Default;
                 if (data != null)
