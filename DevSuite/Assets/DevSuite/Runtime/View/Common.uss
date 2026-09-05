@@ -5,6 +5,9 @@
     --panel-border-width: 1px;
     --panel-border-radius: 8px;
     --toolbar-bg: rgba(30, 30, 30, 0.55);
+    --button-bg-color: rgba(240, 240, 240, 0.07);
+    --btn-bg-color: var(--button-bg-color);
+    --input-bg-color: rgba(0, 0, 0, 0.4);
     --text-color: rgb(230, 230, 230);
     --text-color-inactive: rgb(140, 140, 140);
     --accent-color: rgb(128, 200, 255);
@@ -19,6 +22,8 @@
     --text-color-inactive: rgb(160, 160, 160);
     --unity-colors-label-text: var(--text-color);
     --unity-colors-default-text: var(--text-color);
+    --button-bg-color: rgba(240, 240, 240, 0.20);
+    --input-bg-color: rgba(0, 0, 0, 0.25);
     background-color: transparent !important;
     border-width: 0 !important;
     border-radius: 0 !important;

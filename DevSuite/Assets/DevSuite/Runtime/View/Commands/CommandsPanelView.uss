@@ -191,7 +191,7 @@
 }
 
 .ff-commands-unit-button {
-    background-color: rgba(75, 75, 75, 1);
+    background-color: var(--button-bg-color);
     border-radius: 4px;
     border-width: 1px;
     border-color: rgba(255, 255, 255, 0.05);
@@ -210,7 +210,7 @@
 }
 
 .ff-commands-unit-text {
-    background-color: rgba(0, 0, 0, 0.2); /* semi-transparent black */
+    background-color: var(--input-bg-color);
     border-width: 0;
     border-radius: 3px;
     color: var(--text-color);
@@ -222,7 +222,7 @@
 }
 
 .ff-commands-unit-text--disabled {
-    opacity: 0.5;
+    opacity: 0.6;
 }
 
 .ff-commands-unit-text .unity-text-field__input {
@@ -235,7 +235,7 @@
 }
 
 .ff-commands-unit-dropdown {
-    background-color: rgba(0, 0, 0, 0.2); /* semi-transparent black */
+    background-color: var(--button-bg-color);
     border-width: 0 !important;
     border-radius: 3px;
     min-height: 20px;
@@ -270,6 +270,7 @@
     -unity-background-image-tint-color: rgb(255, 255, 255);
     flex-shrink: 0;
 }
+
 
 /* Force hide any focus rings or background images on ALL slider components */
 .ff-commands-unit-slider *,
@@ -449,6 +450,7 @@
 .unity-base-dropdown__title {
     display: none !important;
 }
+
 
 .ff-commands-unit-nullable-toggle {
     margin-right: 2px;
