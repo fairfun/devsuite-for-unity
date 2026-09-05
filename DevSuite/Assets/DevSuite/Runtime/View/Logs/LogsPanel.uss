@@ -40,7 +40,7 @@
 .logs-filter-icon {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     -unity-text-generator: standard;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     font-size: 10px;
     padding: 0;
     margin: 0;
@@ -172,7 +172,7 @@
     height: 24px;
     margin-left: 2px;
     padding: 0;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     background-color: rgba(40, 40, 40, 0);
     border-width: 0;
     border-radius: 4px;
@@ -253,7 +253,7 @@
     font-size: 12px;
     background-color: rgba(40, 40, 40, 0);
     border-width: 0;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     margin: 0px;
 }
 
@@ -305,7 +305,7 @@
 }
 
 .logs-cli-icon {
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     font-size: 12px;
     -unity-font-style: bold;
     padding: 0;

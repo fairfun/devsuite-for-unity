@@ -26,7 +26,7 @@
     border-width: 1px;
     border-color: rgba(255, 255, 255, 0.05);
     border-top-width: 2px;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     font-size: 12px;
     -unity-font-style: bold;
     cursor: arrow;
@@ -111,7 +111,7 @@
     padding: 0;
     margin: 0px;
     margin-right: 4px;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     -unity-text-align: middle-left;
 }
 
@@ -488,7 +488,7 @@
 .ff-commands-filter-icon {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     -unity-text-generator: standard;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     font-size: 10px;
     margin-right: 1px;
     padding: 0;
@@ -520,7 +520,7 @@
     -unity-text-generator: standard;
     background-color: transparent;
     border-width: 0;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     font-size: 12px;
     min-width: 0;
     width: 10px;

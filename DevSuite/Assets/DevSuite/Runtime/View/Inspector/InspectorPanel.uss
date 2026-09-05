@@ -52,7 +52,7 @@
 
 .inspector-selected-object-path {
     font-size: 10px;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     -unity-font-style: italic;
     margin-top: 2px;
     white-space: normal;
@@ -100,7 +100,7 @@
 
 .inspector-component-type {
     font-size: 9px;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     margin-left: 6px;
 }
 
@@ -125,7 +125,7 @@
 .inspector-property-name,
 .inspector-property-row .inspector-property-name {
     width: 45%;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     font-size: 11px;
     padding-right: 4px;
     margin: 0;
@@ -156,7 +156,7 @@
     height: 24px;
     margin-left: 2px;
     padding: 0;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     background-color: rgba(40, 40, 40, 0);
     border-width: 0;
     border-radius: 4px;
@@ -241,7 +241,7 @@
 
 .inspector-go-path {
     font-size: 9px;
-    color: var(--text-label-color);
+    color: var(--text-color-inactive);
     -unity-font-style: italic;
     margin-top: 0;
     white-space: normal;
