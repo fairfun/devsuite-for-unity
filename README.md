@@ -166,7 +166,10 @@ public class MyGameInitializer : MonoBehaviour
 
 Open the example scene [`DevSuite/Assets/DevSuite/Examples/ExampleManualInitialization.unity`](DevSuite/Assets/DevSuite/Examples/ExampleManualInitialization.unity) to see this setup in action *(needs to be copied into the `Assets` folder to be opened if imported as a package)*.
 
-### 4. Disabling DevSuite
+### 4. Asteroids Sample Game
+Import the **Asteroids Game** sample via Unity Package Manager (`Window > Package Manager > DevSuite for Unity > Samples > Import`), or open the scene at [`DevSuite/Assets/DevSuite/Samples~/Asteroids/Asteroids.unity`](DevSuite/Assets/DevSuite/Samples~/Asteroids/Asteroids.unity) to play a classic Asteroids game equipped with live DevSuite commands, tunable parameters, and runtime hierarchy inspection.
+
+### 5. Disabling DevSuite
 - **Compile-time**: Define the scripting symbol `DEVSUITE_DISABLED` (e.g. in **Player Settings > Other Settings > Scripting Define Symbols**) to completely disable DevSuite.
 - **Runtime**: Set <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.Enabled = false</code></a> before <a href="DevSuite/Assets/DevSuite/Runtime/View/Panel/DevSuitePanelUI.cs"><code>DevSuitePanelUI.Awake</code></a> (execution order `-99`).
 
