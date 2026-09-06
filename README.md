@@ -11,6 +11,22 @@
 
 DevSuite serves as a modern, 100% free, and open-source alternative to popular Unity debug assets such as **SRDebugger**, **Lunar Mobile Console**, **In-game Debug Console**, **UnityRuntimeInspector** and others. By consolidating essential debugging features - including an in-game logs console, runtime hierarchy browser, GameObject inspector, performance monitor, and attribute-driven command system - into one lightweight and powerful package, DevSuite eliminates the need for fragmented, paid toolsets and provides a cohesive experience for efficient runtime troubleshooting.
 
+### Feature Comparison
+
+| Feature | **DevSuite** | **SRDebugger** | **In-Game Debug Console** | **Lunar Mobile Console** |
+| :--- | :---: | :---: | :---: | :---: |
+| **License / Price** | **Free (MIT)** | Paid ($50) | Free (MIT) | Free / $30 Pro |
+| **UI Technology** | **UI Toolkit** (Modern & scalable) | uGUI | IMGUI | Native UI / uGUI |
+| **In-Game Logs & Stacktraces** | ✅ | ✅ | ✅ | ✅ |
+| **Interactive Terminal CLI** | ✅ *(Autocomplete, ghost hints, history)* | ❌ | ✅ *(Basic)* | ❌ |
+| **Runtime Hierarchy & Inspector** | ✅ | ✅ | ❌ | ❌ |
+| **Attribute-Driven Commands** | ✅ *(Extensive customization: colors, visibility, formats, adapters)* | ✅ *(Basic options)* | ✅ *(Basic)* | ✅ *(Basic)* |
+| **Auto-Parameterized Command Inputs** | ✅ *(Sliders, dropdowns, inputs)* | ❌ | ❌ | ❌ |
+| **Performance Monitor & Graphs** | ✅ *(FPS, memory, batches, custom graphs)* | ✅ *(Basic stats)* | ❌ | ✅ *(FPS & memory)* |
+| **Pinned Commands Panel** | ✅ | ✅ | ❌ | ❌ |
+| **Standalone Editor Windows** | ✅ *(Identical UI in Editor & Game)* | ✅ *(Commands only)* | ❌ | ❌ |
+| **Platform Support** | Desktop, Mobile, WebGL, Editor | Desktop, Mobile | Desktop, Mobile, WebGL | Mobile (iOS / Android) |
+
 ## Screenshots
 
 <table style="border-collapse: collapse; width: 100%;">
@@ -214,7 +230,7 @@ Refer to the documentation or sample scenes for more detailed configuration and 
   </tbody>
 </table>
 
-<h3 align="center">🛠️ Make it your own</h3>
+<h3 align="center">🛠️ Customization</h3>
 
 <table style="border-collapse: collapse; width: 100%;">
   <thead>
