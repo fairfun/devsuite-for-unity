@@ -15,20 +15,19 @@ namespace Ff.Prefs
             _serializer = (t, o) => MessagePackSerializer.Serialize(t, o, SerializationOptions);
             _deserializer = (t, b) => MessagePackSerializer.Deserialize(t, b, SerializationOptions);
             FilePath = Path.Combine(PersistentDataPath(), $"{name.TrimEnd('.')}.msgpack");
-            _ = Initialize();
+            Initialize();
         }
 
-        protected override Task DoInitialize()
+        protected override void DoInitialize()
         {
             if (!Exists(FilePath))
             {
                 _data = new DefaultSavedPrefsData();
-                return Task.CompletedTask;
+                return;
             }
 
             var bytes = File.ReadAllBytes(FilePath);
             _data = _deserializer(typeof(DefaultSavedPrefsData), bytes) as DefaultSavedPrefsData;
-            return Task.CompletedTask;
         }
 
         protected override Task DoFlush()

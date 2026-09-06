@@ -13,20 +13,19 @@ namespace Ff.Prefs
             _serializer = (t, o) => Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(o, Formatting.Indented));
             _deserializer = (t, b) => JsonConvert.DeserializeObject(Encoding.UTF8.GetString(b), t);
             FilePath = Path.Combine(PersistentDataPath(), $"{name.TrimEnd('.')}.json");
-            _ = Initialize();
+            Initialize();
         }
 
-        protected override Task DoInitialize()
+        protected override void DoInitialize()
         {
             if (!Exists(FilePath))
             {
                 _data = new DefaultSavedPrefsData();
-                return Task.CompletedTask;
+                return;
             }
 
             var bytes = File.ReadAllBytes(FilePath);
             _data = _deserializer(typeof(DefaultSavedPrefsData), bytes) as DefaultSavedPrefsData;
-            return Task.CompletedTask;
         }
 
         protected override Task DoFlush()

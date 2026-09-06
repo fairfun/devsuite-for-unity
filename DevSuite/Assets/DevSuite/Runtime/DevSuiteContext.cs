@@ -447,6 +447,7 @@ namespace Ff.DevSuite
         private readonly CommandCategory _defaultCategory = new(DefaultGroupId, -1f, null);
         internal int RegistrationOrderCounter { get; set; }
 
+        private static ISavedPrefs _defaultSavedPrefs;
         private ISavedPrefs _savedPrefs;
 
         internal IReadOnlyList<TreeCategory> Tree { get; private set; }
@@ -561,9 +562,9 @@ namespace Ff.DevSuite
 
             _initialized = true;
             _coroutineStarter = coroutineStarter;
-            _savedPrefs = savedPrefs ?? SavedPrefs.Factory.Invoke("DevSuiteContext.Default");
+            _savedPrefs = savedPrefs ?? (_defaultSavedPrefs ??= SavedPrefs.Factory.Invoke("DevSuiteContext.Default"));
             Settings = new SavedPrefsProperty<PersistentSettings>("DevSuiteContext_Settings", new PersistentSettings(), true, _savedPrefs);
-            _savedPrefs?.EnsureReady().Wait();
+            _savedPrefs?.EnsureReady();
             Settings.Value.InitializeDefaultsIfNeeded();
 
             using var _ = Block.SetAndTrack(true, 1, this);

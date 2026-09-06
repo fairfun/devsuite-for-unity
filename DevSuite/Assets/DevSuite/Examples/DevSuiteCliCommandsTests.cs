@@ -83,11 +83,14 @@ namespace Ff.DevSuite
             public void DeleteKey(string key) => _data.Remove(key);
             public void Flush() { }
             public void Clear() => _data.Clear();
-            public System.Threading.Tasks.Task EnsureReady() => System.Threading.Tasks.Task.CompletedTask;
-            public bool Ready => true;
+            public void EnsureReady() => Ready = true;
+            public bool Ready { get; private set; } = true;
             public void SetSerializer(SerializeFunction serialize, DeserializeFunction deserialize) { }
-            public string SessionId { get; } = Guid.NewGuid().ToString();
-            public bool Disposed => false;
+            public void Invalidate()
+            {
+                _data.Clear();
+                Ready = false;
+            }
         }
 
         public static bool RunAllTests()
@@ -316,6 +319,24 @@ namespace Ff.DevSuite
 
                 context.BuildVersionToDisplay = () => "custom_version";
                 Assert(context.BuildVersionToDisplay() == "custom_version", "Custom BuildVersionToDisplay override works");
+
+                // Test 16: SavedPrefs and SavedPrefsProperty Invalidate & re-initialization
+                var prefs1 = new TestMemorySavedPrefs();
+                var prop = new SavedPrefsProperty<int>("test_invalidated_key", 10, true, prefs1);
+                Assert(prop.Value == 10, "Initial property value returns default");
+                prop.Value = 42;
+                Assert(prop.Value == 42, "Property returns updated value");
+
+                prefs1.Invalidate();
+                Assert(!prefs1.Ready, "prefs1 Ready is false after Invalidate");
+                Assert(prop.Value == 10, "Property re-initializes and clears cached value when savedPrefs is invalidated");
+                Assert(prefs1.Ready, "prefs1 Ready is restored after EnsureReady");
+
+                var def1 = SavedPrefs.Default;
+                def1.Invalidate();
+                Assert(!def1.Ready, "SavedPrefs.Default is not ready after Invalidate");
+                var def2 = SavedPrefs.Default;
+                Assert(ReferenceEquals(def1, def2), "SavedPrefs.Default instance is preserved (not cleared)");
             }
             finally
             {

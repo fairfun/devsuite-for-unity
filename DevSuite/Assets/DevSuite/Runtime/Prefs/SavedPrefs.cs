@@ -21,17 +21,16 @@ namespace Ff.Prefs
         void DeleteKey(string key);
         void Flush();
         void Clear();
-        Task EnsureReady();
+        void EnsureReady();
         bool Ready { get; }
         void SetSerializer(SerializeFunction serialize, DeserializeFunction deserialize);
-        public string SessionId { get; }
-        public bool Disposed { get; }
+        void Invalidate();
     }
 
     public delegate byte[] SerializeFunction(Type type, object obj);
     public delegate object DeserializeFunction(Type type, byte[] data);
 
-    public abstract class SavedPrefs : ISavedPrefs, IDisposable
+    public abstract class SavedPrefs : ISavedPrefs
     {
         private static string _persistentDataPath;
         protected static string PersistentDataPath()
@@ -52,7 +51,7 @@ namespace Ff.Prefs
         {
             get
             {
-                return _factory ?? (name =>
+                return _factory ??= (name =>
                 {
 #pragma warning disable CS0162
 #if DEVSUITE_MEMORYPACK
@@ -75,62 +74,54 @@ namespace Ff.Prefs
             }
         }
 
-        private string _sessionId;
-        public string SessionId => _sessionId ??= Guid.NewGuid().ToString();
-
-        public bool Disposed { get; private set; }
+        protected SavedPrefs()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+#endif
+        }
 
 #if UNITY_EDITOR
-        static SavedPrefs()
+        private void OnPlayModeStateChanged(UnityEditor.PlayModeStateChange change)
         {
-            UnityEditor.EditorApplication.playModeStateChanged += m =>
+            if (change == UnityEditor.PlayModeStateChange.ExitingPlayMode)
             {
-                if (m is UnityEditor.PlayModeStateChange.ExitingEditMode or UnityEditor.PlayModeStateChange.ExitingPlayMode)
-                    ResetStatic();
-            };
+                Invalidate();
+            }
         }
 #endif
 
-        private static void ResetStatic()
+        public void Invalidate()
         {
-            _default?._data?.Clear();
-            _default = null;
-            _factory = null;
+            if (!_flushing)
+            {
+                Flush();
+            }
+            _data?.Clear();
+            Ready = false;
         }
 
         private static SavedPrefs _default;
         public static SavedPrefs Default
         {
-            get
-            {
-                return _default ??= Factory.Invoke($"{nameof(SavedPrefs)}.Default");
-            }
-            set
-            {
-                _default = value;
-            }
+            get => _default ??= Factory.Invoke($"{nameof(SavedPrefs)}.Default");
+            set => _default = value;
         }
 
         internal ISavedPrefsData _data;
 
-        private Task _initializationTask;
         private bool _hasChanges;
         public bool Ready { get; private set; }
 
         protected DeserializeFunction _deserializer;
         protected SerializeFunction _serializer;
-        private readonly CancellationTokenSource _cancellationTokenSource = new();
 
-        public async Task EnsureReady()
+        public void EnsureReady()
         {
-            if (_initializationTask != null)
-            {
-                await _initializationTask;
+            if (Ready)
                 return;
-            }
 
-            _ = Initialize();
-            await _initializationTask;
+            Initialize();
         }
 
         public void SetSerializer(SerializeFunction serialize, DeserializeFunction deserialize)
@@ -139,67 +130,66 @@ namespace Ff.Prefs
             _deserializer = deserialize;
         }
 
-        protected async Task Initialize()
+        public void Initialize()
         {
-            _initializationTask = DoInitialize();
-            await _initializationTask;
+            DoInitialize();
             Ready = true;
         }
 
-        protected abstract Task DoInitialize();
+        protected abstract void DoInitialize();
 
-        public async void SetBool(string key, bool? value)
+        public void SetBool(string key, bool? value)
         {
             _hasChanges = true;
             if (!Ready)
-                await _initializationTask;
+                EnsureReady();
             _data.Booleans[key] = value;
             ScheduleFlush();
         }
 
-        public async void SetInt(string key, int? value)
+        public void SetInt(string key, int? value)
         {
             _hasChanges = true;
             if (!Ready)
-                await _initializationTask;
+                EnsureReady();
             _data.Integers[key] = value;
             ScheduleFlush();
         }
 
-        public async void SetFloat(string key, float? value)
+        public void SetFloat(string key, float? value)
         {
             _hasChanges = true;
             if (!Ready)
-                await _initializationTask;
+                EnsureReady();
             _data.Floats[key] = value;
             ScheduleFlush();
         }
 
-        public async void SetString(string key, string value)
+        public void SetString(string key, string value)
         {
             _hasChanges = true;
             if (!Ready)
-                await _initializationTask;
+                EnsureReady();
 
             _data.Strings[key] = value;
             ScheduleFlush();
         }
 
-        public async void SetObject<T>(string key, T value)
+        public void SetObject<T>(string key, T value)
         {
             _hasChanges = true;
             if (!Ready)
-                await _initializationTask;
+                EnsureReady();
 
             _data.Objects[key] = _serializer?.Invoke(typeof(T), value);
             ScheduleFlush();
         }
 
-        public async void Clear()
+        public void Clear()
         {
             _hasChanges = true;
             if (!Ready)
-                await _initializationTask;
+                EnsureReady();
             _data.Clear();
             Flush();
         }
@@ -256,11 +246,11 @@ namespace Ff.Prefs
             return defaultValue;
         }
 
-        public async void DeleteKey(string key)
+        public void DeleteKey(string key)
         {
             _hasChanges = true;
             if (!Ready)
-                await _initializationTask;
+                EnsureReady();
 
             _data.Booleans.Remove(key);
             _data.Integers.Remove(key);
@@ -299,12 +289,10 @@ namespace Ff.Prefs
         public async void Flush()
         {
             _waitingFlush = false;
-            if (_flushing)
+            if (_flushing || !Ready || !_hasChanges)
+            {
                 return;
-            if (!Ready)
-                await _initializationTask;
-            if (!_hasChanges)
-                return;
+            }
 
             _waitingFlush = false;
             _hasChanges = false;
@@ -322,19 +310,6 @@ namespace Ff.Prefs
 
         protected abstract Task DoFlush();
         public string FilePath { get; protected set; }
-
-        public void Dispose()
-        {
-            if (!_flushing)
-            {
-                Flush();
-            }
-
-            Disposed = true;
-            _sessionId = null;
-            _data.Clear();
-            _cancellationTokenSource.Cancel();
-        }
     }
 
     public interface ISavedPrefsData

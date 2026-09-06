@@ -8,13 +8,12 @@ namespace Ff.Prefs
         public FallbackSavedPrefs(string name)
         {
             FilePath = "In Memory";
-            _ = Initialize();
+            Initialize();
         }
 
-        protected override Task DoInitialize()
+        protected override void DoInitialize()
         {
             _data = new TemporarySavedPrefsData();
-            return Task.CompletedTask;
         }
 
         protected override Task DoFlush()

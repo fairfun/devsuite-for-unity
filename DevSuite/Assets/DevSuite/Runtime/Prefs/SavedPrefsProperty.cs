@@ -18,8 +18,6 @@ namespace Ff.Prefs
 
         public bool Ready => _savedPrefs?.Ready ?? false;
 
-        private string _sessionId;
-
         public SavedPrefsProperty(string keyName, T defaultValue = default, bool autoload = true, ISavedPrefs savedPrefs = null, Action<Touch> onTouch = null)
         {
             _keyName = keyName;
@@ -36,25 +34,21 @@ namespace Ff.Prefs
 
         private void ReinitializeIfNeeded()
         {
-            if (_sessionId == null || _sessionId != _savedPrefs.SessionId || _savedPrefs.Disposed)
+            if (_savedPrefs is not { Ready: true })
             {
                 InitializeSavedPrefs();
-                _storedValue = default;
             }
         }
 
-        public void InitializeSavedPrefs(ISavedPrefs savedPrefs = null)
+        private void InitializeSavedPrefs(ISavedPrefs savedPrefs = null)
         {
-            savedPrefs ??= Default();
-            _sessionId = savedPrefs.SessionId;
-            if (savedPrefs == _savedPrefs)
-                return;
-
+            _storedValue = default;
+            savedPrefs ??= _savedPrefs ?? Default?.Invoke();
             _savedPrefs = savedPrefs;
-            if (_savedPrefs.Ready)
-                return;
-
-            _ = _savedPrefs.EnsureReady();
+            if (!_savedPrefs.Ready)
+            {
+                _savedPrefs.EnsureReady();
+            }
         }
 
         public T Value
