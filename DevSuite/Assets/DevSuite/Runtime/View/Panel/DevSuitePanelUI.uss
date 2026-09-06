@@ -1,4 +1,5 @@
 @import "../PickSelection/PickSelectionPanel.uss";
+@import "../SelectionFrame/SelectionFrameView.uss";
 
 :root {
     --margin-size: 4px;

@@ -800,9 +800,6 @@ namespace Ff.DevSuite.View
 
                                 _context.SetSelectedGameObjects(range);
                                 _context.InspectorVisible = true;
-#if UNITY_EDITOR
-                                UnityEditor.Selection.objects = range.ToArray();
-#endif
                             }
                         }
                         else
@@ -1144,6 +1141,11 @@ namespace Ff.DevSuite.View
 #if UNITY_EDITOR
         private void HandleEditorSelectionChanged()
         {
+            if (_context != null && _context.IsSyncingEditorSelection)
+            {
+                return;
+            }
+
             var newSelection = UnityEditor.Selection.gameObjects;
             var selectionChanged = false;
             if (_context.SelectedGameObjects.Count != newSelection.Length)

@@ -16,16 +16,17 @@ namespace Ff.DevSuite.View
             public string Kind;
         }
 
+        private enum CandidateKind
+        {
+            TwoD,
+            ThreeD,
+        }
+
         private VisualElement _pickPopup;
         private ScrollView _pickPopupScrollView;
 
-        public PickSelectionPanelView(StyleSheet uss = null)
+        public PickSelectionPanelView(StyleSheet uss)
         {
-            if (uss != null)
-            {
-                styleSheets.Add(uss);
-            }
-
             AddToClassList("pick-selection-panel");
             pickingMode = PickingMode.Ignore;
 
@@ -165,13 +166,10 @@ namespace Ff.DevSuite.View
             }
         }
 
-        private void CreatePickPopup(StyleSheet uss = null)
+        private void CreatePickPopup(StyleSheet uss)
         {
             _pickPopup = new VisualElement();
-            if (uss != null && !_pickPopup.styleSheets.Contains(uss))
-            {
-                _pickPopup.styleSheets.Add(uss);
-            }
+            _pickPopup.styleSheets.Add(uss);
             _pickPopup.AddToClassList("pick-selection-popup");
             _pickPopup.style.display = DisplayStyle.None;
             _pickPopup.pickingMode = PickingMode.Position;
@@ -194,11 +192,6 @@ namespace Ff.DevSuite.View
 
         private void ShowPickPopup(List<PickTarget> targets, Vector2 panelPos)
         {
-            if (_pickPopup == null)
-            {
-                CreatePickPopup();
-            }
-
             if (_pickPopup.parent != this)
             {
                 _pickPopup.RemoveFromHierarchy();
@@ -491,7 +484,7 @@ namespace Ff.DevSuite.View
                 AddTarget(item.go, "UI");
             }
 
-            // 3. Physics (3D and 2D) across cameras
+            // 3. Scene objects by AABB across cameras (3D and 2D)
             var cameras = Camera.allCameras;
             if (cameras == null || cameras.Length == 0)
             {
@@ -507,6 +500,16 @@ namespace Ff.DevSuite.View
 
             if (cameras != null)
             {
+                if (cameras.Length > 1)
+                {
+                    Array.Sort(cameras, (a, b) => b.depth.CompareTo(a.depth));
+                }
+
+                // Cache active scene renderers and colliders
+                var allRenderers = Object.FindObjectsOfType<Renderer>();
+                var allColliders3D = Object.FindObjectsOfType<Collider>();
+                var allColliders2D = Object.FindObjectsOfType<Collider2D>();
+
                 foreach (var cam in cameras)
                 {
                     if (cam == null || !cam.gameObject.activeInHierarchy || !cam.enabled)
@@ -515,31 +518,128 @@ namespace Ff.DevSuite.View
                     }
 
                     var ray = cam.ScreenPointToRay(mousePos);
+                    var candidates = new List<(GameObject go, CandidateKind kind, float hitDistance, float volume, int depth)>();
+                    var candidateIds = new HashSet<int>();
 
-                    var hits3d = Physics.RaycastAll(ray);
-                    if (hits3d != null && hits3d.Length > 0)
+                    void CheckCandidate(GameObject go, Bounds bounds, CandidateKind kind)
                     {
-                        Array.Sort(hits3d, (a, b) => a.distance.CompareTo(b.distance));
-                        foreach (var hit in hits3d)
+                        if (go == null || !go.activeInHierarchy || IsGameObjectInDevSuite(go))
                         {
-                            if (hit.collider != null && !IsGameObjectInDevSuite(hit.collider.gameObject))
-                            {
-                                AddTarget(hit.collider.gameObject, "3D");
-                            }
+                            return;
                         }
+
+                        if ((cam.cullingMask & (1 << go.layer)) == 0)
+                        {
+                            return;
+                        }
+
+                        if (bounds.size.x <= 0f && bounds.size.y <= 0f && bounds.size.z <= 0f)
+                        {
+                            return;
+                        }
+
+                        var testBounds = bounds;
+                        if (testBounds.size.z < 0.1f)
+                        {
+                            var sz = testBounds.size;
+                            sz.z = 1f;
+                            testBounds.size = sz;
+                        }
+
+                        float hitDistance;
+                        bool hit = false;
+                        if (testBounds.Contains(ray.origin))
+                        {
+                            hit = true;
+                            hitDistance = 0f;
+                        }
+                        else if (testBounds.IntersectRay(ray, out hitDistance))
+                        {
+                            hit = true;
+                        }
+
+                        if (!hit || hitDistance < 0f || (cam.farClipPlane > 0f && hitDistance > cam.farClipPlane))
+                        {
+                            return;
+                        }
+
+                        if (!candidateIds.Add(go.GetInstanceID()))
+                        {
+                            return;
+                        }
+
+                        var depth = 0;
+                        var t = go.transform.parent;
+                        while (t != null)
+                        {
+                            depth++;
+                            t = t.parent;
+                        }
+
+                        var volume = bounds.size.x * bounds.size.y * Mathf.Max(bounds.size.z, 1f);
+                        candidates.Add((go, kind, hitDistance, volume, depth));
                     }
 
-                    var hits2d = Physics2D.GetRayIntersectionAll(ray);
-                    if (hits2d != null && hits2d.Length > 0)
+                    // 1. Check all active Renderers
+                    foreach (var r in allRenderers)
                     {
-                        Array.Sort(hits2d, (a, b) => a.distance.CompareTo(b.distance));
-                        foreach (var hit2d in hits2d)
+                        if (r == null || !r.enabled || !r.gameObject.activeInHierarchy)
                         {
-                            if (hit2d.collider != null && !IsGameObjectInDevSuite(hit2d.collider.gameObject))
-                            {
-                                AddTarget(hit2d.collider.gameObject, "2D");
-                            }
+                            continue;
                         }
+
+                        var is2D = r is SpriteRenderer || r.GetComponent<SpriteRenderer>() != null || r.GetComponent<Collider2D>() != null || cam.orthographic;
+                        var kind = is2D ? CandidateKind.TwoD : CandidateKind.ThreeD;
+                        CheckCandidate(r.gameObject, r.bounds, kind);
+                    }
+
+                    // 2. Check 3D Colliders (for GameObjects without renderers)
+                    foreach (var col in allColliders3D)
+                    {
+                        if (col == null || !col.enabled || !col.gameObject.activeInHierarchy)
+                        {
+                            continue;
+                        }
+
+                        if (col.GetComponent<Renderer>() != null)
+                        {
+                            continue;
+                        }
+
+                        CheckCandidate(col.gameObject, col.bounds, CandidateKind.ThreeD);
+                    }
+
+                    // 3. Check 2D Colliders
+                    foreach (var col2d in allColliders2D)
+                    {
+                        if (col2d == null || !col2d.enabled || !col2d.gameObject.activeInHierarchy)
+                        {
+                            continue;
+                        }
+
+                        CheckCandidate(col2d.gameObject, col2d.bounds, CandidateKind.TwoD);
+                    }
+
+                    candidates.Sort((a, b) =>
+                    {
+                        var distDiff = a.hitDistance.CompareTo(b.hitDistance);
+                        if (Mathf.Abs(a.hitDistance - b.hitDistance) > 0.01f)
+                        {
+                            return distDiff;
+                        }
+
+                        var volDiff = a.volume.CompareTo(b.volume);
+                        if (volDiff != 0)
+                        {
+                            return volDiff;
+                        }
+
+                        return b.depth.CompareTo(a.depth);
+                    });
+
+                    foreach (var candidate in candidates)
+                    {
+                        AddTarget(candidate.go, candidate.kind == CandidateKind.TwoD ? "2D" : "3D");
                     }
                 }
             }
