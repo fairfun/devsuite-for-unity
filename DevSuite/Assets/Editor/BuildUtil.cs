@@ -13,6 +13,19 @@ public static class BuildUtil
         PerformBuild(BuildTarget.WebGL, "Build/WebGL");
     }
 
+    [MenuItem("Build/Build Sample WebGL")]
+    public static void BuildSampleWebGL()
+    {
+        var sampleScene = GetSampleScenePath();
+        if (string.IsNullOrEmpty(sampleScene))
+        {
+            Debug.LogError("[BuildUtil] Could not locate Asteroids sample scene!");
+            return;
+        }
+
+        PerformBuild(BuildTarget.WebGL, "Build/WebGL_Sample", new[] { sampleScene });
+    }
+
     [MenuItem("Build/Build Linux")]
     public static void BuildLinux()
     {
@@ -25,10 +38,39 @@ public static class BuildUtil
         PerformBuild(BuildTarget.Android, "Build/Android");
     }
 
+    private const string SampleSceneDefaultPath = "Assets/Samples/Asteroids/Asteroids.unity";
+
+    public static string GetSampleScenePath()
+    {
+        if (File.Exists(SampleSceneDefaultPath))
+        {
+            return SampleSceneDefaultPath;
+        }
+
+        var guids = AssetDatabase.FindAssets("t:Scene Asteroids");
+        foreach (var guid in guids)
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            if (path.EndsWith("Asteroids.unity", StringComparison.OrdinalIgnoreCase))
+            {
+                return path;
+            }
+        }
+
+        const string packageSamplesPath = "Assets/DevSuite/Samples~/Asteroids/Asteroids.unity";
+        if (File.Exists(packageSamplesPath))
+        {
+            return packageSamplesPath;
+        }
+
+        return SampleSceneDefaultPath;
+    }
+
     public static void Build()
     {
         var target = BuildTarget.WebGL;
         var outputPath = "Build/WebGL";
+        string[] customScenes = null;
 
         var args = Environment.GetCommandLineArgs();
         for (var i = 0; i < args.Length; i++)
@@ -44,12 +86,20 @@ public static class BuildUtil
             {
                 outputPath = args[i + 1];
             }
+            if (args[i] == "-sampleScene")
+            {
+                customScenes = new[] { GetSampleScenePath() };
+            }
+            if (args[i] == "-scenePath" && i + 1 < args.Length)
+            {
+                customScenes = new[] { args[i + 1] };
+            }
         }
 
-        PerformBuild(target, outputPath);
+        PerformBuild(target, outputPath, customScenes);
     }
 
-    private static void PerformBuild(BuildTarget target, string outputPath)
+    private static void PerformBuild(BuildTarget target, string outputPath, string[] customScenes = null)
     {
         if (target == BuildTarget.Android && !outputPath.EndsWith(".apk", StringComparison.OrdinalIgnoreCase))
         {
@@ -88,10 +138,12 @@ public static class BuildUtil
 
         var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
 
-        var scenes = EditorBuildSettings.scenes
-            .Where(s => s.enabled)
-            .Select(s => s.path)
-            .ToArray();
+        var scenes = customScenes != null && customScenes.Length > 0
+            ? customScenes
+            : EditorBuildSettings.scenes
+                .Where(s => s.enabled)
+                .Select(s => s.path)
+                .ToArray();
 
         if (scenes.Length == 0)
         {

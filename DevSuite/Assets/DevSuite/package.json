@@ -15,5 +15,12 @@
     "utility",
     "tool"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "samples": [
+    {
+      "displayName": "Asteroids Game",
+      "description": "A simple Asteroids sample game demonstrating DevSuite commands, inspector, hierarchy, and runtime troubleshooting.",
+      "path": "Samples~/Asteroids"
+    }
+  ]
 }
