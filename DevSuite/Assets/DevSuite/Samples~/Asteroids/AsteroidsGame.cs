@@ -86,6 +86,7 @@ namespace Ff.DevSuite.Samples.Asteroids
             _isGameOver = false;
             ClearAsteroids();
             ClearBullets();
+            ClearDebris();
 
             if (_ship != null)
             {
@@ -212,6 +213,8 @@ namespace Ff.DevSuite.Samples.Asteroids
                 DevSuiteContext.Default.CommandsApi?.UnregisterValuesProvider(_asteroidValuesProvider);
             }
 
+            ClearDebris();
+
             if (_lineMaterial != null)
             {
                 DestroyImmediate(_lineMaterial);
@@ -222,6 +225,7 @@ namespace Ff.DevSuite.Samples.Asteroids
         {
             UpdateScreenBounds();
             UpdateUI();
+            UpdateDebris();
 
             if (_isGameOver)
             {
@@ -234,7 +238,6 @@ namespace Ff.DevSuite.Samples.Asteroids
 
             HandleInput();
             CheckCollisions();
-            UpdateDebris();
 
             if (_asteroids.Count == 0 && !_isGameOver)
             {
@@ -558,6 +561,18 @@ namespace Ff.DevSuite.Samples.Asteroids
                 deb.Renderer.SetPosition(0, deb.Position);
                 deb.Renderer.SetPosition(1, deb.Position + deb.Direction);
             }
+        }
+
+        private void ClearDebris()
+        {
+            for (var i = _debris.Count - 1; i >= 0; i--)
+            {
+                if (_debris[i]?.GameObject != null)
+                {
+                    Destroy(_debris[i].GameObject);
+                }
+            }
+            _debris.Clear();
         }
 
         private void CreateUI()
