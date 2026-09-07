@@ -591,23 +591,33 @@ namespace Ff.DevSuite
             ).StartingIn(500);
         }
 
-        private static readonly Regex AllUppercaseLetters = new(@"([A-Z]|[0-9]+)|( +)", RegexOptions.Compiled);
-        private const string AllUppercaseLettersReplacement = @"[a-z_\- ]*$1";
+        private static readonly Regex AllUppercaseLetters = new(@"([A-Z]|[0-9]+)|(?:\\ )+", RegexOptions.Compiled);
 
         public static readonly Regex AlwaysMatch = new(@".*", RegexOptions.Compiled);
         public static readonly Regex NeverMatch = new(@"\A(?!x)x", RegexOptions.Compiled);
 
         public static Regex GetSmartSearchRegex(string text)
         {
-            if (string.IsNullOrEmpty(text))
+            if (string.IsNullOrWhiteSpace(text))
             {
                 return AlwaysMatch;
             }
 
-            text = Regex.Escape(text);
-            var regexExpression = AllUppercaseLetters.Replace(text, AllUppercaseLettersReplacement);
-            regexExpression = $"(?i){regexExpression}";
-            return new Regex(regexExpression, RegexOptions.Compiled);
+            try
+            {
+                text = Regex.Replace(text.Trim(), @"\s+", " ");
+                text = Regex.Escape(text);
+                var regexExpression = AllUppercaseLetters.Replace(
+                    text,
+                    m => m.Groups[1].Success ? $@"[a-z_\- ]*{m.Groups[1].Value}" : @".*?"
+                );
+                regexExpression = $"(?i){regexExpression}";
+                return new Regex(regexExpression, RegexOptions.Compiled);
+            }
+            catch (Exception)
+            {
+                return NeverMatch;
+            }
         }
 
         public static double Length(this NumberRange<double> range)

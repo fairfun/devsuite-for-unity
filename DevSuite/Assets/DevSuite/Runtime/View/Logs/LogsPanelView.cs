@@ -1086,6 +1086,13 @@ namespace Ff.DevSuite.View
                 return;
             }
 
+            if (newText != null && (newText.Contains('\n') || newText.Contains('\r')))
+            {
+                var cleaned = newText.Replace("\r", " ").Replace("\n", " ");
+                _filterField.SetValueWithoutNotify(cleaned);
+                newText = cleaned;
+            }
+
             _context.LogsPattern = newText;
         }
 

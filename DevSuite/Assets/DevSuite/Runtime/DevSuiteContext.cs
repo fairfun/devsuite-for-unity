@@ -1325,7 +1325,9 @@ namespace Ff.DevSuite
             try
             {
                 _logsFilterRegex = LogsRegex
-                    ? new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase)
+                    ? (string.IsNullOrWhiteSpace(pattern)
+                        ? DevSuiteUtils.AlwaysMatch
+                        : new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase))
                     : DevSuiteUtils.GetSmartSearchRegex(pattern);
             }
             catch (Exception)
@@ -1954,7 +1956,7 @@ namespace Ff.DevSuite
 
         private bool CheckSearchPattern(string id, string pattern)
         {
-            if (string.IsNullOrEmpty(pattern))
+            if (string.IsNullOrWhiteSpace(pattern))
             {
                 return true;
             }
