@@ -166,6 +166,8 @@ namespace Ff.DevSuite.View
             }
         }
 
+        private Vector2 _lastPanelPos;
+
         private void CreatePickPopup(StyleSheet uss)
         {
             _pickPopup = new VisualElement();
@@ -173,6 +175,7 @@ namespace Ff.DevSuite.View
             _pickPopup.AddToClassList("pick-selection-popup");
             _pickPopup.style.display = DisplayStyle.None;
             _pickPopup.pickingMode = PickingMode.Position;
+            _pickPopup.RegisterCallback<GeometryChangedEvent>(OnPopupGeometryChanged);
 
             _pickPopupScrollView = new ScrollView();
             _pickPopupScrollView.AddToClassList("pick-selection-popup-scroll");
@@ -180,6 +183,27 @@ namespace Ff.DevSuite.View
             _pickPopup.Add(_pickPopupScrollView);
 
             Add(_pickPopup);
+        }
+
+        private void OnPopupGeometryChanged(GeometryChangedEvent evt)
+        {
+            if (_pickPopup == null || _pickPopup.style.display == DisplayStyle.None)
+            {
+                return;
+            }
+
+            if (Mathf.Approximately(evt.oldRect.width, evt.newRect.width) &&
+                Mathf.Approximately(evt.oldRect.height, evt.newRect.height))
+            {
+                return;
+            }
+
+            if (evt.newRect.width <= 0 || evt.newRect.height <= 0)
+            {
+                return;
+            }
+
+            PositionPickPopup(_pickPopup, _lastPanelPos, evt.newRect.width, evt.newRect.height);
         }
 
         private void HidePickPopup()
@@ -198,7 +222,11 @@ namespace Ff.DevSuite.View
                 Add(_pickPopup);
             }
 
+            _lastPanelPos = panelPos;
             _pickPopupScrollView.Clear();
+
+            var validCount = 0;
+            var maxNameLength = 0;
 
             foreach (var target in targets)
             {
@@ -206,6 +234,12 @@ namespace Ff.DevSuite.View
                 if (go == null)
                 {
                     continue;
+                }
+
+                validCount++;
+                if (go.name != null && go.name.Length > maxNameLength)
+                {
+                    maxNameLength = go.name.Length;
                 }
 
                 var row = new Button(() => SelectPickedObject(go));
@@ -225,10 +259,20 @@ namespace Ff.DevSuite.View
                 _pickPopupScrollView.Add(row);
             }
 
+            if (validCount == 0)
+            {
+                HidePickPopup();
+                return;
+            }
+
             _pickPopup.style.display = DisplayStyle.Flex;
             _pickPopup.BringToFront();
 
-            PositionPickPopup(_pickPopup, panelPos);
+            // Height estimate: 8px (padding 3*2 + border 1*2) + 23px per item (22px row + 1px margin)
+            var estimatedHeight = Mathf.Min(390f, 8f + validCount * 23f);
+            var estimatedWidth = Mathf.Clamp(maxNameLength * 7.5f + 60f, 180f, 340f);
+
+            PositionPickPopup(_pickPopup, panelPos, estimatedWidth, estimatedHeight);
         }
 
         private static string GetBadgeClassForKind(string kind) => kind switch
@@ -240,7 +284,7 @@ namespace Ff.DevSuite.View
             _ => "badge-default"
         };
 
-        private void PositionPickPopup(VisualElement popup, Vector2 panelPos)
+        private void PositionPickPopup(VisualElement popup, Vector2 panelPos, float? knownWidth = null, float? knownHeight = null)
         {
             if (popup == null)
             {
@@ -253,6 +297,14 @@ namespace Ff.DevSuite.View
             {
                 rootWidth = container.resolvedStyle.width;
             }
+            if ((float.IsNaN(rootWidth) || rootWidth <= 0) && container.panel?.visualTree != null)
+            {
+                rootWidth = container.panel.visualTree.layout.width;
+                if (float.IsNaN(rootWidth) || rootWidth <= 0)
+                {
+                    rootWidth = container.panel.visualTree.resolvedStyle.width;
+                }
+            }
             if (float.IsNaN(rootWidth) || rootWidth <= 0)
             {
                 rootWidth = Screen.width > 0 ? Screen.width : 800f;
@@ -263,29 +315,54 @@ namespace Ff.DevSuite.View
             {
                 rootHeight = container.resolvedStyle.height;
             }
+            if ((float.IsNaN(rootHeight) || rootHeight <= 0) && container.panel?.visualTree != null)
+            {
+                rootHeight = container.panel.visualTree.layout.height;
+                if (float.IsNaN(rootHeight) || rootHeight <= 0)
+                {
+                    rootHeight = container.panel.visualTree.resolvedStyle.height;
+                }
+            }
             if (float.IsNaN(rootHeight) || rootHeight <= 0)
             {
                 rootHeight = Screen.height > 0 ? Screen.height : 600f;
             }
 
-            var popupWidth = popup.layout.width;
-            if (float.IsNaN(popupWidth) || popupWidth <= 0)
+            var popupWidth = 0f;
+            if (knownWidth.HasValue && knownWidth.Value > 0)
             {
-                popupWidth = popup.resolvedStyle.width;
+                popupWidth = knownWidth.Value;
             }
-            if (float.IsNaN(popupWidth) || popupWidth <= 0)
+            else
             {
-                popupWidth = 220f;
+                popupWidth = popup.layout.width;
+                if (float.IsNaN(popupWidth) || popupWidth <= 0)
+                {
+                    popupWidth = popup.resolvedStyle.width;
+                }
+                if (float.IsNaN(popupWidth) || popupWidth <= 0)
+                {
+                    popupWidth = 220f;
+                }
             }
 
-            var popupHeight = popup.layout.height;
-            if (float.IsNaN(popupHeight) || popupHeight <= 0)
+            var popupHeight = 0f;
+            if (knownHeight.HasValue && knownHeight.Value > 0)
             {
-                popupHeight = popup.resolvedStyle.height;
+                popupHeight = knownHeight.Value;
             }
-            if (float.IsNaN(popupHeight) || popupHeight <= 0)
+            else
             {
-                popupHeight = 225f;
+                popupHeight = popup.layout.height;
+                if (float.IsNaN(popupHeight) || popupHeight <= 0)
+                {
+                    popupHeight = popup.resolvedStyle.height;
+                }
+                if (float.IsNaN(popupHeight) || popupHeight <= 0)
+                {
+                    var childCount = _pickPopupScrollView != null ? _pickPopupScrollView.childCount : 0;
+                    popupHeight = childCount > 0 ? Mathf.Min(390f, 8f + childCount * 23f) : 31f;
+                }
             }
 
             var mouseInContainer = container.WorldToLocal(panelPos);
