@@ -13,14 +13,15 @@ namespace Ff.DevSuite.View
         private readonly VisualElement _tagsContainer;
         private readonly List<SelectionTagElement> _tagPool = new();
 
+        private const float FillAlpha = 0.22f;
         private static readonly Color Color3D = new(0.22f, 0.74f, 0.97f, 0.9f); // Cyan #38bdf8
-        private static readonly Color Color3DFill = new(0.22f, 0.74f, 0.97f, 0.05f);
+        private static readonly Color Color3DFill = new(0.22f, 0.74f, 0.97f, FillAlpha);
         private static readonly Color Color2D = new(0.06f, 0.72f, 0.51f, 0.9f); // Emerald #10b981
-        private static readonly Color Color2DFill = new(0.06f, 0.72f, 0.51f, 0.05f);
+        private static readonly Color Color2DFill = new(0.06f, 0.72f, 0.51f, FillAlpha);
         private static readonly Color ColorUI = new(0.96f, 0.62f, 0.04f, 0.9f); // Amber #f59e0b
-        private static readonly Color ColorUIFill = new(0.96f, 0.62f, 0.04f, 0.05f);
+        private static readonly Color ColorUIFill = new(0.96f, 0.62f, 0.04f, FillAlpha);
         private static readonly Color ColorDefault = new(0.8f, 0.8f, 0.85f, 0.9f);
-        private static readonly Color ColorDefaultFill = new(0.8f, 0.8f, 0.85f, 0.05f);
+        private static readonly Color ColorDefaultFill = new(0.8f, 0.8f, 0.85f, FillAlpha);
 
         private static readonly (int, int)[] BoxEdges =
         {
@@ -28,6 +29,8 @@ namespace Ff.DevSuite.View
             (4, 5), (5, 6), (6, 7), (7, 4), // Top
             (0, 4), (1, 5), (2, 6), (3, 7), // Vertical pillars
         };
+
+        private readonly (Vector2 pA, Vector2 pB)[] _edgesBuffer = new (Vector2, Vector2)[BoxEdges.Length];
 
         public SelectionFrameView(StyleSheet uss)
         {
@@ -301,8 +304,8 @@ namespace Ff.DevSuite.View
             var center = bounds.center;
             var ext = bounds.extents;
 
-            var extX = Mathf.Max(ext.x, 0.2f);
-            var extY = Mathf.Max(ext.y, 0.2f);
+            var extX = Mathf.Max(ext.x, 0.01f);
+            var extY = Mathf.Max(ext.y, 0.01f);
 
             var w0 = new Vector3(center.x - extX, center.y - extY, center.z);
             var w1 = new Vector3(center.x + extX, center.y - extY, center.z);
@@ -392,17 +395,34 @@ namespace Ff.DevSuite.View
                 {
                     screenMinX = pA.x;
                 }
+                if (pA.x > screenMaxX)
+                {
+                    screenMaxX = pA.x;
+                }
                 if (pA.y < screenMinY)
                 {
                     screenMinY = pA.y;
                 }
+                if (pA.y > screenMaxY)
+                {
+                    screenMaxY = pA.y;
+                }
+
                 if (pB.x < screenMinX)
                 {
                     screenMinX = pB.x;
                 }
+                if (pB.x > screenMaxX)
+                {
+                    screenMaxX = pB.x;
+                }
                 if (pB.y < screenMinY)
                 {
                     screenMinY = pB.y;
+                }
+                if (pB.y > screenMaxY)
+                {
+                    screenMaxY = pB.y;
                 }
 
                 anyVisible = true;
@@ -642,8 +662,8 @@ namespace Ff.DevSuite.View
             var center = bounds.center;
             var ext = bounds.extents;
 
-            var extX = Mathf.Max(ext.x, 0.2f);
-            var extY = Mathf.Max(ext.y, 0.2f);
+            var extX = Mathf.Max(ext.x, 0.01f);
+            var extY = Mathf.Max(ext.y, 0.01f);
 
             var w0 = new Vector3(center.x - extX, center.y - extY, center.z);
             var w1 = new Vector3(center.x + extX, center.y - extY, center.z);
@@ -720,13 +740,8 @@ namespace Ff.DevSuite.View
             var zNear = cam.nearClipPlane + 0.02f;
             float screenMinX = float.MaxValue, screenMaxX = float.MinValue;
             float screenMinY = float.MaxValue, screenMaxY = float.MinValue;
-            var anyVisible = false;
+            var visibleCount = 0;
 
-            painter.lineWidth = 1.5f;
-            painter.strokeColor = strokeColor;
-            painter.lineCap = LineCap.Round;
-
-            // Draw 12 edges of 3D AABB with near plane clipping
             for (var i = 0; i < BoxEdges.Length; i++)
             {
                 var (idxA, idxB) = BoxEdges[i];
@@ -738,7 +753,7 @@ namespace Ff.DevSuite.View
 
                 if (lA.z < zNear && lB.z < zNear)
                 {
-                    continue; // Entire edge behind near plane
+                    continue;
                 }
 
                 var finalWA = wA;
@@ -760,10 +775,7 @@ namespace Ff.DevSuite.View
                 var pA = WorldToPanel(finalWA, cam);
                 var pB = WorldToPanel(finalWB, cam);
 
-                painter.BeginPath();
-                painter.MoveTo(pA);
-                painter.LineTo(pB);
-                painter.Stroke();
+                _edgesBuffer[visibleCount++] = (pA, pB);
 
                 if (pA.x < screenMinX)
                 {
@@ -798,23 +810,19 @@ namespace Ff.DevSuite.View
                 {
                     screenMaxY = pB.y;
                 }
-
-                anyVisible = true;
             }
 
-            if (!anyVisible)
+            if (visibleCount == 0)
             {
                 return;
             }
 
-            // Draw outer corner brackets with padding
             const float padding = 4f;
             screenMinX -= padding;
             screenMaxX += padding;
             screenMinY -= padding;
             screenMaxY += padding;
 
-            // Subtle 2D fill
             painter.fillColor = fillColor;
             painter.BeginPath();
             painter.MoveTo(new Vector2(screenMinX, screenMinY));
@@ -823,6 +831,18 @@ namespace Ff.DevSuite.View
             painter.LineTo(new Vector2(screenMinX, screenMaxY));
             painter.ClosePath();
             painter.Fill();
+
+            painter.lineWidth = 1.5f;
+            painter.strokeColor = strokeColor;
+            painter.lineCap = LineCap.Round;
+
+            for (var i = 0; i < visibleCount; i++)
+            {
+                painter.BeginPath();
+                painter.MoveTo(_edgesBuffer[i].pA);
+                painter.LineTo(_edgesBuffer[i].pB);
+                painter.Stroke();
+            }
 
             DrawCornerBrackets(painter, screenMinX, screenMinY, screenMaxX, screenMaxY, strokeColor);
         }
@@ -849,6 +869,15 @@ namespace Ff.DevSuite.View
             var maxX = p.x + size;
             var minY = p.y - size;
             var maxY = p.y + size;
+
+            painter.fillColor = ColorDefaultFill;
+            painter.BeginPath();
+            painter.MoveTo(new Vector2(minX, minY));
+            painter.LineTo(new Vector2(maxX, minY));
+            painter.LineTo(new Vector2(maxX, maxY));
+            painter.LineTo(new Vector2(minX, maxY));
+            painter.ClosePath();
+            painter.Fill();
 
             DrawCornerBrackets(painter, minX, minY, maxX, maxY, ColorDefault);
 
@@ -968,12 +997,12 @@ namespace Ff.DevSuite.View
                     continue;
                 }
 
-                if (r is SpriteRenderer)
+                if (r is SpriteRenderer || r is LineRenderer)
                 {
                     is2D = true;
                 }
 
-                var rBounds = r.bounds;
+                var rBounds = GetRendererBounds(r);
                 if (rBounds.size.x <= 0f && rBounds.size.y <= 0f && rBounds.size.z <= 0f)
                 {
                     continue;
@@ -991,58 +1020,118 @@ namespace Ff.DevSuite.View
                 }
             }
 
-            var colliders2d = go.GetComponentsInChildren<Collider2D>(false);
-            foreach (var c2d in colliders2d)
+            if (!hasRenderer)
             {
-                if (c2d == null || !c2d.enabled)
+                var colliders2d = go.GetComponentsInChildren<Collider2D>(false);
+                foreach (var c2d in colliders2d)
                 {
-                    continue;
+                    if (c2d == null || !c2d.enabled)
+                    {
+                        continue;
+                    }
+
+                    is2D = true;
+                    var cBounds = c2d.bounds;
+                    if (cBounds.size.x <= 0f && cBounds.size.y <= 0f && cBounds.size.z <= 0f)
+                    {
+                        continue;
+                    }
+
+                    if (!hasBounds)
+                    {
+                        bounds = cBounds;
+                        hasBounds = true;
+                    }
+                    else
+                    {
+                        bounds.Encapsulate(cBounds);
+                    }
                 }
 
-                is2D = true;
-                var cBounds = c2d.bounds;
-                if (cBounds.size.x <= 0f && cBounds.size.y <= 0f && cBounds.size.z <= 0f)
+                var colliders = go.GetComponentsInChildren<Collider>(false);
+                foreach (var c in colliders)
                 {
-                    continue;
-                }
+                    if (c == null || !c.enabled)
+                    {
+                        continue;
+                    }
 
-                if (!hasBounds)
-                {
-                    bounds = cBounds;
-                    hasBounds = true;
-                }
-                else
-                {
-                    bounds.Encapsulate(cBounds);
-                }
-            }
+                    var cBounds = c.bounds;
+                    if (cBounds.size.x <= 0f && cBounds.size.y <= 0f && cBounds.size.z <= 0f)
+                    {
+                        continue;
+                    }
 
-            var colliders = go.GetComponentsInChildren<Collider>(false);
-            foreach (var c in colliders)
-            {
-                if (c == null || !c.enabled)
-                {
-                    continue;
-                }
-
-                var cBounds = c.bounds;
-                if (cBounds.size.x <= 0f && cBounds.size.y <= 0f && cBounds.size.z <= 0f)
-                {
-                    continue;
-                }
-
-                if (!hasBounds)
-                {
-                    bounds = cBounds;
-                    hasBounds = true;
-                }
-                else
-                {
-                    bounds.Encapsulate(cBounds);
+                    if (!hasBounds)
+                    {
+                        bounds = cBounds;
+                        hasBounds = true;
+                    }
+                    else
+                    {
+                        bounds.Encapsulate(cBounds);
+                    }
                 }
             }
 
             return hasBounds;
+        }
+
+        private static Bounds GetRendererBounds(Renderer r)
+        {
+            if (r is LineRenderer lr && lr.positionCount > 0)
+            {
+                return GetLineRendererBounds(lr);
+            }
+
+            return r.bounds;
+        }
+
+        private static Bounds GetLineRendererBounds(LineRenderer lr)
+        {
+            var count = lr.positionCount;
+            if (count == 0)
+            {
+                return lr.bounds;
+            }
+
+            var useWorldSpace = lr.useWorldSpace;
+            var xform = lr.transform;
+
+            var p0 = lr.GetPosition(0);
+            if (!useWorldSpace)
+            {
+                p0 = xform.TransformPoint(p0);
+            }
+
+            var min = p0;
+            var max = p0;
+
+            for (var i = 1; i < count; i++)
+            {
+                var p = lr.GetPosition(i);
+                if (!useWorldSpace)
+                {
+                    p = xform.TransformPoint(p);
+                }
+
+                if (p.x < min.x) min.x = p.x;
+                if (p.y < min.y) min.y = p.y;
+                if (p.z < min.z) min.z = p.z;
+
+                if (p.x > max.x) max.x = p.x;
+                if (p.y > max.y) max.y = p.y;
+                if (p.z > max.z) max.z = p.z;
+            }
+
+            var bounds = new Bounds((min + max) * 0.5f, max - min);
+            var maxWidth = Mathf.Max(lr.startWidth, lr.endWidth) * lr.widthMultiplier;
+            if (maxWidth > 0f)
+            {
+                bounds.Expand(maxWidth);
+            }
+
+            return bounds;
         }
 
         private static Camera FindRenderingCamera(GameObject go)
