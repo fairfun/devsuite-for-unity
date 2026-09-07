@@ -56,6 +56,9 @@ namespace Ff.DevSuite.View
         [Header("Pick Selection")]
         [SerializeField] private StyleSheet _pickSelectionUss;
 
+        [Header("Selection Frame")]
+        [SerializeField] private StyleSheet _selectionFrameUss;
+
         private LogsPanelView _logsPanelView;
         private CommandsPanelView _commandsFullPanelView;
         private CommandsPanelView _commandsPinnedPanelView;
@@ -64,6 +67,7 @@ namespace Ff.DevSuite.View
         private HierarchyPanelView _hierarchyPanelView;
         private InspectorPanelView _inspectorPanelView;
         private PickSelectionPanelView _pickSelectionPanelView;
+        private SelectionFrameView _selectionFrameView;
 
         private VisualElement _logsContainer;
         private VisualElement _commandsFullContainer;
@@ -170,6 +174,10 @@ namespace Ff.DevSuite.View
             _inspectorContainer.Add(_inspectorPanelView);
             _inspectorPanelView.Initialize(_context);
 
+            _selectionFrameView = new SelectionFrameView(_selectionFrameUss);
+            root.Add(_selectionFrameView);
+            _selectionFrameView.Initialize(_context);
+
             _pickSelectionPanelView = new PickSelectionPanelView(_pickSelectionUss);
             root.Add(_pickSelectionPanelView);
             _pickSelectionPanelView.Initialize(_context);
@@ -200,6 +208,7 @@ namespace Ff.DevSuite.View
             _hierarchyPanelView?.Reset();
             _inspectorPanelView?.Reset();
             _pickSelectionPanelView?.Reset();
+            _selectionFrameView?.Reset();
         }
 
         private void ApplyColors(VisualElement root)

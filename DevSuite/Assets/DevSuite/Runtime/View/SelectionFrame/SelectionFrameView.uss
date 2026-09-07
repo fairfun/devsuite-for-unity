@@ -1,0 +1,85 @@
+@import "../Common.uss";
+
+.devsuite-selection-frame-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Floating Selection Tag */
+.devsuite-selection-tag {
+    position: absolute;
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(18, 18, 22, 0.92);
+    border-width: 1px;
+    border-radius: 4px;
+    padding-left: 5px;
+    padding-right: 4px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    border-color: rgba(128, 128, 128, 0.6);
+}
+
+.devsuite-selection-tag-name {
+    font-size: 10px;
+    color: rgb(242, 242, 247);
+    -unity-font-style: bold;
+    margin: 0;
+    padding: 0;
+}
+
+.devsuite-selection-tag-badge {
+    font-size: 9px;
+    margin-left: 4px;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 3px;
+    padding-right: 3px;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-radius: 3px;
+    -unity-text-align: middle-center;
+}
+
+/* Tag Category Variants */
+.devsuite-selection-tag.tag-3d {
+    border-color: rgba(56, 189, 248, 0.6);
+}
+
+.devsuite-selection-tag.tag-3d .devsuite-selection-tag-badge {
+    color: rgb(56, 189, 248);
+    background-color: rgba(56, 189, 248, 0.18);
+}
+
+.devsuite-selection-tag.tag-2d {
+    border-color: rgba(16, 185, 129, 0.6);
+}
+
+.devsuite-selection-tag.tag-2d .devsuite-selection-tag-badge {
+    color: rgb(16, 185, 129);
+    background-color: rgba(16, 185, 129, 0.18);
+}
+
+.devsuite-selection-tag.tag-ui {
+    border-color: rgba(245, 158, 11, 0.6);
+}
+
+.devsuite-selection-tag.tag-ui .devsuite-selection-tag-badge {
+    color: rgb(245, 158, 11);
+    background-color: rgba(245, 158, 11, 0.18);
+}
+
+.devsuite-selection-tag.tag-default {
+    border-color: rgba(200, 200, 210, 0.6);
+}
+
+.devsuite-selection-tag.tag-default .devsuite-selection-tag-badge {
+    color: rgb(200, 200, 210);
+    background-color: rgba(200, 200, 210, 0.18);
+}

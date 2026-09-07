@@ -337,6 +337,17 @@ namespace Ff.DevSuite
                 Assert(!def1.Ready, "SavedPrefs.Default is not ready after Invalidate");
                 var def2 = SavedPrefs.Default;
                 Assert(ReferenceEquals(def1, def2), "SavedPrefs.Default instance is preserved (not cleared)");
+
+                // Test 17: ShowSelectionFrame default and persistent settings synchronization
+                Assert(context.ShowSelectionFrame, "ShowSelectionFrame is ON by default");
+                context.ShowSelectionFrame = false;
+                Assert(!context.ShowSelectionFrame, "ShowSelectionFrame can be toggled OFF");
+                Assert(!context.Settings.Value.ShowSelectionFrame, "ShowSelectionFrame OFF persisted to settings");
+                context.ShowSelectionFrame = true;
+                Assert(context.ShowSelectionFrame, "ShowSelectionFrame can be toggled back ON");
+                Assert(context.Settings.Value.ShowSelectionFrame, "ShowSelectionFrame ON persisted to settings");
+                context.ClearSettings();
+                Assert(context.ShowSelectionFrame, "ShowSelectionFrame is restored to ON after ClearSettings");
             }
             finally
             {

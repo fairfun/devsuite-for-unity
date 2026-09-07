@@ -16,6 +16,7 @@ namespace Ff.DevSuite.View
         private readonly Button _refreshBtn;
         private readonly Button _autoRefreshBtn;
         private readonly Button _autoPauseBtn;
+        private readonly Button _selectionFrameBtn;
         private readonly Button _unselectAllBtn;
         private readonly Button _copyBtn;
         private readonly Toggle _goActivityToggle;
@@ -167,6 +168,16 @@ namespace Ff.DevSuite.View
                 };
             }
 
+            _selectionFrameBtn = root.Q<Button>("selectionFrameBtn");
+            if (_selectionFrameBtn != null)
+            {
+                _selectionFrameBtn.clicked += () =>
+                {
+                    _context.ShowSelectionFrame = !_context.ShowSelectionFrame;
+                    UpdateButtonStates();
+                };
+            }
+
             _unselectAllBtn = root.Q<Button>("unselectAllBtn");
             if (_unselectAllBtn != null)
             {
@@ -224,6 +235,7 @@ namespace Ff.DevSuite.View
         {
             _autoRefreshBtn?.EnableInClassList("active", _context.InspectorAutoRefresh);
             _autoPauseBtn?.EnableInClassList("active", _context.InspectorAutoPause);
+            _selectionFrameBtn?.EnableInClassList("active", _context.ShowSelectionFrame);
             _unselectAllBtn?.EnableInClassList("has-selection", _context.SelectedGameObjects.Count > 0);
         }
 

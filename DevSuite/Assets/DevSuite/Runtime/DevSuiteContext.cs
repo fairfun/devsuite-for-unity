@@ -47,7 +47,6 @@ namespace Ff.DevSuite
         void RegisterPerformanceGraph<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider;
         void SetPerformanceGraphSettings<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider;
         Func<string> BuildVersionToDisplay { get; set; }
-        GameObject SelectedGameObject { get; set; }
         string GetAllLogsText();
         void ClearLogs();
         void ClearSettings();
@@ -258,6 +257,7 @@ namespace Ff.DevSuite
 
 #if UNITY_EDITOR
         private bool _isSyncingEditorSelection;
+        internal bool IsSyncingEditorSelection => _isSyncingEditorSelection;
 
         private void SyncEditorSelection()
         {
@@ -308,6 +308,13 @@ namespace Ff.DevSuite
 #endif
 
         private bool _isSelectedFromDevSuite;
+        internal bool IsSelectedFromDevSuite => _isSelectedFromDevSuite;
+
+        internal bool ShowSelectionFrame
+        {
+            get => !(Settings?.Ready ?? false) || Settings.Value.ShowSelectionFrame;
+            set => SetSettingsValue(() => Settings.Value.ShowSelectionFrame, v => Settings.Value.ShowSelectionFrame = v, value);
+        }
 
         internal void SetSelectedGameObjects(IEnumerable<GameObject> gameObjects)
         {
@@ -358,7 +365,7 @@ namespace Ff.DevSuite
             _onChangedDispatcher.Dispatch();
         }
 
-        public GameObject SelectedGameObject
+        internal GameObject SelectedGameObject
         {
             get => _selectedGameObjects.Count > 0 ? _selectedGameObjects[0] : null;
             set
@@ -2841,6 +2848,7 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(21)][Key(21)] public string HierarchyPattern { get; set; }
         [DataMember][MemoryPackOrder(22)][Key(22)] public Dictionary<string, string> VirtualButtonParameters { get; set; } = new();
         [DataMember][MemoryPackOrder(23)][Key(23)] public List<string> CliCommandHistory { get; set; } = new();
+        [DataMember][MemoryPackOrder(24)][Key(24)] public bool ShowSelectionFrame { get; set; } = true;
 
         public void InitializeDefaultsIfNeeded()
         {
