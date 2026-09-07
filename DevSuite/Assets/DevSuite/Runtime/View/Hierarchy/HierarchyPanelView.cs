@@ -11,6 +11,8 @@ namespace Ff.DevSuite.View
 {
     internal class HierarchyPanelView : VisualElement
     {
+        private const float RowHeight = 23f;
+
         private DevSuiteContext _context;
 
         private readonly Button _pickBtn;
@@ -28,10 +30,19 @@ namespace Ff.DevSuite.View
         private bool _searchByName = true;
         private bool _searchByType = true;
         private bool _keepDimmed = true;
+
         private readonly ScrollView _scrollView;
+        private readonly VisualElement _topSpacer;
+        private readonly VisualElement _rowsContainer;
+        private readonly VisualElement _bottomSpacer;
+
+        private readonly List<HierarchyRowView> _rowPool = new();
+        private readonly List<HierarchyItem> _flatItems = new();
+        private readonly HashSet<int> _selectedInstanceIdsCache = new();
 
         private HashSet<string> CollapsedSceneNames => _context.HierarchyCollapsedScenes;
         private HashSet<int> ExpandedGameObjectInstanceIds => _context.HierarchyExpandedGameObjects;
+
         private GameObject SelectionAnchor
         {
             get => _context.HierarchySelectionAnchor;
@@ -40,9 +51,6 @@ namespace Ff.DevSuite.View
 
         private readonly HashSet<int> _matchingInstanceIds = new();
         private readonly HashSet<int> _descendantMatchingInstanceIds = new();
-        private readonly Dictionary<int, VisualElement> _gameObjectRows = new();
-        private readonly Dictionary<int, (GameObject Go, Toggle Toggle)> _gameObjectActivityToggles = new();
-        private readonly List<VisualElement> _currentlySelectedRows = new();
 
         private Regex _searchRegex;
         private VisualElement _pickOverlay;
@@ -142,6 +150,27 @@ namespace Ff.DevSuite.View
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             DevSuiteUtils.SetupTooltips(this);
 
+            _topSpacer = new VisualElement { name = "hierarchyTopSpacer" };
+            _topSpacer.style.flexShrink = 0;
+            _topSpacer.style.flexGrow = 0;
+            _topSpacer.pickingMode = PickingMode.Ignore;
+            _scrollView.Add(_topSpacer);
+
+            _rowsContainer = new VisualElement { name = "hierarchyRowsContainer" };
+            _rowsContainer.style.flexShrink = 0;
+            _rowsContainer.style.flexGrow = 0;
+            _rowsContainer.style.flexDirection = FlexDirection.Column;
+            _scrollView.Add(_rowsContainer);
+
+            _bottomSpacer = new VisualElement { name = "hierarchyBottomSpacer" };
+            _bottomSpacer.style.flexShrink = 0;
+            _bottomSpacer.style.flexGrow = 0;
+            _bottomSpacer.pickingMode = PickingMode.Ignore;
+            _scrollView.Add(_bottomSpacer);
+
+            _scrollView.verticalScroller.valueChanged += _ => UpdateVisibleRows();
+            _scrollView.RegisterCallback<GeometryChangedEvent>(_ => UpdateVisibleRows());
+
             RegisterCallback<AttachToPanelEvent>(
                 evt =>
                 {
@@ -195,7 +224,7 @@ namespace Ff.DevSuite.View
             UpdateButtonStates();
             UpdateSearchRegex(_filterField.value);
             PrecomputeSearch();
-            RebuildTree();
+            RebuildFlatList();
         }
 
         public void Reset()
@@ -209,6 +238,9 @@ namespace Ff.DevSuite.View
                 _context.OnPickModeChanged -= HandlePickModeChanged;
                 _context.OnHierarchyChanged -= HandleHierarchyChanged;
             }
+
+            _flatItems.Clear();
+            UpdateVisibleRows();
         }
 
         private void HandlePickModeChanged(bool active)
@@ -323,36 +355,33 @@ namespace Ff.DevSuite.View
                 _keepDimmed = dim;
                 UpdateButtonStates();
                 HandleSearchOptionsChanged();
+                return;
             }
 
             if (_context.SelectedGameObject != null)
             {
-                var targetId = _context.SelectedGameObject.GetInstanceID();
-                if (!_gameObjectRows.ContainsKey(targetId))
+                var targetGo = _context.SelectedGameObject;
+                bool parentsExpanded = EnsureParentsExpanded(targetGo);
+                if (parentsExpanded)
                 {
-                    ExpandParents(_context.SelectedGameObject);
-                    RebuildTree();
+                    RebuildFlatList();
                 }
 
-                if (_gameObjectRows.TryGetValue(targetId, out var row))
+                int targetIndex = FindGameObjectIndex(targetGo);
+                if (targetIndex >= 0)
                 {
-                    SafeScrollTo(row);
+                    SafeScrollToIndex(targetIndex);
                 }
             }
 
             UpdateSelectionHighlight();
         }
 
-        private void SafeScrollTo(VisualElement row)
+        public void SafeScrollTo(VisualElement row)
         {
-            if (_scrollView == null || row == null)
+            if (row != null && _scrollView != null && _scrollView.panel != null)
             {
-                return;
-            }
-
-            _scrollView.schedule.Execute(() =>
-            {
-                if (_scrollView != null && _scrollView.panel != null && row != null && row.panel != null)
+                _scrollView.schedule.Execute(() =>
                 {
                     try
                     {
@@ -362,7 +391,53 @@ namespace Ff.DevSuite.View
                     {
                         // Ignore UI Toolkit internal measurement edge cases
                     }
+                });
+            }
+        }
+
+        public void SafeScrollTo(GameObject go)
+        {
+            int index = FindGameObjectIndex(go);
+            if (index >= 0)
+            {
+                SafeScrollToIndex(index);
+            }
+        }
+
+        private void SafeScrollToIndex(int targetIndex)
+        {
+            if (_scrollView == null || targetIndex < 0 || targetIndex >= _flatItems.Count)
+            {
+                return;
+            }
+
+            _scrollView.schedule.Execute(() =>
+            {
+                if (_scrollView == null || _scrollView.panel == null) return;
+
+                float viewportHeight = _scrollView.contentViewport.resolvedStyle.height;
+                if (float.IsNaN(viewportHeight) || viewportHeight <= 0)
+                {
+                    viewportHeight = _scrollView.resolvedStyle.height;
                 }
+                if (float.IsNaN(viewportHeight) || viewportHeight <= 0)
+                {
+                    viewportHeight = 400f;
+                }
+
+                float targetY = targetIndex * RowHeight;
+                float currentScrollY = _scrollView.scrollOffset.y;
+
+                if (targetY < currentScrollY)
+                {
+                    _scrollView.scrollOffset = new Vector2(_scrollView.scrollOffset.x, targetY);
+                }
+                else if (targetY + RowHeight > currentScrollY + viewportHeight)
+                {
+                    _scrollView.scrollOffset = new Vector2(_scrollView.scrollOffset.x, targetY + RowHeight - viewportHeight);
+                }
+
+                UpdateVisibleRows();
             });
         }
 
@@ -386,7 +461,7 @@ namespace Ff.DevSuite.View
             UpdateButtonStates();
             UpdateSearchRegex(_filterField.value);
             PrecomputeSearch();
-            RebuildTree();
+            RebuildFlatList();
         }
 
         private void HandleSearchChanged(string query)
@@ -522,10 +597,12 @@ namespace Ff.DevSuite.View
 
         private void RebuildTree()
         {
-            _scrollView.Clear();
-            _gameObjectRows.Clear();
-            _gameObjectActivityToggles.Clear();
-            _currentlySelectedRows.Clear();
+            RebuildFlatList();
+        }
+
+        private void RebuildFlatList()
+        {
+            _flatItems.Clear();
 
             for (var i = 0; i < SceneManager.sceneCount; i++)
             {
@@ -535,10 +612,175 @@ namespace Ff.DevSuite.View
                     continue;
                 }
 
-                RenderSceneNode(scene);
+                FlattenSceneNode(scene);
             }
 
+            UpdateVisibleRows();
             UpdateSelectionHighlight();
+        }
+
+        private void FlattenSceneNode(Scene scene)
+        {
+            var sceneName = scene.name;
+            var isExpanded = !CollapsedSceneNames.Contains(sceneName);
+
+            var sceneItem = new HierarchyItem
+            {
+                Type = HierarchyItemType.Scene,
+                Scene = scene,
+                SceneName = sceneName,
+                Depth = 0,
+                HasChildren = true,
+                IsExpanded = isExpanded,
+                IsMatching = true,
+                HasMatchingDescendant = false
+            };
+
+            _flatItems.Add(sceneItem);
+
+            if (isExpanded)
+            {
+                var rootObjects = scene.GetRootGameObjects();
+                for (var i = 0; i < rootObjects.Length; i++)
+                {
+                    FlattenGameObjectNode(rootObjects[i], 1);
+                }
+            }
+        }
+
+        private void FlattenGameObjectNode(GameObject go, int depth)
+        {
+            if (go == null) return;
+
+            var instanceId = go.GetInstanceID();
+            var isMatching = _searchRegex == null || _matchingInstanceIds.Contains(instanceId);
+            var hasMatchingDescendant = _searchRegex == null || _descendantMatchingInstanceIds.Contains(instanceId);
+
+            if (_searchRegex != null && !_keepDimmed && !isMatching && !hasMatchingDescendant)
+            {
+                return;
+            }
+
+            var transform = go.transform;
+            var childCount = transform.childCount;
+            var hasChildren = childCount > 0;
+            var isExpanded = ExpandedGameObjectInstanceIds.Contains(instanceId) || (_searchRegex != null && hasMatchingDescendant);
+
+            var item = new HierarchyItem
+            {
+                Type = HierarchyItemType.GameObject,
+                GameObject = go,
+                InstanceId = instanceId,
+                Depth = depth,
+                HasChildren = hasChildren,
+                IsExpanded = isExpanded,
+                IsMatching = isMatching,
+                HasMatchingDescendant = hasMatchingDescendant,
+                BadgeKind = null // Lazily evaluated on bind
+            };
+
+            _flatItems.Add(item);
+
+            if (hasChildren && isExpanded)
+            {
+                for (var i = 0; i < childCount; i++)
+                {
+                    var child = transform.GetChild(i);
+                    if (child != null)
+                    {
+                        FlattenGameObjectNode(child.gameObject, depth + 1);
+                    }
+                }
+            }
+        }
+
+        private void UpdateVisibleRows()
+        {
+            if (_scrollView == null || _flatItems == null) return;
+
+            int totalCount = _flatItems.Count;
+            if (totalCount == 0)
+            {
+                _topSpacer.style.height = 0;
+                _bottomSpacer.style.height = 0;
+                for (var i = 0; i < _rowPool.Count; i++)
+                {
+                    _rowPool[i].style.display = DisplayStyle.None;
+                    _rowPool[i].Unbind();
+                }
+                return;
+            }
+
+            float viewportHeight = _scrollView.contentViewport.resolvedStyle.height;
+            if (float.IsNaN(viewportHeight) || viewportHeight <= 0)
+            {
+                viewportHeight = _scrollView.resolvedStyle.height;
+            }
+            if (float.IsNaN(viewportHeight) || viewportHeight <= 0)
+            {
+                viewportHeight = 400f;
+            }
+
+            float maxScrollY = Mathf.Max(0f, (totalCount * RowHeight) - viewportHeight);
+            if (_scrollView.scrollOffset.y > maxScrollY)
+            {
+                _scrollView.scrollOffset = new Vector2(_scrollView.scrollOffset.x, maxScrollY);
+            }
+
+            const int buffer = 3;
+            float scrollY = Mathf.Max(0f, _scrollView.scrollOffset.y);
+            int firstVisibleIndex = Mathf.Clamp(Mathf.FloorToInt(scrollY / RowHeight) - buffer, 0, totalCount - 1);
+            int visibleCount = Mathf.CeilToInt(viewportHeight / RowHeight) + (buffer * 2);
+            int lastVisibleIndex = Mathf.Clamp(firstVisibleIndex + visibleCount - 1, 0, totalCount - 1);
+
+            int countToDisplay = lastVisibleIndex - firstVisibleIndex + 1;
+
+            while (_rowPool.Count < countToDisplay)
+            {
+                var row = new HierarchyRowView(this);
+                _rowPool.Add(row);
+                _rowsContainer.Add(row);
+            }
+
+            float topHeight = firstVisibleIndex * RowHeight;
+            float bottomHeight = Mathf.Max(0f, (totalCount - 1 - lastVisibleIndex) * RowHeight);
+
+            _topSpacer.style.height = topHeight;
+            _bottomSpacer.style.height = bottomHeight;
+
+            bool hasSearch = _searchRegex != null;
+            bool keepDimmed = _keepDimmed;
+            UpdateSelectedInstanceIdsCache();
+
+            for (var i = 0; i < _rowPool.Count; i++)
+            {
+                var row = _rowPool[i];
+                if (i < countToDisplay)
+                {
+                    int itemIndex = firstVisibleIndex + i;
+                    row.style.display = DisplayStyle.Flex;
+                    row.Bind(_flatItems[itemIndex], _selectedInstanceIdsCache, hasSearch, keepDimmed);
+                }
+                else
+                {
+                    row.style.display = DisplayStyle.None;
+                    row.Unbind();
+                }
+            }
+        }
+
+        private void ToggleItemExpanded(HierarchyItem item)
+        {
+            if (item == null) return;
+
+            if (item.Type == HierarchyItemType.Scene)
+            {
+                ToggleSceneCollapsed(item.SceneName);
+            }
+            else if (item.Type == HierarchyItemType.GameObject)
+            {
+                ToggleGameObjectExpanded(item.InstanceId);
+            }
         }
 
         private void ToggleSceneCollapsed(string sceneName)
@@ -569,312 +811,147 @@ namespace Ff.DevSuite.View
             _context.NotifyHierarchyChanged();
         }
 
-        private void RenderSceneNode(Scene scene)
+        private void HandleGameObjectClicked(GameObject go, bool isCtrlHeld, bool isShiftHeld)
         {
-            var sceneName = scene.name;
-            var container = new VisualElement
+            if (go == null) return;
+
+            if (isShiftHeld && SelectionAnchor != null)
             {
-                name = "sceneContainer",
-            };
-            _scrollView.Add(container);
+                int anchorIndex = FindGameObjectIndex(SelectionAnchor);
+                int targetIndex = FindGameObjectIndex(go);
 
-            var row = new VisualElement();
-            row.AddToClassList("hierarchy-item-row");
-            row.AddToClassList("hierarchy-scene-row");
-
-            var foldoutBtn = new Button
-            {
-                name = "foldoutBtn",
-            };
-            foldoutBtn.AddToClassList("hierarchy-foldout-btn");
-
-            var isExpanded = !CollapsedSceneNames.Contains(sceneName);
-            foldoutBtn.text = isExpanded ? "\uf0d7" : "\uf0da";
-            row.Add(foldoutBtn);
-
-            var label = new Label
-            {
-                name = "itemLabel",
-                text = $"Scene: {sceneName}",
-            };
-            label.AddToClassList("hierarchy-item-label");
-            row.Add(label);
-
-            container.Add(row);
-
-            row.RegisterCallback<ClickEvent>(
-                evt =>
+                if (anchorIndex >= 0 && targetIndex >= 0)
                 {
-                    if (evt.clickCount == 2)
+                    var start = Mathf.Min(anchorIndex, targetIndex);
+                    var end = Mathf.Max(anchorIndex, targetIndex);
+
+                    var range = new List<GameObject>();
+                    for (var i = start; i <= end; i++)
                     {
-                        ToggleSceneCollapsed(sceneName);
-                        evt.StopPropagation();
+                        var item = _flatItems[i];
+                        if (item.Type == HierarchyItemType.GameObject && item.GameObject != null)
+                        {
+                            range.Add(item.GameObject);
+                        }
                     }
+
+                    _context.SetSelectedGameObjects(range);
+                    _context.InspectorVisible = true;
                 }
-            );
-
-            var childrenContainer = new VisualElement
-            {
-                name = "sceneChildren",
-            };
-            childrenContainer.style.display = isExpanded ? DisplayStyle.Flex : DisplayStyle.None;
-            container.Add(childrenContainer);
-
-            foldoutBtn.clicked += () =>
-            {
-                ToggleSceneCollapsed(sceneName);
-            };
-
-            if (isExpanded)
-            {
-                var rootObjects = scene.GetRootGameObjects();
-                foreach (var go in rootObjects)
-                {
-                    RenderGameObjectNode(go, 1, childrenContainer);
-                }
-            }
-        }
-
-        private void RenderGameObjectNode(GameObject go, int depth, VisualElement container)
-        {
-            if (go == null)
-            {
-                return;
-            }
-
-            var instanceId = go.GetInstanceID();
-            var isMatching = _searchRegex == null || _matchingInstanceIds.Contains(instanceId);
-            var hasMatchingDescendant = _searchRegex == null || _descendantMatchingInstanceIds.Contains(instanceId);
-
-            if (_searchRegex != null && !_keepDimmed && !isMatching && !hasMatchingDescendant)
-            {
-                return;
-            }
-
-            var nodeContainer = new VisualElement
-            {
-                name = "nodeContainer",
-            };
-            container.Add(nodeContainer);
-
-            var row = new VisualElement();
-            row.AddToClassList("hierarchy-item-row");
-            row.AddToClassList("hierarchy-object-row");
-            if (!go.activeSelf)
-            {
-                row.AddToClassList("inactive");
-            }
-
-            row.style.paddingLeft = 6 + (depth * 16);
-
-            if (_searchRegex != null && _keepDimmed)
-            {
-                if (isMatching || hasMatchingDescendant)
-                {
-                    row.RemoveFromClassList("dimmed");
-                }
-                else
-                {
-                    row.AddToClassList("dimmed");
-                }
-            }
-
-            _gameObjectRows[instanceId] = row;
-
-            var foldoutBtn = new Button
-            {
-                name = "foldoutBtn",
-            };
-            foldoutBtn.AddToClassList("hierarchy-foldout-btn");
-
-            var hasChildren = go.transform.childCount > 0;
-            var isExpanded = ExpandedGameObjectInstanceIds.Contains(instanceId) || (_searchRegex != null && hasMatchingDescendant);
-
-            if (hasChildren)
-            {
-                foldoutBtn.text = isExpanded ? "\uf0d7" : "\uf0da";
             }
             else
             {
-                foldoutBtn.text = "";
-                foldoutBtn.style.visibility = Visibility.Hidden;
-            }
-
-            row.Add(foldoutBtn);
-
-            var activityToggle = new Toggle
-            {
-                name = "activityToggle",
-                value = go.activeSelf,
-                tooltip = "Toggle active state"
-            };
-            activityToggle.AddToClassList("ff-toggle");
-            activityToggle.AddToClassList("hierarchy-activity-toggle");
-            var activityCheckmark = activityToggle.Q<VisualElement>("unity-checkmark");
-            if (activityCheckmark != null)
-            {
-                var icon = new Label("\uf00c");
-                icon.AddToClassList("ff-toggle-icon");
-                activityCheckmark.Add(icon);
-            }
-
-            activityToggle.RegisterValueChangedCallback(evt =>
-            {
-                if (go != null)
+                SelectionAnchor = go;
+                if (isCtrlHeld)
                 {
-                    go.SetActive(evt.newValue);
-                    if (evt.newValue)
+                    _context.ToggleSelectedGameObject(go);
+                }
+                else
+                {
+                    _context.SelectedGameObject = go;
+                }
+
+                _context.InspectorVisible = true;
+#if UNITY_EDITOR
+                if (isCtrlHeld)
+                {
+                    var currentSelection = new List<Object>(UnityEditor.Selection.objects);
+                    if (currentSelection.Contains(go))
                     {
-                        row.RemoveFromClassList("inactive");
+                        currentSelection.Remove(go);
                     }
                     else
                     {
-                        row.AddToClassList("inactive");
+                        currentSelection.Add(go);
                     }
+
+                    UnityEditor.Selection.objects = currentSelection.ToArray();
                 }
-            });
+                else
+                {
+                    UnityEditor.Selection.activeGameObject = go;
+                }
+#endif
+            }
+        }
 
-            var label = new Label
+        private int FindGameObjectIndex(GameObject go)
+        {
+            if (go == null) return -1;
+            for (var i = 0; i < _flatItems.Count; i++)
             {
-                name = "itemLabel",
-                text = go.name,
-            };
-            label.AddToClassList("hierarchy-item-label");
-            row.Add(label);
+                var item = _flatItems[i];
+                if (item.Type == HierarchyItemType.GameObject && item.GameObject == go)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
 
-            var badgeKind = GetGameObjectKind(go);
-            if (!string.IsNullOrEmpty(badgeKind))
+        private bool EnsureParentsExpanded(GameObject go)
+        {
+            if (go == null) return false;
+            bool changed = false;
+
+            if (CollapsedSceneNames.Contains(go.scene.name))
             {
-                var badgeLabel = new Label(badgeKind);
-                badgeLabel.AddToClassList("hierarchy-badge");
-                badgeLabel.AddToClassList(GetBadgeClassForKind(badgeKind));
-                badgeLabel.pickingMode = PickingMode.Ignore;
-                row.Add(badgeLabel);
+                CollapsedSceneNames.Remove(go.scene.name);
+                changed = true;
             }
 
-            row.Add(activityToggle);
-            _gameObjectActivityToggles[instanceId] = (go, activityToggle);
-
-            nodeContainer.Add(row);
-
-            var childrenContainer = new VisualElement
+            var parent = go.transform.parent;
+            while (parent != null)
             {
-                name = "nodeChildren",
-            };
-            childrenContainer.style.display = isExpanded ? DisplayStyle.Flex : DisplayStyle.None;
-            nodeContainer.Add(childrenContainer);
-
-            foldoutBtn.clicked += () =>
-            {
-                ToggleGameObjectExpanded(instanceId);
-            };
-
-            row.RegisterCallback<ClickEvent>(
-                evt =>
+                var parentGo = parent.gameObject;
+                int parentId = parentGo.GetInstanceID();
+                if (!ExpandedGameObjectInstanceIds.Contains(parentId))
                 {
-                    if (evt.clickCount == 2 && hasChildren)
-                    {
-                        ToggleGameObjectExpanded(instanceId);
-                        evt.StopPropagation();
-                    }
-                    else if (evt.clickCount == 1)
-                    {
-                        var isCtrlHeld = evt.ctrlKey || evt.commandKey;
-                        var isShiftHeld = evt.shiftKey;
-
-                        if (isShiftHeld && SelectionAnchor != null)
-                        {
-                            var visibleList = GetVisibleGameObjectsInOrder();
-                            if (visibleList.Contains(SelectionAnchor) && visibleList.Contains(go))
-                            {
-                                var anchorIndex = visibleList.IndexOf(SelectionAnchor);
-                                var targetIndex = visibleList.IndexOf(go);
-                                var start = Mathf.Min(anchorIndex, targetIndex);
-                                var end = Mathf.Max(anchorIndex, targetIndex);
-
-                                var range = new List<GameObject>();
-                                for (var i = start; i <= end; i++)
-                                {
-                                    range.Add(visibleList[i]);
-                                }
-
-                                _context.SetSelectedGameObjects(range);
-                                _context.InspectorVisible = true;
-                            }
-                        }
-                        else
-                        {
-                            SelectionAnchor = go;
-                            if (isCtrlHeld)
-                            {
-                                _context.ToggleSelectedGameObject(go);
-                            }
-                            else
-                            {
-                                _context.SelectedGameObject = go;
-                            }
-
-                            _context.InspectorVisible = true;
-#if UNITY_EDITOR
-                            if (isCtrlHeld)
-                            {
-                                var currentSelection = new List<Object>(UnityEditor.Selection.objects);
-                                if (currentSelection.Contains(go))
-                                {
-                                    currentSelection.Remove(go);
-                                }
-                                else
-                                {
-                                    currentSelection.Add(go);
-                                }
-
-                                UnityEditor.Selection.objects = currentSelection.ToArray();
-                            }
-                            else
-                            {
-                                UnityEditor.Selection.activeGameObject = go;
-                            }
-#endif
-                        }
-                    }
+                    ExpandedGameObjectInstanceIds.Add(parentId);
+                    changed = true;
                 }
-            );
+                parent = parent.parent;
+            }
 
-            if (hasChildren && isExpanded)
+            return changed;
+        }
+
+        private void ExpandParents(GameObject go)
+        {
+            EnsureParentsExpanded(go);
+        }
+
+        private void UpdateSelectedInstanceIdsCache()
+        {
+            _selectedInstanceIdsCache.Clear();
+            if (_context?.SelectedGameObjects != null)
             {
-                for (var i = 0; i < go.transform.childCount; i++)
+                var list = _context.SelectedGameObjects;
+                for (var i = 0; i < list.Count; i++)
                 {
-                    RenderGameObjectNode(go.transform.GetChild(i).gameObject, depth + 1, childrenContainer);
+                    var go = list[i];
+                    if (go != null)
+                    {
+                        _selectedInstanceIdsCache.Add(go.GetInstanceID());
+                    }
                 }
             }
         }
 
         private void UpdateSelectionHighlight()
         {
-            foreach (var row in _currentlySelectedRows)
-            {
-                if (row != null)
-                {
-                    row.RemoveFromClassList("selected");
-                }
-            }
-            _currentlySelectedRows.Clear();
+            UpdateSelectedInstanceIdsCache();
 
-            foreach (var go in _context.SelectedGameObjects)
+            for (var i = 0; i < _rowPool.Count; i++)
             {
-                if (go == null)
+                var row = _rowPool[i];
+                if (row.style.display != DisplayStyle.None)
                 {
-                    continue;
-                }
-                var selId = go.GetInstanceID();
-                if (_gameObjectRows.TryGetValue(selId, out var row))
-                {
-                    row.AddToClassList("selected");
-                    _currentlySelectedRows.Add(row);
+                    row.UpdateSelection(_selectedInstanceIdsCache);
                 }
             }
 
-            if (SelectionAnchor == null || !_context.SelectedGameObjects.Contains(SelectionAnchor))
+            if (SelectionAnchor == null || !_selectedInstanceIdsCache.Contains(SelectionAnchor.GetInstanceID()))
             {
                 SelectionAnchor = _context.SelectedGameObject;
             }
@@ -882,54 +959,16 @@ namespace Ff.DevSuite.View
 
         private List<GameObject> GetVisibleGameObjectsInOrder()
         {
-            var visibleList = new List<GameObject>();
-            for (var i = 0; i < SceneManager.sceneCount; i++)
+            var visibleList = new List<GameObject>(_flatItems.Count);
+            for (var i = 0; i < _flatItems.Count; i++)
             {
-                var scene = SceneManager.GetSceneAt(i);
-                if (!scene.isLoaded)
+                var item = _flatItems[i];
+                if (item.Type == HierarchyItemType.GameObject && item.GameObject != null)
                 {
-                    continue;
-                }
-                if (CollapsedSceneNames.Contains(scene.name))
-                {
-                    continue;
-                }
-
-                var rootObjects = scene.GetRootGameObjects();
-                foreach (var go in rootObjects)
-                {
-                    GetVisibleChildrenRecursive(go, visibleList);
+                    visibleList.Add(item.GameObject);
                 }
             }
             return visibleList;
-        }
-
-        private void GetVisibleChildrenRecursive(GameObject go, List<GameObject> visibleList)
-        {
-            if (go == null)
-            {
-                return;
-            }
-
-            var matches = true;
-            if (_searchRegex != null)
-            {
-                matches = _matchingInstanceIds.Contains(go.GetInstanceID()) || _descendantMatchingInstanceIds.Contains(go.GetInstanceID());
-            }
-
-            if (matches)
-            {
-                visibleList.Add(go);
-            }
-
-            var instanceId = go.GetInstanceID();
-            if (ExpandedGameObjectInstanceIds.Contains(instanceId))
-            {
-                for (var i = 0; i < go.transform.childCount; i++)
-                {
-                    GetVisibleChildrenRecursive(go.transform.GetChild(i).gameObject, visibleList);
-                }
-            }
         }
 
         private void HandlePrevResult()
@@ -986,15 +1025,10 @@ namespace Ff.DevSuite.View
             }
 
             var target = list[nextIndex];
+            EnsureParentsExpanded(target);
             _context.SelectedGameObject = target;
             _context.InspectorVisible = true;
-            ExpandParents(target);
             _context.NotifyHierarchyChanged();
-
-            if (_gameObjectRows.TryGetValue(target.GetInstanceID(), out var row))
-            {
-                SafeScrollTo(row);
-            }
         }
 
         private void CollectMatchingObjectsRecursive(GameObject go, List<GameObject> list)
@@ -1014,23 +1048,6 @@ namespace Ff.DevSuite.View
             }
         }
 
-        private void ExpandParents(GameObject go)
-        {
-            if (go == null)
-            {
-                return;
-            }
-
-            CollapsedSceneNames.Remove(go.scene.name);
-
-            var parent = go.transform.parent;
-            while (parent != null)
-            {
-                ExpandedGameObjectInstanceIds.Add(parent.gameObject.GetInstanceID());
-                parent = parent.parent;
-            }
-        }
-
         private void HandleOnEveryFrame()
         {
             SyncActivityStates();
@@ -1038,20 +1055,12 @@ namespace Ff.DevSuite.View
 
         private void SyncActivityStates()
         {
-            foreach (var kvp in _gameObjectActivityToggles)
+            for (var i = 0; i < _rowPool.Count; i++)
             {
-                var (go, toggle) = kvp.Value;
-                if (go == null || toggle == null || toggle.panel == null) continue;
-
-                var row = _gameObjectRows.TryGetValue(kvp.Key, out var r) ? r : null;
-                if (row == null) continue;
-
-                bool isActive = go.activeSelf;
-                if (toggle.value != isActive)
+                var row = _rowPool[i];
+                if (row.style.display != DisplayStyle.None)
                 {
-                    toggle.SetValueWithoutNotify(isActive);
-                    if (isActive) row.RemoveFromClassList("inactive");
-                    else row.AddToClassList("inactive");
+                    row.SyncActivityState();
                 }
             }
         }
@@ -1248,6 +1257,272 @@ namespace Ff.DevSuite.View
                 "3D" => "badge-3d",
                 _ => "badge-default"
             };
+        }
+
+        private enum HierarchyItemType
+        {
+            Scene,
+            GameObject
+        }
+
+        private class HierarchyItem
+        {
+            public HierarchyItemType Type;
+            public Scene Scene;
+            public string SceneName;
+            public GameObject GameObject;
+            public int InstanceId;
+            public int Depth;
+            public bool HasChildren;
+            public bool IsExpanded;
+            public bool IsMatching;
+            public bool HasMatchingDescendant;
+            public string BadgeKind;
+        }
+
+        private class HierarchyRowView : VisualElement
+        {
+            private readonly HierarchyPanelView _owner;
+            private readonly Button _foldoutBtn;
+            private readonly Label _itemLabel;
+            private readonly Label _badgeLabel;
+            private readonly Toggle _activityToggle;
+            private HierarchyItem _item;
+            private bool _isBinding;
+
+            public HierarchyItem Item => _item;
+
+            public HierarchyRowView(HierarchyPanelView owner)
+            {
+                _owner = owner;
+                AddToClassList("hierarchy-item-row");
+                style.flexShrink = 0;
+                style.flexGrow = 0;
+
+                _foldoutBtn = new Button { name = "foldoutBtn" };
+                _foldoutBtn.AddToClassList("hierarchy-foldout-btn");
+                _foldoutBtn.RegisterCallback<ClickEvent>(evt => evt.StopPropagation());
+                _foldoutBtn.clicked += OnFoldoutClicked;
+                Add(_foldoutBtn);
+
+                _itemLabel = new Label { name = "itemLabel" };
+                _itemLabel.AddToClassList("hierarchy-item-label");
+                Add(_itemLabel);
+
+                _badgeLabel = new Label { name = "badgeLabel" };
+                _badgeLabel.AddToClassList("hierarchy-badge");
+                _badgeLabel.pickingMode = PickingMode.Ignore;
+                _badgeLabel.style.display = DisplayStyle.None;
+                Add(_badgeLabel);
+
+                _activityToggle = new Toggle
+                {
+                    name = "activityToggle",
+                    tooltip = "Toggle active state"
+                };
+                _activityToggle.AddToClassList("ff-toggle");
+                _activityToggle.AddToClassList("hierarchy-activity-toggle");
+
+                var checkmark = _activityToggle.Q<VisualElement>("unity-checkmark");
+                if (checkmark != null)
+                {
+                    var icon = new Label("\uf00c");
+                    icon.AddToClassList("ff-toggle-icon");
+                    checkmark.Add(icon);
+                }
+                else
+                {
+                    _activityToggle.RegisterCallback<AttachToPanelEvent>(_ =>
+                    {
+                        var cm = _activityToggle.Q<VisualElement>("unity-checkmark");
+                        if (cm != null && cm.childCount == 0)
+                        {
+                            var icon = new Label("\uf00c");
+                            icon.AddToClassList("ff-toggle-icon");
+                            cm.Add(icon);
+                        }
+                    });
+                }
+
+                _activityToggle.RegisterCallback<ClickEvent>(evt => evt.StopPropagation());
+                _activityToggle.RegisterValueChangedCallback(OnActivityToggleChanged);
+                Add(_activityToggle);
+
+                RegisterCallback<ClickEvent>(OnRowClicked);
+            }
+
+            private void OnFoldoutClicked()
+            {
+                if (_item == null) return;
+                _owner.ToggleItemExpanded(_item);
+            }
+
+            private void OnRowClicked(ClickEvent evt)
+            {
+                if (_item == null) return;
+
+                if (evt.clickCount == 2)
+                {
+                    if (_item.HasChildren || _item.Type == HierarchyItemType.Scene)
+                    {
+                        _owner.ToggleItemExpanded(_item);
+                        evt.StopPropagation();
+                    }
+                }
+                else if (evt.clickCount == 1)
+                {
+                    if (_item.Type == HierarchyItemType.GameObject)
+                    {
+                        var isCtrlHeld = evt.ctrlKey || evt.commandKey;
+                        var isShiftHeld = evt.shiftKey;
+                        _owner.HandleGameObjectClicked(_item.GameObject, isCtrlHeld, isShiftHeld);
+                    }
+                }
+            }
+
+            private void OnActivityToggleChanged(ChangeEvent<bool> evt)
+            {
+                if (_isBinding) return;
+                if (_item?.GameObject != null)
+                {
+                    _item.GameObject.SetActive(evt.newValue);
+                    EnableInClassList("inactive", !evt.newValue);
+                }
+            }
+
+            public void Bind(HierarchyItem item, HashSet<int> selectedInstanceIds, bool hasSearch, bool keepDimmed)
+            {
+                _isBinding = true;
+                _item = item;
+
+                style.paddingLeft = 6 + (item.Depth * 16);
+
+                if (item.Type == HierarchyItemType.Scene)
+                {
+                    RemoveFromClassList("hierarchy-object-row");
+                    RemoveFromClassList("inactive");
+                    RemoveFromClassList("dimmed");
+                    RemoveFromClassList("selected");
+                    AddToClassList("hierarchy-scene-row");
+
+                    _itemLabel.text = $"Scene: {item.SceneName}";
+                    _foldoutBtn.style.visibility = Visibility.Visible;
+                    _foldoutBtn.text = item.IsExpanded ? "\uf0d7" : "\uf0da";
+                    _badgeLabel.style.display = DisplayStyle.None;
+                    _activityToggle.style.display = DisplayStyle.None;
+                }
+                else
+                {
+                    RemoveFromClassList("hierarchy-scene-row");
+                    AddToClassList("hierarchy-object-row");
+
+                    var go = item.GameObject;
+                    if (go == null)
+                    {
+                        _itemLabel.text = "<Destroyed>";
+                        _foldoutBtn.style.visibility = Visibility.Hidden;
+                        _foldoutBtn.text = "";
+                        _badgeLabel.style.display = DisplayStyle.None;
+                        _activityToggle.style.display = DisplayStyle.None;
+                        RemoveFromClassList("inactive");
+                        RemoveFromClassList("dimmed");
+                        RemoveFromClassList("selected");
+                    }
+                    else
+                    {
+                        _itemLabel.text = go.name;
+
+                        bool isActive = go.activeSelf;
+                        EnableInClassList("inactive", !isActive);
+
+                        _activityToggle.style.display = DisplayStyle.Flex;
+                        _activityToggle.SetValueWithoutNotify(isActive);
+
+                        if (item.HasChildren)
+                        {
+                            _foldoutBtn.style.visibility = Visibility.Visible;
+                            _foldoutBtn.text = item.IsExpanded ? "\uf0d7" : "\uf0da";
+                        }
+                        else
+                        {
+                            _foldoutBtn.style.visibility = Visibility.Hidden;
+                            _foldoutBtn.text = "";
+                        }
+
+                        if (hasSearch && keepDimmed)
+                        {
+                            bool isDimmed = !(item.IsMatching || item.HasMatchingDescendant);
+                            EnableInClassList("dimmed", isDimmed);
+                        }
+                        else
+                        {
+                            RemoveFromClassList("dimmed");
+                        }
+
+                        if (item.BadgeKind == null)
+                        {
+                            item.BadgeKind = GetGameObjectKind(go) ?? string.Empty;
+                        }
+
+                        if (!string.IsNullOrEmpty(item.BadgeKind))
+                        {
+                            _badgeLabel.text = item.BadgeKind;
+                            _badgeLabel.RemoveFromClassList("badge-uitoolkit");
+                            _badgeLabel.RemoveFromClassList("badge-ugui");
+                            _badgeLabel.RemoveFromClassList("badge-2d");
+                            _badgeLabel.RemoveFromClassList("badge-3d");
+                            _badgeLabel.RemoveFromClassList("badge-default");
+                            _badgeLabel.AddToClassList(GetBadgeClassForKind(item.BadgeKind));
+                            _badgeLabel.style.display = DisplayStyle.Flex;
+                        }
+                        else
+                        {
+                            _badgeLabel.style.display = DisplayStyle.None;
+                        }
+
+                        EnableInClassList("selected", selectedInstanceIds.Contains(item.InstanceId));
+                    }
+                }
+
+                _isBinding = false;
+            }
+
+            public void Unbind()
+            {
+                _item = null;
+            }
+
+            public void UpdateSelection(HashSet<int> selectedInstanceIds)
+            {
+                if (_item != null && _item.Type == HierarchyItemType.GameObject)
+                {
+                    EnableInClassList("selected", selectedInstanceIds.Contains(_item.InstanceId));
+                }
+                else
+                {
+                    RemoveFromClassList("selected");
+                }
+            }
+
+            public void SyncActivityState()
+            {
+                if (_item?.GameObject == null) return;
+                var go = _item.GameObject;
+
+                if (_itemLabel.text != go.name)
+                {
+                    _itemLabel.text = go.name;
+                }
+
+                bool isActive = go.activeSelf;
+                if (_activityToggle.value != isActive)
+                {
+                    _isBinding = true;
+                    _activityToggle.SetValueWithoutNotify(isActive);
+                    _isBinding = false;
+                    EnableInClassList("inactive", !isActive);
+                }
+            }
         }
     }
 }
