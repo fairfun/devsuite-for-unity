@@ -8,6 +8,8 @@
 
 .logs-panel-container {
     flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
     flex-direction: column;
     overflow: hidden;
     color: var(--text-color);
@@ -22,6 +24,7 @@
     background-color: var(--toolbar-bg);
     border-bottom-width: 0px;
     border-bottom-color: var(--border-color);
+    flex-shrink: 0;
 }
 
 .logs-filter-container {
@@ -35,6 +38,8 @@
     border-width: 1px;
     border-color: rgba(255, 255, 255, 0.05);
     flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 40px;
 }
 
 .logs-filter-icon {
@@ -83,6 +88,7 @@
     justify-content: center;
     -unity-text-align: middle-center;
     font-size: 13px;
+    flex-shrink: 0;
 }
 
 .logs-severity-btn:hover {
@@ -179,6 +185,7 @@
     -unity-text-align: middle-center;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .logs-icon-btn:hover {
@@ -192,6 +199,8 @@
 
 .logs-list-view {
     flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
     min-height: 0px;
 }
 
@@ -289,6 +298,7 @@
     border-top-width: 1px;
     border-top-color: var(--divider-color);
     position: relative;
+    flex-shrink: 0;
 }
 
 .logs-cli-input-wrapper {
@@ -302,6 +312,8 @@
     border-width: 1px;
     border-color: rgba(255, 255, 255, 0.05);
     flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 40px;
 }
 
 .logs-cli-icon {
@@ -376,6 +388,7 @@
     align-items: center;
     justify-content: center;
     margin-left: 2px;
+    flex-shrink: 0;
 }
 
 .logs-cli-send-btn:hover {

@@ -56,6 +56,8 @@ namespace Ff.DevSuite.View
             styleSheets.Add(uss);
 
             style.flexGrow = 1;
+            style.flexShrink = 1;
+            style.minHeight = 0;
             AddToClassList("ff-panel");
 
             var root = this.Q<VisualElement>("logs-panel-root") ?? this;
