@@ -8,9 +8,13 @@ namespace Ff.DevSuite
         public event Action<T> OnChanged;
 
         private readonly SortedList<int, ValueStackValue> _values = new();
+        private readonly T _defaultValue;
+        private readonly int _defaultPriority;
 
         public ValueStack(T defaultValue = default, int defaultPriority = 0)
         {
+            _defaultValue = defaultValue;
+            _defaultPriority = defaultPriority;
             _values.Add(defaultPriority, new ValueStackValue(defaultValue));
         }
 
@@ -57,6 +61,17 @@ namespace Ff.DevSuite
                 {
                     DispatchChanged();
                 }
+            }
+        }
+
+        public void Clear()
+        {
+            var oldValue = Value;
+            _values.Clear();
+            _values.Add(_defaultPriority, new ValueStackValue(_defaultValue));
+            if (HasChanged(Value, oldValue))
+            {
+                DispatchChanged();
             }
         }
 

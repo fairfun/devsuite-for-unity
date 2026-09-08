@@ -18,6 +18,12 @@ namespace Ff.DevSuite.View
         private readonly Button _expandButton;
         private readonly VisualElement _divider;
         private readonly Label _versionLabel;
+        private readonly Button _unpauseButton;
+
+        private bool _isPaused;
+        private IVisualElementScheduledItem _pauseCheckTask;
+        private static readonly Color ColorOrangeBase = new(1f, 200f / 255f, 0f, 1f);
+        private static readonly Color ColorOrangeGlow = new(1f, 225f / 255f, 80f / 255f, 1f);
 
         private bool _hasUnseenErrors;
         private IVisualElementScheduledItem _blinkTask;
@@ -59,6 +65,11 @@ namespace Ff.DevSuite.View
             _expandButton = this.Q<Button>("expand-btn");
             _divider = this.Q<VisualElement>("divider");
             _versionLabel = this.Q<Label>("version-lbl");
+            _unpauseButton = this.Q<Button>("unpause-btn");
+            if (_unpauseButton != null)
+            {
+                _unpauseButton.clicked += HandleUnpauseClicked;
+            }
 
             _resetButton.text = IconReset;
             _logsButton.text = IconLogs;
@@ -100,6 +111,34 @@ namespace Ff.DevSuite.View
             _expandButton.RegisterCallback<MouseLeaveEvent>(HandleExpandMouseUp, TrickleDown.TrickleDown);
             _expandButton.clicked += HandleExpandClicked;
             DevSuiteUtils.SetupTooltips(this);
+
+            RegisterCallback<AttachToPanelEvent>(_ =>
+            {
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.pauseStateChanged -= HandleEditorPauseStateChanged;
+                UnityEditor.EditorApplication.pauseStateChanged += HandleEditorPauseStateChanged;
+                UnityEditor.EditorApplication.update -= HandleEditorUpdate;
+                UnityEditor.EditorApplication.update += HandleEditorUpdate;
+#endif
+                StartPauseMonitoring();
+            });
+
+            RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.pauseStateChanged -= HandleEditorPauseStateChanged;
+                UnityEditor.EditorApplication.update -= HandleEditorUpdate;
+#endif
+                StopPauseMonitoring();
+            });
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.pauseStateChanged -= HandleEditorPauseStateChanged;
+            UnityEditor.EditorApplication.pauseStateChanged += HandleEditorPauseStateChanged;
+            UnityEditor.EditorApplication.update -= HandleEditorUpdate;
+            UnityEditor.EditorApplication.update += HandleEditorUpdate;
+#endif
+            StartPauseMonitoring();
         }
 
         private void HandleExpandClicked()
@@ -183,6 +222,7 @@ namespace Ff.DevSuite.View
             {
                 _context.OnChanged -= UpdateView;
                 _context.OnLogMessagesMessageAdded -= HandleLogMessageAdded;
+                _context.PauseHandlerGameSpeed.OnChanged -= HandlePauseHandlerGameSpeedChanged;
             }
 
             _context = context;
@@ -191,6 +231,7 @@ namespace Ff.DevSuite.View
             {
                 _context.OnChanged += UpdateView;
                 _context.OnLogMessagesMessageAdded += HandleLogMessageAdded;
+                _context.PauseHandlerGameSpeed.OnChanged += HandlePauseHandlerGameSpeedChanged;
 
                 _hasUnseenErrors = false;
                 foreach (var logMessage in _context.AllLogMessages)
@@ -198,6 +239,7 @@ namespace Ff.DevSuite.View
                     HandleLogMessageAdded(logMessage);
                 }
 
+                StartPauseMonitoring();
                 UpdateView();
             }
         }
@@ -302,22 +344,39 @@ namespace Ff.DevSuite.View
 
         private void UpdateView()
         {
-            var expanded = _context.PanelExpanded;
+            var expanded = _context != null && _context.PanelExpanded;
+            _isPaused = CheckIsPaused();
 
             EnableInClassList("collapsed", !expanded);
 
             _resetButton.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             _divider.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
 
-            var extraVersion = _context.BuildVersionToDisplay?.Invoke();
-            if (string.IsNullOrEmpty(extraVersion))
+            if (_isPaused)
             {
                 _versionLabel.style.display = DisplayStyle.None;
+                if (_unpauseButton != null)
+                {
+                    _unpauseButton.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
+                }
             }
             else
             {
-                _versionLabel.text = extraVersion;
-                _versionLabel.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
+                if (_unpauseButton != null)
+                {
+                    _unpauseButton.style.display = DisplayStyle.None;
+                }
+
+                var extraVersion = _context?.BuildVersionToDisplay?.Invoke();
+                if (string.IsNullOrEmpty(extraVersion))
+                {
+                    _versionLabel.style.display = DisplayStyle.None;
+                }
+                else
+                {
+                    _versionLabel.text = extraVersion;
+                    _versionLabel.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
+                }
             }
 
             _logsButton.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
@@ -330,21 +389,147 @@ namespace Ff.DevSuite.View
             _expandButton.text = expanded ? IconCollapse : IconExpand;
             _expandButton.EnableInClassList("active", expanded);
 
-            _logsButton.EnableInClassList("active", _context.LogsVisible);
-            _commandsButton.EnableInClassList("active", _context.CommandsVisible);
-            _pinnedCommandsButton.EnableInClassList("active", _context.PinnedCommandsVisible);
-            _metricsButton.EnableInClassList("active", _context.MetricsVisible);
-            _hierarchyButton.EnableInClassList("active", _context.HierarchyVisible);
-            _inspectorButton.EnableInClassList("active", _context.InspectorVisible);
+            if (_context != null)
+            {
+                _logsButton.EnableInClassList("active", _context.LogsVisible);
+                _commandsButton.EnableInClassList("active", _context.CommandsVisible);
+                _pinnedCommandsButton.EnableInClassList("active", _context.PinnedCommandsVisible);
+                _metricsButton.EnableInClassList("active", _context.MetricsVisible);
+                _hierarchyButton.EnableInClassList("active", _context.HierarchyVisible);
+                _inspectorButton.EnableInClassList("active", _context.InspectorVisible);
+            }
             _resetButton.EnableInClassList("normal", true);
 
             UpdateErrorBlink();
             UpdateExpandButtonVisibility();
+            if (_isPaused)
+            {
+                UpdatePingPongAnimation();
+            }
         }
+
+        private void HandlePauseHandlerGameSpeedChanged(float speed)
+        {
+            UpdatePauseState();
+        }
+
+        private void HandleUnpauseClicked()
+        {
+            if (_context != null)
+            {
+                _context.ResetPause();
+            }
+            else
+            {
+                Time.timeScale = 1.0f;
+            }
+            UpdatePauseState();
+        }
+
+        private bool CheckIsPaused()
+        {
+            if (Mathf.Approximately(Time.timeScale, 0f) || Time.timeScale < 0.0001f)
+            {
+                return true;
+            }
+
+            if (_context != null && _context.PauseHandlerGameSpeed.Value == 0f)
+            {
+                return true;
+            }
+
+#if UNITY_EDITOR
+            if (UnityEditor.EditorApplication.isPlaying && UnityEditor.EditorApplication.isPaused)
+            {
+                return true;
+            }
+#endif
+            return false;
+        }
+
+        private void UpdatePauseState()
+        {
+            var isPaused = CheckIsPaused();
+            if (_isPaused != isPaused)
+            {
+                _isPaused = isPaused;
+                UpdateView();
+            }
+        }
+
+        private void UpdatePingPongAnimation()
+        {
+            if (!_isPaused || _unpauseButton == null || _unpauseButton.style.display == DisplayStyle.None)
+            {
+                return;
+            }
+
+            var time = GetCurrentTime();
+            var t = Mathf.PingPong(time * 1.5f, 1f);
+            t = Mathf.SmoothStep(0f, 1f, t);
+            var color = Color.Lerp(ColorOrangeBase, ColorOrangeGlow, t);
+            _unpauseButton.style.color = color;
+        }
+
+        private static float GetCurrentTime()
+        {
+#if UNITY_EDITOR
+            return (float)UnityEditor.EditorApplication.timeSinceStartup;
+#else
+            return Time.unscaledTime;
+#endif
+        }
+
+        private void StartPauseMonitoring()
+        {
+            if (_pauseCheckTask != null)
+            {
+                return;
+            }
+
+            _pauseCheckTask = schedule.Execute(() =>
+            {
+                UpdatePauseState();
+                if (_isPaused)
+                {
+                    UpdatePingPongAnimation();
+                }
+            }).Every(30);
+        }
+
+        private void StopPauseMonitoring()
+        {
+            _pauseCheckTask?.Pause();
+            _pauseCheckTask = null;
+        }
+
+#if UNITY_EDITOR
+        private void HandleEditorUpdate()
+        {
+            if (_isPaused)
+            {
+                UpdatePauseState();
+                UpdatePingPongAnimation();
+                _unpauseButton?.MarkDirtyRepaint();
+            }
+            else
+            {
+                if (CheckIsPaused())
+                {
+                    UpdatePauseState();
+                }
+            }
+        }
+
+        private void HandleEditorPauseStateChanged(UnityEditor.PauseState state)
+        {
+            UpdatePauseState();
+        }
+#endif
 
         private void UpdateExpandButtonVisibility()
         {
-            var expanded = _context.PanelExpanded;
+            var expanded = _context != null && _context.PanelExpanded;
             var shouldShow = expanded; // Always show if expanded
 
             if (!expanded)
@@ -369,15 +554,23 @@ namespace Ff.DevSuite.View
 
         public void Reset()
         {
+            StopPauseMonitoring();
             StopBlinking();
             _hasUnseenErrors = false;
+            _isPaused = false;
 
             if (_context != null)
             {
                 _context.OnChanged -= UpdateView;
                 _context.OnLogMessagesMessageAdded -= HandleLogMessageAdded;
+                _context.PauseHandlerGameSpeed.OnChanged -= HandlePauseHandlerGameSpeedChanged;
                 _context = null;
             }
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.pauseStateChanged -= HandleEditorPauseStateChanged;
+            UnityEditor.EditorApplication.update -= HandleEditorUpdate;
+#endif
         }
     }
 

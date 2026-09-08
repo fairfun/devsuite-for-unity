@@ -104,3 +104,29 @@
 .ff-control-panel-root-left {
     justify-content: flex-start;
 }
+
+.ff-control-panel-unpause-btn {
+    font-size: 11px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    height: 20px;
+    margin: 0 4px;
+    padding: 0 8px;
+    color: #ffc800;
+    background-color: rgba(255, 200, 0, 0.12);
+    border-width: 1px;
+    border-color: rgba(255, 200, 0, 0.35);
+    border-radius: 4px;
+    transition-property: background-color;
+    transition-duration: 0.1s;
+    transition-timing-function: linear;
+}
+
+.ff-control-panel-unpause-btn:hover {
+    background-color: rgba(255, 200, 0, 0.22);
+    border-color: rgba(255, 200, 0, 0.6);
+}
+
+.ff-control-panel-unpause-btn:active {
+    background-color: rgba(255, 200, 0, 0.35);
+}

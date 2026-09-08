@@ -295,6 +295,7 @@ namespace Ff.DevSuite
                 try
                 {
                     TestTimeScaleCommands(context, Assert);
+                    TestResetPauseCommand(context, Assert);
                 }
                 catch (System.Security.SecurityException)
                 {
@@ -384,6 +385,59 @@ namespace Ff.DevSuite
 
                 context.ExecuteCliCommand("gamespeed 1");
                 assert(Mathf.Approximately(Time.timeScale, 1f), "gamespeed 1 sets timescale to 1");
+            }
+            finally
+            {
+                Time.timeScale = originalTimeScale;
+                CommonCommands.TimeScale.Value = null;
+            }
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void TestResetPauseCommand(DevSuiteContext context, System.Action<bool, string> assert)
+        {
+            var originalTimeScale = Time.timeScale;
+            try
+            {
+                // Test ValueStack Clear
+                var vs = new ValueStack<float>(-1f, 0);
+                vs.Set(0f, 1, context);
+                vs.Set(0f, 2, context);
+                assert(Mathf.Approximately(vs.Value, 0f), "ValueStack has priority 2 value 0");
+                vs.Clear();
+                assert(Mathf.Approximately(vs.Value, -1f), "ValueStack Clear resets to default -1");
+
+                // Test ResetPause when paused via Time.timeScale = 0
+                Time.timeScale = 0f;
+                assert(context.IsPaused, "context.IsPaused is true when Time.timeScale == 0");
+                context.ResetPause();
+                assert(Mathf.Approximately(Time.timeScale, 1f), "ResetPause restores Time.timeScale to 1.0");
+                assert(!context.IsPaused, "context.IsPaused is false after ResetPause");
+
+                // Test ResetPause when paused via PauseHandlerGameSpeed
+                context.PauseHandlerGameSpeed.Set(0f, 2, context);
+                assert(context.IsPaused, "context.IsPaused is true when PauseHandlerGameSpeed is active");
+                context.ResetPause();
+                assert(Mathf.Approximately(Time.timeScale, 1f), "ResetPause restores Time.timeScale to 1.0 when PauseHandlerGameSpeed was set");
+                assert(context.PauseHandlerGameSpeed.Value < 0f, "ResetPause clears PauseHandlerGameSpeed");
+                assert(!context.IsPaused, "context.IsPaused is false after clearing PauseHandlerGameSpeed");
+
+                // Test ResetPause preserves IsSelectedFromDevSuite (keeping selection frame active)
+                var go = new GameObject("TestSelectionFrameTarget");
+                try
+                {
+                    context.SetSelectedGameObjects(new[] { go });
+                    assert(context.IsSelectedFromDevSuite, "IsSelectedFromDevSuite is true on DevSuite selection");
+                    context.ResetPause();
+                    assert(context.IsSelectedFromDevSuite, "IsSelectedFromDevSuite remains true after ResetPause (keeping selection frame)");
+                    assert(Mathf.Approximately(Time.timeScale, 1f), "Time.timeScale is 1.0 after ResetPause");
+                    assert(!context.IsPaused, "context.IsPaused is false after ResetPause");
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(go);
+                    context.SetSelectedGameObjects(null);
+                }
             }
             finally
             {

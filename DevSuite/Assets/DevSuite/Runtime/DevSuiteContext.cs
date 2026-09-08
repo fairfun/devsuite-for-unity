@@ -175,6 +175,7 @@ namespace Ff.DevSuite
 
         internal ValueStack<bool> Block { get; } = new();
         internal readonly ValueStack<float> _pauseHandlerGameSpeed = new(-1f, 0);
+        internal ValueStack<float> PauseHandlerGameSpeed => _pauseHandlerGameSpeed;
         private float? _savedGameSpeed;
 
         private event Action OnApiCalled;
@@ -311,6 +312,7 @@ namespace Ff.DevSuite
 
         private bool _isSelectedFromDevSuite;
         internal bool IsSelectedFromDevSuite => _isSelectedFromDevSuite;
+        private bool _suppressAutoPauseForCurrentSelection;
 
         internal bool ShowSelectionFrame
         {
@@ -320,6 +322,7 @@ namespace Ff.DevSuite
 
         internal void SetSelectedGameObjects(IEnumerable<GameObject> gameObjects)
         {
+            _suppressAutoPauseForCurrentSelection = false;
             _selectedGameObjects.Clear();
             if (gameObjects != null)
             {
@@ -335,6 +338,7 @@ namespace Ff.DevSuite
 
         internal void SetSelectedGameObjectsFromEditor(IEnumerable<GameObject> gameObjects)
         {
+            _suppressAutoPauseForCurrentSelection = false;
             _selectedGameObjects.Clear();
             if (gameObjects != null)
             {
@@ -347,6 +351,7 @@ namespace Ff.DevSuite
 
         internal void ToggleSelectedGameObject(GameObject go)
         {
+            _suppressAutoPauseForCurrentSelection = false;
             if (go == null)
             {
                 return;
@@ -372,6 +377,7 @@ namespace Ff.DevSuite
             get => _selectedGameObjects.Count > 0 ? _selectedGameObjects[0] : null;
             set
             {
+                _suppressAutoPauseForCurrentSelection = false;
                 if (value == null)
                 {
                     if (_selectedGameObjects.Count == 0)
@@ -447,9 +453,10 @@ namespace Ff.DevSuite
             if (!hasSelected)
             {
                 _isSelectedFromDevSuite = false;
+                _suppressAutoPauseForCurrentSelection = false;
             }
 
-            var shouldPause = InspectorAutoPause && hasSelected && _isSelectedFromDevSuite;
+            var shouldPause = InspectorAutoPause && hasSelected && _isSelectedFromDevSuite && !_suppressAutoPauseForCurrentSelection;
             _pauseHandlerGameSpeed.Toggle(0f, 2, shouldPause, this);
         }
 
@@ -623,6 +630,7 @@ namespace Ff.DevSuite
             }
             _selectedGameObjects.Clear();
             _isSelectedFromDevSuite = false;
+            _suppressAutoPauseForCurrentSelection = false;
             _pauseHandlerGameSpeed.Remove(1, this);
             _pauseHandlerGameSpeed.Remove(2, this);
 
@@ -1160,6 +1168,7 @@ namespace Ff.DevSuite
             get => !(Settings?.Ready ?? false) || Settings.Value.InspectorAutoPause;
             set
             {
+                _suppressAutoPauseForCurrentSelection = false;
                 SetSettingsValue(() => Settings.Value.InspectorAutoPause, v => Settings.Value.InspectorAutoPause = v, value);
                 UpdateInspectorAutoPause();
             }
@@ -2642,6 +2651,48 @@ namespace Ff.DevSuite
             {
                 OnPerformanceGraphCollapsedChanged?.Invoke(provider, IsPerformanceGraphCollapsed(provider));
             }
+            _onChangedDispatcher.Dispatch();
+        }
+
+        internal bool IsPaused
+        {
+            get
+            {
+                if (Mathf.Approximately(Time.timeScale, 0f) || Time.timeScale < 0.0001f)
+                {
+                    return true;
+                }
+
+                if (_pauseHandlerGameSpeed.Value == 0f)
+                {
+                    return true;
+                }
+
+#if UNITY_EDITOR
+                if (UnityEditor.EditorApplication.isPlaying && UnityEditor.EditorApplication.isPaused)
+                {
+                    return true;
+                }
+#endif
+                return false;
+            }
+        }
+
+        internal void ResetPause()
+        {
+            _savedGameSpeed = null;
+            _suppressAutoPauseForCurrentSelection = true;
+            _pauseHandlerGameSpeed.Clear();
+            if (_pickModeActive)
+            {
+                PickModeActive = false;
+            }
+            CommonCommands.GameSpeed(1.0f);
+            if (CommonCommands.TimeScale.Value != null)
+            {
+                CommonCommands.TimeScale.Value = 1.0f;
+            }
+            Time.timeScale = 1.0f;
             _onChangedDispatcher.Dispatch();
         }
 
