@@ -294,9 +294,12 @@ namespace Ff.DevSuite
         private static void ForceGCIncremental() => GarbageCollector.CollectIncremental();
 
         [Command(DisplayName = "Test Log", Description = "Send a test log message to Unity console.\n\nExecutes <b><color=#ffc800>Debug.LogFormat()</color></b> in code."), CommandButton(Title = "Send Log", CliEnabled = false, Description = "Send a test log message to Unity console.\n\nExecutes <b><color=#ffc800>Debug.LogFormat()</color></b> in code.")]
-        private static void SendLogMessage(LogType logType = LogType.Error)
+        private static void SendLogMessage(LogType logType = LogType.Error, int count = 1)
         {
-            Debug.LogFormat(logType, LogOption.None, null, "Test Log");
+            for (var i = 0; i < count; i++)
+            {
+                Debug.LogFormat(logType, LogOption.None, null, "Test Log");
+            }
         }
 
         [Command(DisplayName = "Test Exception", Description = "Testing utilities for exceptions and crashes."), CommandButton(Title = "Throw", Color = ColorOrange, SuppressExceptions = false, CliEnabled = false, Description = "Throw a test exception.\n\nThrows <b><color=#ffc800>System.Exception</color></b> in code.")]
