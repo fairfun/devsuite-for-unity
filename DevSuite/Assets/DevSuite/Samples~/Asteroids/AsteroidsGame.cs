@@ -128,6 +128,10 @@ namespace Ff.DevSuite.Samples.Asteroids
         [SerializeField] private Canvas _canvas;
         [SerializeField] private Text _hudText;
         [SerializeField] private Text _gameOverText;
+        [SerializeField] private RectTransform _devSuiteArrow;
+
+        private bool _devSuiteOpenedInSession;
+        private Vector2 _arrowBasePos = new Vector2(-120f, -120f);
 
         public Material LineMaterial
         {
@@ -175,6 +179,10 @@ namespace Ff.DevSuite.Samples.Asteroids
             {
                 EnsureFont(_hudText);
                 EnsureFont(_gameOverText);
+                if (_devSuiteArrow != null)
+                {
+                    _arrowBasePos = _devSuiteArrow.anchoredPosition;
+                }
             }
         }
 
@@ -638,10 +646,30 @@ namespace Ff.DevSuite.Samples.Asteroids
             goShadow.effectDistance = new Vector2(2f, -2f);
 
             gameOverGo.SetActive(false);
+
+            var arrowGo = new GameObject("DevSuiteArrow");
+            arrowGo.transform.SetParent(canvasGo.transform, false);
+            _devSuiteArrow = arrowGo.AddComponent<RectTransform>();
+            _devSuiteArrow.anchorMin = Vector2.one;
+            _devSuiteArrow.anchorMax = Vector2.one;
+            _devSuiteArrow.pivot = new Vector2(0.5f, 0.5f);
+            _devSuiteArrow.anchoredPosition = _arrowBasePos = new Vector2(-120f, -120f);
+            _devSuiteArrow.sizeDelta = new Vector2(110f, 44f);
+            _devSuiteArrow.localEulerAngles = new Vector3(0, 0, 45f);
+
+            var img = arrowGo.AddComponent<Image>();
+            img.raycastTarget = false;
+            img.sprite = Resources.Load<Sprite>("DevSuiteArrow");
+
+            var arrowShadow = arrowGo.AddComponent<Shadow>();
+            arrowShadow.effectColor = new Color(0f, 0f, 0f, 0.75f);
+            arrowShadow.effectDistance = new Vector2(2f, -2f);
         }
 
         private void UpdateUI()
         {
+            UpdateDevSuiteArrow();
+
             if (_hudText != null)
             {
                 var godModeStr = _godMode ? " (GOD MODE)" : "";
@@ -655,6 +683,24 @@ namespace Ff.DevSuite.Samples.Asteroids
             {
                 _gameOverText.gameObject.SetActive(_isGameOver);
             }
+        }
+
+        private void UpdateDevSuiteArrow()
+        {
+            if (_devSuiteArrow == null || _devSuiteOpenedInSession)
+            {
+                return;
+            }
+
+            if (DevSuiteContext.Default.PanelExpanded)
+            {
+                _devSuiteOpenedInSession = true;
+                _devSuiteArrow.gameObject.SetActive(false);
+                return;
+            }
+
+            var bounce = Mathf.PingPong(Time.unscaledTime * 120f, 60f);
+            _devSuiteArrow.anchoredPosition = _arrowBasePos + new Vector2(1f, 1f).normalized * bounce;
         }
 
         private class DebrisLine

@@ -50,6 +50,8 @@ namespace Ff.DevSuite
         string GetAllLogsText();
         void ClearLogs();
         void ClearSettings();
+        event Action OnChanged;
+        bool PanelExpanded { get; set; }
     }
 
 #if UNITY_EDITOR
@@ -176,7 +178,7 @@ namespace Ff.DevSuite
         private float? _savedGameSpeed;
 
         private event Action OnApiCalled;
-        internal event Action OnChanged;
+        public event Action OnChanged;
         internal event Action OnEveryFrame;
         internal event Action OnPerformancePanelChanged;
         internal event Action<BaseGraphDataProvider, bool> OnPerformanceGraphCollapsedChanged;
@@ -1129,7 +1131,7 @@ namespace Ff.DevSuite
             set => SetSettingsValue(() => Settings.Value.LogsVisible, v => Settings.Value.LogsVisible = v, value);
         }
 
-        internal bool PanelExpanded
+        public bool PanelExpanded
         {
             get => (Settings?.Ready ?? false) && Settings.Value.PanelExpanded;
             set => SetSettingsValue(() => Settings.Value.PanelExpanded, v => Settings.Value.PanelExpanded = v, value);
