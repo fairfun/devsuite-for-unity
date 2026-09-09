@@ -719,6 +719,7 @@ namespace Ff.DevSuite.View
             {
                 matches = allCommands
                     .OrderBy(x => ghostCmd != null && x == ghostCmd ? 0 : 1)
+                    .ThenBy(x => x.Path, StringComparer.OrdinalIgnoreCase)
                     .ThenBy(x => x.CliCommand, StringComparer.OrdinalIgnoreCase)
                     .ThenByDescending(x => x.Priority)
                     .ToList();
@@ -753,7 +754,7 @@ namespace Ff.DevSuite.View
                             }
                             else
                             {
-                                var fullPath = $"{c.CategoryName}/{c.GroupName}/{c.CommandId}/{c.CliCommand}";
+                                var fullPath = $"{c.Path}/{c.CliCommand}";
                                 if (fullPath.IndexOf(cmdQueryStr, StringComparison.OrdinalIgnoreCase) >= 0 || smartRegex.IsMatch(fullPath))
                                 {
                                     rank = 4;
@@ -768,6 +769,7 @@ namespace Ff.DevSuite.View
                     )
                     .Where(x => x.rank < int.MaxValue)
                     .OrderBy(x => x.rank)
+                    .ThenBy(x => x.cmd.Path, StringComparer.OrdinalIgnoreCase)
                     .ThenBy(x => x.cmd.CliCommand, StringComparer.OrdinalIgnoreCase)
                     .ThenByDescending(x => x.cmd.Priority)
                     .Select(x => x.cmd)
@@ -809,7 +811,7 @@ namespace Ff.DevSuite.View
             var header = new VisualElement();
             header.AddToClassList("logs-cli-tooltip-header");
 
-            var pathPrefix = $"{cmd.CategoryName}/{cmd.GroupName}/{cmd.CommandId}/";
+            var pathPrefix = $"{cmd.Path}/";
             var pathLabel = new Label(pathPrefix);
             pathLabel.AddToClassList("logs-cli-tooltip-path");
             header.Add(pathLabel);

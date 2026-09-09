@@ -1630,7 +1630,8 @@ namespace Ff.DevSuite
             }
 
             return list
-                .OrderBy(c => c.CliCommand, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(c => c.Path, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(c => c.CliCommand, StringComparer.OrdinalIgnoreCase)
                 .ThenByDescending(c => c.Priority)
                 .ToList();
         }
@@ -3141,6 +3142,7 @@ namespace Ff.DevSuite
         public string CategoryName => Command?.AssignedToGroup?.AssignedToCategory?.DisplayName ?? (Command?.CategoryId != null ? DevSuiteUtils.TrimName(Command.CategoryId) : "Default");
         public string GroupName => Command?.AssignedToGroup?.DisplayName ?? (Command?.GroupId != null ? DevSuiteUtils.TrimName(Command.GroupId) : "Default");
         public string CommandId => !string.IsNullOrEmpty(Command?.DisplayName) ? Command.DisplayName : (!string.IsNullOrEmpty(Command?.Id) ? DevSuiteUtils.TrimName(Command.Id) : "Default");
+        public string Path => $"{CategoryName}/{GroupName}/{CommandId}";
 
         public CliCommandData(string cliCommand, string title, string description, CommandUnitButton button, Command command, IReadOnlyList<CommandUnitButtonParameter> parameters)
         {

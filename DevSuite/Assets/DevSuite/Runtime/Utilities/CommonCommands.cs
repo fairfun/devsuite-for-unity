@@ -410,7 +410,7 @@ namespace Ff.DevSuite
             sb.AppendLine($"Available CLI Commands ({commands.Count}):");
             foreach (var cmd in commands)
             {
-                var fullPath = $"{cmd.CategoryName}/{cmd.GroupName}/{cmd.CommandId}/";
+                var fullPath = $"{cmd.Path}/";
                 var paramsList = new List<string>();
                 if (cmd.Parameters != null)
                 {

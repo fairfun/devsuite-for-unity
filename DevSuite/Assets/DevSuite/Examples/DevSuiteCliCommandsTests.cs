@@ -67,6 +67,19 @@ namespace Ff.DevSuite
             }
         }
 
+        [CommandCategory("AAA_Cat")]
+        public static class TestSortingCatA
+        {
+            [CommandButton] public static void Zulu() { }
+            [CommandButton] public static void Alpha() { }
+        }
+
+        [CommandCategory("ZZZ_Cat")]
+        public static class TestSortingCatZ
+        {
+            [CommandButton] public static void Beta() { }
+        }
+
         private class TestMemorySavedPrefs : ISavedPrefs
         {
             private readonly Dictionary<string, object> _data = new();
@@ -291,6 +304,17 @@ namespace Ff.DevSuite
 
                 var tabUnpause = DevSuiteUtils.TryGetCliTabCompletion("unp", allCliCmds, out var compUnpause);
                 Assert(tabUnpause && compUnpause == "unpause ", "Tab completes unpause command");
+
+                // Test 15: Path-first sorting of CLI commands
+                context.AttributesParser.RegisterStatic(typeof(TestSortingCatA));
+                context.AttributesParser.RegisterStatic(typeof(TestSortingCatZ));
+                var sortedCmds = context.GetActiveCliCommands();
+                var alphaIdx = sortedCmds.FindIndex(c => c.CliCommand == "Alpha");
+                var zuluIdx = sortedCmds.FindIndex(c => c.CliCommand == "Zulu");
+                var betaIdx = sortedCmds.FindIndex(c => c.CliCommand == "Beta");
+                Assert(alphaIdx >= 0 && zuluIdx >= 0 && betaIdx >= 0, "Registered test sorting commands are present in active CLI commands");
+                Assert(alphaIdx < zuluIdx, "Within same path, commands sorted alphabetically by command name (Alpha < Zulu)");
+                Assert(zuluIdx < betaIdx, "Higher level sorting by path takes precedence over command name (AAA_Cat/.../Zulu < ZZZ_Cat/.../Beta)");
 
                 try
                 {
