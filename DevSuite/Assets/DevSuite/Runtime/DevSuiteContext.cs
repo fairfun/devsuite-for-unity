@@ -113,7 +113,7 @@ namespace Ff.DevSuite
             _isEditorPlaying = UnityEditor.EditorApplication.isPlaying;
             UnityEditor.EditorApplication.playModeStateChanged += m =>
             {
-                _isEditorPlaying = m == UnityEditor.PlayModeStateChange.EnteredPlayMode;
+                _isEditorPlaying = m is UnityEditor.PlayModeStateChange.ExitingEditMode or UnityEditor.PlayModeStateChange.EnteredPlayMode;
                 if (m is UnityEditor.PlayModeStateChange.ExitingEditMode or UnityEditor.PlayModeStateChange.ExitingPlayMode)
                 {
                     ResetStatic();
@@ -121,7 +121,9 @@ namespace Ff.DevSuite
             };
         }
 
-        public static bool IsPlaying => _isEditorPlaying;
+        public static bool IsPlaying => Thread.CurrentThread.ManagedThreadId == _mainThreadId
+            ? Application.isPlaying
+            : _isEditorPlaying;
 #else
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void InitRuntime()
