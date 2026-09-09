@@ -30,7 +30,7 @@ namespace Ff.DevSuite.Samples.Asteroids
         [CommandValue] public int ActiveAsteroidsCount => _asteroids.Count;
         [CommandValue] public int ActiveBulletsCount => _bullets.Count;
 
-        [CommandButton(Title = "Spawn Wave", Color = "#66CCFF", Description = "Spawn a new wave of large asteroids around the screen edges.")]
+        [CommandButton(Title = "Spawn Wave", CliCommand = "spawn_wave", Color = "#66CCFF", Description = "Spawn a new wave of large asteroids around the screen edges.")]
         private void SpawnWave(int count = 4)
         {
             for (var i = 0; i < count; i++)
@@ -39,13 +39,16 @@ namespace Ff.DevSuite.Samples.Asteroids
             }
         }
 
-        [CommandButton(Title = "Spawn 1 Asteroid", Description = "Spawn a single large asteroid.")]
-        public void SpawnOneAsteroid()
+        [CommandButton(Title = "Spawn Asteroid", CliCommand = "spawn_asteroid", Description = "Spawn large asteroids.")]
+        public void SpawnOneAsteroid(int count = 1)
         {
-            SpawnAsteroid(AsteroidSize.Large);
+            for (var i = 0; i < count; i++)
+            {
+                SpawnAsteroid(AsteroidSize.Large);
+            }
         }
 
-        [CommandButton(Title = "Nuke Asteroids", Color = "#FF5555", Description = "Destroys all active asteroids on screen with score and debris.")]
+        [CommandButton(Title = "Nuke Asteroids", CliCommand = "nuke_asteroids", Color = "#FF5555", Description = "Destroys all active asteroids on screen with score and debris.")]
         public void NukeAllAsteroids()
         {
             foreach (var asteroid in _asteroids.ToArray())
@@ -54,7 +57,7 @@ namespace Ff.DevSuite.Samples.Asteroids
             }
         }
 
-        [CommandButton(Title = "Clear Asteroids", Description = "Removes all asteroids without awarding points.")]
+        [CommandButton(Title = "Clear Asteroids", CliCommand = "clear_asteroids", Description = "Removes all asteroids without awarding points.")]
         private void ClearAsteroids()
         {
             foreach (var asteroid in _asteroids.ToArray())
@@ -64,7 +67,7 @@ namespace Ff.DevSuite.Samples.Asteroids
             _asteroids.Clear();
         }
 
-        [CommandButton(Title = "Destroy Asteroid", Color = "#FF5555", Description = "Destroys the selected asteroid from the dropdown.")]
+        [CommandButton(Title = "Destroy Asteroid", CliCommand = "destroy_asteroid", Color = "#FF5555", Description = "Destroys the selected asteroid from the dropdown.")]
         public void DestroySelectedAsteroid(AsteroidEntity asteroid = null)
         {
             if (asteroid == null && _asteroids.Count > 0)
@@ -77,7 +80,7 @@ namespace Ff.DevSuite.Samples.Asteroids
             }
         }
 
-        [CommandButton(Title = "Reset Game", Color = "#FFCC00", Description = "Reset score, restore lives, and start a fresh wave.")]
+        [CommandButton(Title = "Reset Game", CliCommand = "reset_game", Color = "#FFCC00", Description = "Reset score, restore lives, and start a fresh wave.")]
         private void ResetGame()
         {
             _score = 0;
@@ -97,16 +100,16 @@ namespace Ff.DevSuite.Samples.Asteroids
             UpdateUI();
         }
 
-        [CommandButton(Title = "+500 Score", Description = "Add bonus points to score.")]
+        [CommandButton(Title = "Add Score", CliCommand = "add_score", Description = "Add bonus points to score.")]
         public void AddScore(int amount = 500)
         {
             _score += amount;
         }
 
-        [CommandButton(Title = "+1 Life", Description = "Add an extra life.")]
-        public void AddLife()
+        [CommandButton(Title = "Add Life", CliCommand = "add_life", Description = "Add an extra life.")]
+        public void AddLife(int count = 1)
         {
-            _lives++;
+            _lives += count;
         }
 
         private Camera _mainCamera;
