@@ -9,6 +9,7 @@ namespace Ff.DevSuite.View
         private DevSuiteContext _context;
 
         private readonly Button _resetButton;
+        private readonly VisualElement _resetProgressBar;
         private readonly Button _logsButton;
         private readonly Button _commandsButton;
         private readonly Button _pinnedCommandsButton;
@@ -30,9 +31,16 @@ namespace Ff.DevSuite.View
         private readonly DevSuitePanelActivationMode _activationMode;
         private readonly ControlPanelExpandButtonVisibility _expandButtonVisibility;
 
+        private const float ResetHoldDuration = 2.0f;
+        private const float ResetClickThreshold = 0.2f;
+
         private int _clickCount;
         private IVisualElementScheduledItem _clickResetTask;
         private IVisualElementScheduledItem _holdTask;
+        private IVisualElementScheduledItem _resetHoldTask;
+        private bool _resetHoldCompleted;
+        private bool _resetHoldCancelled;
+        private float _resetHoldStartTime;
         private IVisualElementScheduledItem _warningTask;
         private float _lastToggleTime;
 
@@ -56,6 +64,10 @@ namespace Ff.DevSuite.View
             AddToClassList("ff-panel");
 
             _resetButton = this.Q<Button>("reset-btn");
+            _resetProgressBar = new VisualElement { name = "reset-btn-progress", pickingMode = PickingMode.Ignore };
+            _resetProgressBar.AddToClassList("ff-control-panel-btn-progress");
+            _resetProgressBar.style.display = DisplayStyle.None;
+            _resetButton.Insert(0, _resetProgressBar);
             _logsButton = this.Q<Button>("logs-btn");
             _commandsButton = this.Q<Button>("commands-btn");
             _pinnedCommandsButton = this.Q<Button>("pinned-commands-btn");
@@ -95,6 +107,13 @@ namespace Ff.DevSuite.View
             _activationMode = activationMode;
             _expandButtonVisibility = expandButtonVisibility;
 
+            _resetButton.RegisterCallback<PointerDownEvent>(HandleResetPointerDown, TrickleDown.TrickleDown);
+            _resetButton.RegisterCallback<PointerUpEvent>(HandleResetPointerUp, TrickleDown.TrickleDown);
+            _resetButton.RegisterCallback<PointerLeaveEvent>(HandleResetPointerLeave, TrickleDown.TrickleDown);
+            _resetButton.RegisterCallback<PointerCancelEvent>(HandleResetPointerLeave, TrickleDown.TrickleDown);
+            _resetButton.RegisterCallback<MouseDownEvent>(HandleResetMouseDown, TrickleDown.TrickleDown);
+            _resetButton.RegisterCallback<MouseUpEvent>(HandleResetMouseUp, TrickleDown.TrickleDown);
+            _resetButton.RegisterCallback<MouseLeaveEvent>(HandleResetPointerLeave, TrickleDown.TrickleDown);
             _resetButton.clicked += HandleResetClicked;
             _logsButton.clicked += () => ToggleContextValue(ctx => ctx.LogsVisible = !ctx.LogsVisible);
             _commandsButton.clicked += () => ToggleContextValue(ctx => ctx.CommandsVisible = !ctx.CommandsVisible);
@@ -209,6 +228,96 @@ namespace Ff.DevSuite.View
             _holdTask = null;
         }
 
+        private void HandleResetMouseDown(MouseDownEvent evt) => HandleResetHoldStart();
+        private void HandleResetMouseUp(EventBase evt) => HandleResetHoldStop();
+        private void HandleResetPointerDown(PointerDownEvent evt) => HandleResetHoldStart();
+        private void HandleResetPointerUp(EventBase evt) => HandleResetHoldStop();
+
+        private void HandleResetHoldStart()
+        {
+            if (_resetHoldTask != null)
+                return;
+
+            _resetHoldCompleted = false;
+            _resetHoldCancelled = false;
+            _resetHoldStartTime = GetCurrentTime();
+            SetResetProgress(0f);
+
+            _resetHoldTask = schedule.Execute(() =>
+            {
+                var elapsed = GetCurrentTime() - _resetHoldStartTime;
+                var progress = Mathf.Clamp01(elapsed / ResetHoldDuration);
+                SetResetProgress(progress);
+
+                if (elapsed >= ResetHoldDuration)
+                {
+                    _resetHoldCompleted = true;
+                    _resetHoldTask.Pause();
+                    _resetHoldTask = null;
+                    SetResetProgress(0f);
+
+                    if (_context != null)
+                    {
+                        _context.ClearAllSavedPrefs();
+                    }
+                    else
+                    {
+                        Prefs.SavedPrefs.ClearAll();
+                    }
+                    DevSuiteUtils.ShowIconButtonClickedFeedback(_resetButton);
+                    UpdateView();
+                }
+            }).Every(16);
+        }
+
+        private void HandleResetHoldStop()
+        {
+            if (_resetHoldTask != null)
+            {
+                var elapsed = GetCurrentTime() - _resetHoldStartTime;
+                if (elapsed >= ResetClickThreshold)
+                {
+                    _resetHoldCancelled = true;
+                }
+
+                _resetHoldTask.Pause();
+                _resetHoldTask = null;
+                SetResetProgress(0f);
+            }
+        }
+
+        private void HandleResetPointerLeave(EventBase evt)
+        {
+            if (_resetHoldTask != null)
+            {
+                _resetHoldCancelled = true;
+                _resetHoldTask.Pause();
+                _resetHoldTask = null;
+                SetResetProgress(0f);
+            }
+        }
+
+        private void SetResetProgress(float progress)
+        {
+            if (_resetProgressBar == null)
+                return;
+
+            if (progress <= 0f)
+            {
+                _resetProgressBar.style.display = DisplayStyle.None;
+                _resetProgressBar.style.width = Length.Percent(0);
+                return;
+            }
+
+            _resetProgressBar.style.display = DisplayStyle.Flex;
+            _resetProgressBar.style.width = Length.Percent(progress * 100f);
+
+            var colorBar = Color.Lerp(ColorOrangeBase, new Color(1f, 102f / 255f, 102f / 255f, 1f), progress);
+            var colorBg = new Color(colorBar.r, colorBar.g, colorBar.b, Mathf.Lerp(0.18f, 0.40f, progress));
+            _resetProgressBar.style.backgroundColor = colorBg;
+            _resetProgressBar.style.borderBottomColor = colorBar;
+        }
+
         private void ShowCooldownFeedback()
         {
             _warningTask?.Pause();
@@ -253,7 +362,19 @@ namespace Ff.DevSuite.View
 
         private void HandleResetClicked()
         {
-            _context.ClearSettings();
+            if (_resetHoldCompleted)
+            {
+                _resetHoldCompleted = false;
+                return;
+            }
+
+            if (_resetHoldCancelled)
+            {
+                _resetHoldCancelled = false;
+                return;
+            }
+
+            _context?.ClearSettings();
             DevSuiteUtils.ShowIconButtonClickedFeedback(_resetButton);
             UpdateView();
         }
@@ -556,6 +677,13 @@ namespace Ff.DevSuite.View
         {
             StopPauseMonitoring();
             StopBlinking();
+            _holdTask?.Pause();
+            _holdTask = null;
+            _resetHoldTask?.Pause();
+            _resetHoldTask = null;
+            _resetHoldCompleted = false;
+            _resetHoldCancelled = false;
+            SetResetProgress(0f);
             _hasUnseenErrors = false;
             _isPaused = false;
 

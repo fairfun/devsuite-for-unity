@@ -74,11 +74,42 @@ namespace Ff.Prefs
             }
         }
 
+        private static readonly List<WeakReference<SavedPrefs>> _allInstances = new();
+
         protected SavedPrefs()
         {
+            lock (_allInstances)
+            {
+                _allInstances.Add(new WeakReference<SavedPrefs>(this));
+            }
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 #endif
+        }
+
+        public static void ClearAll()
+        {
+            Default.Clear();
+            Default.Invalidate();
+
+            lock (_allInstances)
+            {
+                for (var i = _allInstances.Count - 1; i >= 0; i--)
+                {
+                    if (_allInstances[i].TryGetTarget(out var instance))
+                    {
+                        if (instance != _default)
+                        {
+                            instance.Clear();
+                            instance.Invalidate();
+                        }
+                    }
+                    else
+                    {
+                        _allInstances.RemoveAt(i);
+                    }
+                }
+            }
         }
 
 #if UNITY_EDITOR

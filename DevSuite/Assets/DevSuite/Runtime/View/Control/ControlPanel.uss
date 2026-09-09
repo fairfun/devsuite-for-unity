@@ -31,6 +31,7 @@
     background-color: transparent;
     border-width: 0;
     border-radius: 4px;
+    overflow: hidden;
     transition-property: background-color;
     transition-duration: 0.1s;
     transition-timing-function: linear;
@@ -129,4 +130,13 @@
 
 .ff-control-panel-unpause-btn:active {
     background-color: rgba(255, 200, 0, 0.35);
+}
+
+.ff-control-panel-btn-progress {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0%;
+    border-bottom-width: 2px;
 }

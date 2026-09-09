@@ -349,6 +349,16 @@ namespace Ff.DevSuite
                 Assert(context.Settings.Value.ShowSelectionFrame, "ShowSelectionFrame ON persisted to settings");
                 context.ClearSettings();
                 Assert(context.ShowSelectionFrame, "ShowSelectionFrame is restored to ON after ClearSettings");
+
+                // Test 18: ClearAllSavedPrefs clears all saved prefs and settings
+                context.ShowSelectionFrame = false;
+                Assert(!context.ShowSelectionFrame, "ShowSelectionFrame can be toggled OFF before ClearAllSavedPrefs");
+                var testProp = new SavedPrefsProperty<int>("test_clear_all_key", 99, true, SavedPrefs.Default);
+                testProp.Value = 123;
+                Assert(testProp.Value == 123, "testProp has updated value before ClearAllSavedPrefs");
+                context.ClearAllSavedPrefs();
+                Assert(context.ShowSelectionFrame, "ShowSelectionFrame is restored to ON after ClearAllSavedPrefs");
+                Assert(testProp.Value == 99, "testProp value is reset to default after ClearAllSavedPrefs");
             }
             finally
             {

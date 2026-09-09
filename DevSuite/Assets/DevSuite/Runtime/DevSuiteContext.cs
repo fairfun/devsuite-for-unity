@@ -2654,6 +2654,12 @@ namespace Ff.DevSuite
             _onChangedDispatcher.Dispatch();
         }
 
+        internal void ClearAllSavedPrefs()
+        {
+            SavedPrefs.ClearAll();
+            ClearSettings();
+        }
+
         internal bool IsPaused
         {
             get
