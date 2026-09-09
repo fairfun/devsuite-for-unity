@@ -775,6 +775,37 @@ namespace Ff.DevSuite
             );
         }
 
+        public const float DefaultUnity2022MouseWheelScrollSize = 1000f;
+
+        public static void SetupScrollView(ScrollView scrollView)
+        {
+            // Mouse wheel speed in Unity 6 works fine natively, but in Unity 2022 it is terribly slow in Player/Runtime by default.
+            // In Unity Editor windows (ContextType.Editor), the default scroll size is already correct and applying Player scroll size causes extreme speed.
+#if UNITY_6000_0_OR_NEWER
+            return;
+#endif
+            var scrollSize = DefaultUnity2022MouseWheelScrollSize;
+
+            var defaultScrollSize = scrollView.mouseWheelScrollSize > 0f
+                ? scrollView.mouseWheelScrollSize
+                : 18f;
+
+            void Apply(IPanel panel)
+            {
+                if (panel != null && panel.contextType == ContextType.Editor)
+                {
+                    scrollView.mouseWheelScrollSize = defaultScrollSize;
+                    return;
+                }
+
+                scrollView.mouseWheelScrollSize = scrollSize;
+            }
+
+            Apply(scrollView.panel);
+
+            scrollView.RegisterCallback<AttachToPanelEvent>(evt => Apply(evt.destinationPanel));
+            scrollView.RegisterCallback<DetachFromPanelEvent>(_ => scrollView.mouseWheelScrollSize = defaultScrollSize);
+        }
 
         [System.Runtime.InteropServices.DllImport("__Internal")] private static extern void CopyToClipboardWebGL(string text);
 

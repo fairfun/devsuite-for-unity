@@ -37,6 +37,7 @@ namespace Ff.DevSuite.View
 
             var scrollView = this.Q<ScrollView>("commands-scroll-view");
             scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            DevSuiteUtils.SetupScrollView(scrollView);
 
             DevSuiteUtils.SetupTooltips(this);
         }

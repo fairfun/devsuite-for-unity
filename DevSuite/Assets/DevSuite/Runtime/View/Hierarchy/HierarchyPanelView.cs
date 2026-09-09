@@ -148,6 +148,7 @@ namespace Ff.DevSuite.View
 
             _scrollView = root.Q<ScrollView>("hierarchyScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            DevSuiteUtils.SetupScrollView(_scrollView);
             DevSuiteUtils.SetupTooltips(this);
 
             _topSpacer = new VisualElement { name = "hierarchyTopSpacer" };

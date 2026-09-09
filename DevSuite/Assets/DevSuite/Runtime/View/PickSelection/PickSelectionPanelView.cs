@@ -180,6 +180,7 @@ namespace Ff.DevSuite.View
             _pickPopupScrollView = new ScrollView();
             _pickPopupScrollView.AddToClassList("pick-selection-popup-scroll");
             _pickPopupScrollView.pickingMode = PickingMode.Position;
+            DevSuiteUtils.SetupScrollView(_pickPopupScrollView);
             _pickPopup.Add(_pickPopupScrollView);
 
             Add(_pickPopup);

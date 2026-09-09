@@ -500,6 +500,13 @@ namespace Ff.DevSuite
                     UnityEngine.Object.DestroyImmediate(go);
                     context.SetSelectedGameObjects(null);
                 }
+
+                // Test 18: SetupScrollView configures mouseWheelScrollSize in Unity 2022
+                var testScrollView = new UnityEngine.UIElements.ScrollView();
+                DevSuiteUtils.SetupScrollView(testScrollView);
+#if !UNITY_6000_0_OR_NEWER
+                assert(Mathf.Approximately(testScrollView.mouseWheelScrollSize, DevSuiteUtils.DefaultUnity2022MouseWheelScrollSize), "SetupScrollView sets mouseWheelScrollSize to DefaultMouseWheelScrollSize in Unity 2022");
+#endif
             }
             finally
             {

@@ -123,6 +123,7 @@ namespace Ff.DevSuite.View
             _selectedObjectPathLabel = root.Q<Label>("selectedObjectPathLabel");
             _scrollView = root.Q<ScrollView>("inspectorScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            DevSuiteUtils.SetupScrollView(_scrollView);
 
             // Header activity toggle — wired dynamically in RebuildInspector since it needs the current GO reference
             _goActivityToggle = root.Q<Toggle>("goActivityToggle");

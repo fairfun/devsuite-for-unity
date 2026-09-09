@@ -120,6 +120,7 @@ namespace Ff.DevSuite.View
 
             _scrollView = root.Q<ScrollView>("logsScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            DevSuiteUtils.SetupScrollView(_scrollView);
             _scrollView.verticalScroller.valueChanged += _ => ClearHovers();
 
             _cliInputField = root.Q<TextField>("cliInputField");
@@ -127,6 +128,7 @@ namespace Ff.DevSuite.View
             _cliSendButton = root.Q<Button>("cliSendButton");
             _cliTooltipContainer = root.Q<VisualElement>("cliTooltipContainer");
             _cliTooltipScrollView = root.Q<ScrollView>("cliTooltipScrollView");
+            DevSuiteUtils.SetupScrollView(_cliTooltipScrollView);
 
             if (_cliInputField != null)
             {
