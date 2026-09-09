@@ -612,6 +612,7 @@ namespace Ff.DevSuite
             RegisterPerformanceGraph(new DrawCallsCountDataProvider());
             RegisterPerformanceGraph(new BatchesCountDataProvider());
             RegisterPerformanceGraph(new TrianglesCountDataProvider());
+            RegisterPerformanceGraph(new BatteryDrainRateGraphDataProvider());
 
             if (registerCommonCommands)
             {
