@@ -339,6 +339,7 @@ namespace Ff.DevSuite.View
             {
                 name = "copyBtn",
                 text = "\uf0c5",
+                tooltip = "Copy log message to clipboard.\n\n<b><i>Hint: </i></b>Customize copy behavior via <b><color=#ffc800>DevSuiteContext.Default.CopyToClipboardAction</color></b>.",
             };
             copyBtn.AddToClassList("log-item-copy-btn");
             header.Add(copyBtn);
@@ -346,7 +347,7 @@ namespace Ff.DevSuite.View
             copyBtn.RegisterCallback<ClickEvent>(
                 evt =>
                 {
-                    DevSuiteUtils.CopyToClipboard(msg.MessageAndCallStack());
+                    DevSuiteUtils.CopyToClipboard(msg.MessageAndCallStack(), _context);
                     DevSuiteUtils.ShowIconButtonClickedFeedback(copyBtn);
                     Debug.Log("Copied the message into the clipboard");
                 }
@@ -1135,7 +1136,7 @@ namespace Ff.DevSuite.View
 
         private void HandleCopyPressed()
         {
-            DevSuiteUtils.CopyToClipboard(_context.GetAllLogsText());
+            DevSuiteUtils.CopyToClipboard(_context.GetAllLogsText(), _context);
             Debug.Log("Copied the filtered log into the clipboard");
         }
 

@@ -18,7 +18,7 @@
                 <ui:Label text="&#xf06a;" class="logs-severity-icon" picking-mode="Ignore"/>
                 <ui:Label name="errorCount" text="0" class="logs-severity-count" picking-mode="Ignore"/>
             </ui:Button>
-            <ui:Button name="copyButton" class="logs-icon-btn" tooltip="Copy filtered logs to clipboard"/>
+            <ui:Button name="copyButton" class="logs-icon-btn" tooltip="Copy filtered logs to clipboard.&#10;&#10;&lt;b&gt;&lt;i&gt;Hint: &lt;/i&gt;&lt;/b&gt;Customize copy behavior via &lt;b&gt;&lt;color=#ffc800&gt;DevSuiteContext.Default.CopyToClipboardAction&lt;/color&gt;&lt;/b&gt;."/>
             <ui:Button name="saveButton" class="logs-icon-btn" tooltip="Save filtered logs to a text file.&#10;&#10;Saved into Application.persistentDataPath/logger_panel/Log_yyyyMMdd_HHmmss.log."/>
             <ui:Button name="folderButton" class="logs-icon-btn" tooltip="Open log folder in OS file explorer.&#10;&#10;Opens Application.persistentDataPath/logger_panel."/>
             <ui:Button name="clearButton" class="logs-icon-btn clear-btn" tooltip="Clear all logs.&#10;&#10;Clear logs in code via &lt;b&gt;&lt;color=#ffc800&gt;DevSuiteContext.Default.ClearLogs()&lt;/color&gt;&lt;/b&gt;."/>

@@ -86,7 +86,7 @@ namespace Ff.DevSuite.View
                 _copyBtn.clicked += () =>
                 {
                     var hierarchyText = GetFullHierarchyAsText();
-                    DevSuiteUtils.CopyToClipboard(hierarchyText);
+                    DevSuiteUtils.CopyToClipboard(hierarchyText, _context);
                     DevSuiteUtils.ShowIconButtonClickedFeedback(_copyBtn);
                 };
             }

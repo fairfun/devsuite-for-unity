@@ -321,6 +321,34 @@ namespace Ff.DevSuite
                 context.BuildVersionToDisplay = () => "custom_version";
                 Assert(context.BuildVersionToDisplay() == "custom_version", "Custom BuildVersionToDisplay override works");
 
+                // Test 15b: CopyToClipboardAction and CopyToClipboardContinueType
+                Assert(context.CopyToClipboardAction != null, "Default CopyToClipboardAction is not null");
+                var defaultRes = context.CopyToClipboardAction("sample text");
+                Assert(defaultRes.ContinueType == CopyToClipboardContinueType.ContinueDefault, "Default CopyToClipboardAction returns ContinueDefault");
+                Assert(defaultRes.ContinueTextIfNeedModifying == "sample text", "Default CopyToClipboardAction passes through unmodified text");
+
+                string capturedText = null;
+                var continueType = CopyToClipboardContinueType.Break;
+                string continueText = null;
+                context.CopyToClipboardAction = text =>
+                {
+                    capturedText = text;
+                    return (continueType, continueText);
+                };
+
+                DevSuiteUtils.CopyToClipboard("hello world", context);
+                Assert(capturedText == "hello world", "Custom CopyToClipboardAction was invoked with expected text on Break");
+
+                continueType = CopyToClipboardContinueType.ContinueDefault;
+                continueText = "modified text";
+                capturedText = null;
+                DevSuiteUtils.CopyToClipboard("test continue", context);
+                Assert(capturedText == "test continue", "Custom CopyToClipboardAction was invoked with expected text on ContinueDefault");
+
+                context.CopyToClipboardAction = t => (CopyToClipboardContinueType.ContinueDefault, t);
+                var restored = context.CopyToClipboardAction("reset");
+                Assert(restored.ContinueType == CopyToClipboardContinueType.ContinueDefault && restored.ContinueTextIfNeedModifying == "reset", "CopyToClipboardAction restored to default");
+
                 // Test 16: SavedPrefs and SavedPrefsProperty Invalidate & re-initialization
                 var prefs1 = new TestMemorySavedPrefs();
                 var prop = new SavedPrefsProperty<int>("test_invalidated_key", 10, true, prefs1);

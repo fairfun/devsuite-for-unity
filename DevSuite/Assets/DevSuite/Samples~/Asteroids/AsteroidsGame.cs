@@ -207,6 +207,11 @@ namespace Ff.DevSuite.Samples.Asteroids
 
             CreateShip();
             ResetGame();
+
+            Debug.Log("DevSuite Demo: Welcome to the Asteroids sample game!");
+            Debug.Log("This is a demo project to demonstrate the basic capabilities of DevSuite.");
+            Debug.Log("Open DevSuite (Ctrl + ` or the top-right button) to explore runtime commands, inspect game objects, tweak parameters, and monitor logs.");
+            Debug.LogWarning("Have fun!");
         }
 
         private void OnDestroy()

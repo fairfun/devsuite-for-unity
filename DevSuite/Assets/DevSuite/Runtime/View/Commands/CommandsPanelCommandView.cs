@@ -78,11 +78,11 @@ namespace Ff.DevSuite.View
                         throw new NotImplementedException();
                     }
                 }
-                DevSuiteUtils.CopyToClipboard(sb.ToString());
+                DevSuiteUtils.CopyToClipboard(sb.ToString(), context);
 
                 DevSuiteUtils.ShowIconButtonClickedFeedback(copyIcon);
             };
-            registerTooltip?.Invoke(copyIcon, "Copy command information.\n\nCopies Category, Group, Command ID, and current parameter values to clipboard.");
+            registerTooltip?.Invoke(copyIcon, "Copy command information.\n\nCopies Category, Group, Command ID, and current parameter values to clipboard.\n\n<b><i>Hint: </i></b>Customize copy behavior via <b><color=#ffc800>DevSuiteContext.Default.CopyToClipboardAction</color></b>.");
             Add(copyIcon);
 
             _label = new Label(command.DisplayName);

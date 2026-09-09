@@ -47,6 +47,7 @@ namespace Ff.DevSuite
         void RegisterPerformanceGraph<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider;
         void SetPerformanceGraphSettings<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider;
         Func<string> BuildVersionToDisplay { get; set; }
+        CopyToClipboardAction CopyToClipboardAction { get; set; }
         string GetAllLogsText();
         void ClearLogs();
         void ClearSettings();
@@ -160,6 +161,9 @@ namespace Ff.DevSuite
 
         internal static DevSuiteContext DefaultInternal => Default as DevSuiteContext;
 
+        public Func<string> BuildVersionToDisplay { get; set; } = GetDefaultBuildVersionToDisplay;
+        public CopyToClipboardAction CopyToClipboardAction { get; set; } = t => (CopyToClipboardContinueType.ContinueDefault, t);
+
         public CommandAttributesParser AttributesParser { get; internal set; }
         public DevSuiteCommandsApi CommandsApi { get; internal set; }
 
@@ -230,8 +234,6 @@ namespace Ff.DevSuite
         internal Dictionary<Type, CommandFunctionsSourceProvider> TargetsForFunctionsProviders { get; } = new();
 
         private readonly Dictionary<Type, GraphDataProviderSettings> _performanceGraphSettings = new();
-
-        public Func<string> BuildVersionToDisplay { get; set; } = GetDefaultBuildVersionToDisplay;
 
         private static string GetDefaultBuildVersionToDisplay()
         {
@@ -3180,4 +3182,12 @@ namespace Ff.DevSuite
         Warning,
         Error,
     }
+
+    public enum CopyToClipboardContinueType
+    {
+        ContinueDefault,
+        Break,
+    }
+
+    public delegate (CopyToClipboardContinueType ContinueType, string ContinueTextIfNeedModifying) CopyToClipboardAction(string text);
 }

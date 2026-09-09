@@ -197,7 +197,7 @@ namespace Ff.DevSuite.View
                     if (_context.SelectedGameObjects.Count > 0)
                     {
                         var inspectorText = GetInspectorText(_context.SelectedGameObjects);
-                        DevSuiteUtils.CopyToClipboard(inspectorText);
+                        DevSuiteUtils.CopyToClipboard(inspectorText, _context);
                         DevSuiteUtils.ShowIconButtonClickedFeedback(_copyBtn);
                     }
                 };

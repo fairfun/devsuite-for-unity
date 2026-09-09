@@ -682,7 +682,17 @@ namespace Ff.DevSuite
             return result as Dictionary<TKey, TValue>;
         }
 
-        public static void CopyToClipboard(string text)
+        public static void CopyToClipboard(string text, IDevSuiteContext context)
+        {
+            var (customActionResult, customContinueText) = context.CopyToClipboardAction.Invoke(text);
+            customContinueText ??= text;
+            if (customActionResult == CopyToClipboardContinueType.ContinueDefault)
+            {
+                DefaultCopyToClipboard(customContinueText);
+            }
+        }
+
+        private static void DefaultCopyToClipboard(string text)
         {
             if (IsWebGl)
             {

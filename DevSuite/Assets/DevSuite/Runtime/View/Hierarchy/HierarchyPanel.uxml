@@ -19,7 +19,7 @@
             <ui:Button name="refreshBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Refresh hierarchy.&#10;&#10;Rescans all active scenes and rebuilds the hierarchy tree."/>
             <ui:Button name="pickBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Pick mode: Raycast and select objects in Game View.&#10;&#10;Clicking an object selects it in Hierarchy and Inspector, and syncs with Unity Editor selection."/>
             <ui:VisualElement style="flex-grow: 1;"/>
-            <ui:Button name="copyBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Copy scene hierarchy to clipboard.&#10;&#10;Exports the entire loaded scene hierarchy as an indented text tree."/>
+            <ui:Button name="copyBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Copy scene hierarchy to clipboard.&#10;&#10;Exports the entire loaded scene hierarchy as an indented text tree.&#10;&#10;&lt;b&gt;&lt;i&gt;Hint: &lt;/i&gt;&lt;/b&gt;Customize copy behavior via &lt;b&gt;&lt;color=#ffc800&gt;DevSuiteContext.Default.CopyToClipboardAction&lt;/color&gt;&lt;/b&gt;."/>
         </ui:VisualElement>
 
         <!-- Scrollable Scene Tree -->
