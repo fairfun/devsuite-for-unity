@@ -94,14 +94,14 @@ if [ "$TARGET" = "Android" ]; then
     OUTPUT_PATH="Build/Android/build.apk"
 elif [ "$TARGET" = "StandaloneLinux64" ]; then
     OUTPUT_PATH="Build/Linux/xArena.x86_64"
-elif [ "$TARGET" = "Asteroids" ] || [ "$TARGET" = "GitHubPages" ] || [ "$TARGET" = "WebGL_Sample" ]; then
+elif [ "$TARGET" = "Asteroids" ] || [ "$TARGET" = "GitHubPages" ] || [ "$TARGET" = "docs" ] || [ "$TARGET" = "WebGL" ]; then
+    TARGET="WebGL"
+    OUTPUT_PATH="../docs"
+    EXTRA_BUILD_ARGS=("-sampleScene" "-docs")
+elif [ "$TARGET" = "WebGL_Sample" ]; then
     TARGET="WebGL"
     OUTPUT_PATH="Build/WebGL_Sample"
     EXTRA_BUILD_ARGS=("-sampleScene")
-elif [ "$TARGET" = "docs" ]; then
-    TARGET="WebGL"
-    OUTPUT_PATH="docs"
-    EXTRA_BUILD_ARGS=("-sampleScene" "-docs")
 fi
 
 echo "Starting build for target: $TARGET (Output: $OUTPUT_PATH)..."
@@ -120,10 +120,12 @@ echo "Build logs will be written to: $LOG_FILE"
     "${@:2}"
 
 # Ensure .nojekyll is present for GitHub Pages WebGL builds
-if [ "$TARGET" = "WebGL" ] && [ -d "$PROJECT_DIR/$OUTPUT_PATH" ]; then
-    touch "$PROJECT_DIR/$OUTPUT_PATH/.nojekyll"
-    echo "Ensured .nojekyll in $PROJECT_DIR/$OUTPUT_PATH for GitHub Pages compatibility."
+FINAL_OUTPUT_DIR="$PROJECT_DIR/$OUTPUT_PATH"
+if [ "$TARGET" = "WebGL" ] && [ -d "$FINAL_OUTPUT_DIR" ]; then
+    touch "$FINAL_OUTPUT_DIR/.nojekyll"
+    echo "Ensured .nojekyll in $(cd "$FINAL_OUTPUT_DIR" && pwd) for GitHub Pages compatibility."
 fi
 
-echo "Build finished! Resulting build path: $PROJECT_DIR/$OUTPUT_PATH"
+RESOLVED_OUTPUT="$(cd "$PROJECT_DIR/$OUTPUT_PATH" 2>/dev/null && pwd || echo "$PROJECT_DIR/$OUTPUT_PATH")"
+echo "Build finished! Resulting build path: $RESOLVED_OUTPUT"
 echo "Check logs at $LOG_FILE for details."

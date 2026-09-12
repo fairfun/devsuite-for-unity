@@ -14,20 +14,36 @@ public static class BuildUtil
     }
 
     [MenuItem("Build/Build Sample WebGL")]
-    [MenuItem("Build/Build Asteroids for GitHub Pages (Build/WebGL_Sample)")]
+    [MenuItem("Build/Build Asteroids for GitHub Pages (docs)")]
     public static void BuildSampleWebGL()
+    {
+        BuildAsteroidsWebGL(GetDocsOutputPath());
+    }
+
+    [MenuItem("Build/Build Asteroids to Build/WebGL_Sample")]
+    public static void BuildAsteroidsWebGLSampleFolder()
     {
         BuildAsteroidsWebGL("Build/WebGL_Sample");
     }
 
-    [MenuItem("Build/Build Asteroids for GitHub Pages (docs)")]
-    public static void BuildAsteroidsWebGLDocs()
+    public static string GetDocsOutputPath()
     {
-        BuildAsteroidsWebGL("docs");
+        var projectDir = Directory.GetCurrentDirectory();
+        var parentDir = Directory.GetParent(projectDir)?.FullName;
+        if (parentDir != null && Directory.Exists(Path.Combine(parentDir, ".git")))
+        {
+            return "../docs";
+        }
+        return "docs";
     }
 
-    public static void BuildAsteroidsWebGL(string outputPath = "Build/WebGL_Sample")
+    public static void BuildAsteroidsWebGL(string outputPath = null)
     {
+        if (string.IsNullOrEmpty(outputPath))
+        {
+            outputPath = GetDocsOutputPath();
+        }
+
         var sampleScene = GetSampleScenePath();
         if (string.IsNullOrEmpty(sampleScene))
         {
@@ -154,12 +170,12 @@ public static class BuildUtil
             customScenes = new[] { GetSampleScenePath() };
             if (outputPath == "Build/WebGL")
             {
-                outputPath = isDocsOutput ? "docs" : "Build/WebGL_Sample";
+                outputPath = GetDocsOutputPath();
             }
         }
         else if (isDocsOutput && outputPath == "Build/WebGL")
         {
-            outputPath = "docs";
+            outputPath = GetDocsOutputPath();
         }
 
         PerformBuild(target, outputPath, customScenes);
