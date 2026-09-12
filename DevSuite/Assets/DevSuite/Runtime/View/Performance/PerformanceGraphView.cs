@@ -8,15 +8,15 @@ namespace Ff.DevSuite.View
 {
     internal class PerformanceGraphView : VisualElement
     {
-        private const int MaxValuesCount = BaseGraphDataProvider.CounterLength;
+        private int _maxValuesCount;
         private BaseGraphDataProvider _dataProvider;
         private DevSuiteContext _context;
-        private readonly BaseGraphDataProvider.DataPoint[] _dataPointsBuffer = new BaseGraphDataProvider.DataPoint[MaxValuesCount];
+        private BaseGraphDataProvider.DataPoint[] _dataPointsBuffer;
         private int _dataPointsCount;
         private int _dataPointsHead;
 
-        private readonly Vertex[] _verticesBuffer = new Vertex[(MaxValuesCount + 1) * 4];
-        private readonly ushort[] _indicesBuffer = CreateIndicesBuffer((MaxValuesCount + 1) * 6);
+        private Vertex[] _verticesBuffer;
+        private ushort[] _indicesBuffer;
 
         private static readonly Color ColorGood = new(118 / 255f, 194 / 255f, 37 / 255f);           // #79af55
         private static readonly Color ColorBad = new(194 / 255f, 53 / 255f, 37 / 255f);             // #ca413c
@@ -29,6 +29,8 @@ namespace Ff.DevSuite.View
         {
             _dataProvider = dataProvider;
             _context = context;
+
+            SetMaxValuesCount(_context?.PerformanceGraphTicksCapacity ?? _dataProvider?.CurrentCounterCapacity ?? BaseGraphDataProvider.CounterLength);
 
             AddToClassList("graph-view");
             style.overflow = Overflow.Hidden;
@@ -62,12 +64,39 @@ namespace Ff.DevSuite.View
         public void Initialize(DevSuiteContext context)
         {
             _context = context;
+            SetMaxValuesCount(_context?.PerformanceGraphTicksCapacity ?? _dataProvider?.CurrentCounterCapacity ?? BaseGraphDataProvider.CounterLength);
             Subscribe();
             UpdateViewState();
         }
 
+        private void SetMaxValuesCount(int count)
+        {
+            if (count < 2)
+            {
+                count = 2;
+            }
+
+            if (_maxValuesCount == count && _dataPointsBuffer != null)
+            {
+                return;
+            }
+
+            _maxValuesCount = count;
+            _dataPointsBuffer = new BaseGraphDataProvider.DataPoint[_maxValuesCount];
+            _dataPointsCount = 0;
+            _dataPointsHead = 0;
+            _verticesBuffer = new Vertex[(_maxValuesCount + 1) * 4];
+            _indicesBuffer = CreateIndicesBuffer((_maxValuesCount + 1) * 6);
+        }
+
         internal void UpdateViewState()
         {
+            var maxCount = _context?.PerformanceGraphTicksCapacity ?? _dataProvider?.CurrentCounterCapacity ?? BaseGraphDataProvider.CounterLength;
+            if (_maxValuesCount != maxCount)
+            {
+                SetMaxValuesCount(maxCount);
+            }
+
             tooltip = _dataProvider?.Settings?.Tooltip;
             var isCollapsed = _context != null && _context.IsPerformanceGraphCollapsed(_dataProvider);
             if (isCollapsed)
@@ -80,7 +109,7 @@ namespace Ff.DevSuite.View
                 RemoveFromClassList("graph-view--collapsed");
                 if (_dataPointsCount > 0)
                 {
-                    var lastPoint = _dataPointsBuffer[(_dataPointsHead - 1 + MaxValuesCount) % MaxValuesCount];
+                    var lastPoint = _dataPointsBuffer[(_dataPointsHead - 1 + _maxValuesCount) % _maxValuesCount];
                     UpdateInfoLabel(lastPoint);
                 }
                 else
@@ -145,9 +174,14 @@ namespace Ff.DevSuite.View
                 return;
             }
 
+            if (_dataPointsBuffer == null || _maxValuesCount <= 0)
+            {
+                return;
+            }
+
             _dataPointsBuffer[_dataPointsHead] = point;
-            _dataPointsHead = (_dataPointsHead + 1) % MaxValuesCount;
-            if (_dataPointsCount < MaxValuesCount)
+            _dataPointsHead = (_dataPointsHead + 1) % _maxValuesCount;
+            if (_dataPointsCount < _maxValuesCount)
             {
                 _dataPointsCount++;
             }
@@ -168,7 +202,7 @@ namespace Ff.DevSuite.View
                 return;
             }
 
-            if (_dataPointsCount == 0)
+            if (_dataPointsBuffer == null || _dataPointsCount == 0 || _maxValuesCount <= 0)
             {
                 return;
             }
@@ -180,7 +214,7 @@ namespace Ff.DevSuite.View
             }
 
             var maxOfValues = double.MinValue;
-            var startIdx = (_dataPointsHead - _dataPointsCount + MaxValuesCount) % MaxValuesCount;
+            var startIdx = (_dataPointsHead - _dataPointsCount + _maxValuesCount) % _maxValuesCount;
             var curIdx = startIdx;
             for (var i = 0; i < _dataPointsCount; i++)
             {
@@ -189,13 +223,13 @@ namespace Ff.DevSuite.View
                 {
                     maxOfValues = val;
                 }
-                curIdx = (curIdx + 1) % MaxValuesCount;
+                curIdx = (curIdx + 1) % _maxValuesCount;
             }
 
             const float topPadding = 1.05f;
             const float minRefScale = 1.3f;
 
-            var lastIdx = (_dataPointsHead - 1 + MaxValuesCount) % MaxValuesCount;
+            var lastIdx = (_dataPointsHead - 1 + _maxValuesCount) % _maxValuesCount;
             var lastPoint = _dataPointsBuffer[lastIdx];
             var refValue = lastPoint.ReferenceValue;
 
@@ -212,16 +246,16 @@ namespace Ff.DevSuite.View
             }
 
             var referenceValue = refValue ?? maxOfValues;
-            var barWidth = rect.width / MaxValuesCount;
+            var barWidth = rect.width / _maxValuesCount;
 
             var mesh = mgc.Allocate(_verticesBuffer.Length, _indicesBuffer.Length);
 
             var colorImpact = lastPoint.ReferenceColorImpact ?? 1f;
 
             curIdx = startIdx;
-            var dataStartIndex = MaxValuesCount - _dataPointsCount;
+            var dataStartIndex = _maxValuesCount - _dataPointsCount;
 
-            for (var i = 0; i < MaxValuesCount; i++)
+            for (var i = 0; i < _maxValuesCount; i++)
             {
                 var vOffset = i * 4;
                 var xMin = i * barWidth;
@@ -267,7 +301,7 @@ namespace Ff.DevSuite.View
                     finalColor = Color.Lerp(ColorGood, ColorBad, (float)currentToReference);
 
                     yMin = rect.height - barHeight;
-                    curIdx = (curIdx + 1) % MaxValuesCount;
+                    curIdx = (curIdx + 1) % _maxValuesCount;
                 }
 
                 _verticesBuffer[vOffset + 0] = new Vertex
@@ -297,7 +331,7 @@ namespace Ff.DevSuite.View
             }
 
             // Reference Line (last quad in buffer)
-            var refVOffset = MaxValuesCount * 4;
+            var refVOffset = _maxValuesCount * 4;
             if (refValue.HasValue)
             {
                 var refHeightPercent = (float)(referenceValue / maxValue);

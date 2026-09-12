@@ -4,9 +4,26 @@ namespace Ff.DevSuite.Performance
 {
     public abstract class BaseGraphDataProvider : IDisposable
     {
-        public const int CounterLength = 100;
+        public const int DefaultCounterLength = 100;
+        public const int CounterLength = DefaultCounterLength;
 
-        internal NumberCounterDouble _counter = new(CounterLength);
+        internal NumberCounterDouble _counter = new(DefaultCounterLength);
+        public int CurrentCounterCapacity => _counter.Capacity;
+        public int CurrentCounterLength => CurrentCounterCapacity;
+
+        internal void SetCounterCapacity(int capacity)
+        {
+            if (capacity < 2)
+            {
+                capacity = 2;
+            }
+
+            if (_counter.Capacity != capacity)
+            {
+                _counter = new NumberCounterDouble(capacity);
+            }
+        }
+
         public virtual float? ReferenceValueColorImpact => 1.5f;
         internal event Action<DataPoint> OnUpdate;
         internal abstract string Label { get; }

@@ -53,6 +53,7 @@ namespace Ff.DevSuite
         void ClearSettings();
         event Action OnChanged;
         bool PanelExpanded { get; set; }
+        int PerformanceGraphTicksCapacity { get; set; }
     }
 
 #if UNITY_EDITOR
@@ -680,6 +681,27 @@ namespace Ff.DevSuite
         }
 
         private readonly Dictionary<Type, bool> _performancePanelDefaultCollapsed = new();
+        private int _performanceGraphTicksCapacity = BaseGraphDataProvider.CounterLength;
+
+        public int PerformanceGraphTicksCapacity
+        {
+            get => _performanceGraphTicksCapacity;
+            set
+            {
+                var clamped = Math.Max(2, value);
+                if (_performanceGraphTicksCapacity == clamped)
+                    return;
+
+                _performanceGraphTicksCapacity = clamped;
+
+                foreach (var provider in _performancePanelProviders)
+                {
+                    provider.SetCounterCapacity(_performanceGraphTicksCapacity);
+                }
+
+                _onPerformancePanelDispatcher.Dispatch();
+            }
+        }
 
         public void RegisterPerformanceGraph<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider
         {
@@ -708,6 +730,8 @@ namespace Ff.DevSuite
             {
                 provider.Settings.Tooltip = tooltip;
             }
+
+            provider.SetCounterCapacity(_performanceGraphTicksCapacity);
 
             _performancePanelDefaultCollapsed[type] = !isExpanded;
             _performancePanelProviders.Add(provider);

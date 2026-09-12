@@ -18,10 +18,14 @@ namespace Ff.DevSuite
         private double _min;
         private double _max;
 
-        public NumberCounterDouble(int length)
+        public NumberCounterDouble(int capacity)
         {
-            _buffer = new double[length];
+            if (capacity <= 0)
+                throw new ArgumentOutOfRangeException(nameof(capacity), "Length must be greater than zero.");
+            _buffer = new double[capacity];
         }
+
+        public int Capacity => _buffer.Length;
 
         public bool IsFilled => _count >= _buffer.Length;
 
