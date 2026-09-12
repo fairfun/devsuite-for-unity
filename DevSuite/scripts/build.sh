@@ -6,7 +6,7 @@ set -e
 # Target parameter check
 if [ -z "$1" ]; then
     echo "Usage: $0 <BuildTarget>"
-    echo "Example targets: WebGL, StandaloneLinux64, Android"
+    echo "Example targets: Asteroids, GitHubPages, docs, WebGL, StandaloneLinux64, Android"
     exit 1
 fi
 
@@ -87,14 +87,24 @@ echo "Found Unity Executable: $UNITY_PATH"
 LOG_FILE="$PROJECT_DIR/Build/unity_build.log"
 mkdir -p "$PROJECT_DIR/Build"
 
+EXTRA_BUILD_ARGS=()
 OUTPUT_PATH="Build/$TARGET"
+
 if [ "$TARGET" = "Android" ]; then
     OUTPUT_PATH="Build/Android/build.apk"
 elif [ "$TARGET" = "StandaloneLinux64" ]; then
     OUTPUT_PATH="Build/Linux/xArena.x86_64"
+elif [ "$TARGET" = "Asteroids" ] || [ "$TARGET" = "GitHubPages" ] || [ "$TARGET" = "WebGL_Sample" ]; then
+    TARGET="WebGL"
+    OUTPUT_PATH="Build/WebGL_Sample"
+    EXTRA_BUILD_ARGS=("-sampleScene")
+elif [ "$TARGET" = "docs" ]; then
+    TARGET="WebGL"
+    OUTPUT_PATH="docs"
+    EXTRA_BUILD_ARGS=("-sampleScene" "-docs")
 fi
 
-echo "Starting build for target: $TARGET..."
+echo "Starting build for target: $TARGET (Output: $OUTPUT_PATH)..."
 echo "Build logs will be written to: $LOG_FILE"
 
 # Run Unity in batchmode
@@ -106,7 +116,14 @@ echo "Build logs will be written to: $LOG_FILE"
     -buildTarget "$TARGET" \
     -outputPath "$OUTPUT_PATH" \
     -logFile "$LOG_FILE" \
+    "${EXTRA_BUILD_ARGS[@]}" \
     "${@:2}"
+
+# Ensure .nojekyll is present for GitHub Pages WebGL builds
+if [ "$TARGET" = "WebGL" ] && [ -d "$PROJECT_DIR/$OUTPUT_PATH" ]; then
+    touch "$PROJECT_DIR/$OUTPUT_PATH/.nojekyll"
+    echo "Ensured .nojekyll in $PROJECT_DIR/$OUTPUT_PATH for GitHub Pages compatibility."
+fi
 
 echo "Build finished! Resulting build path: $PROJECT_DIR/$OUTPUT_PATH"
 echo "Check logs at $LOG_FILE for details."
