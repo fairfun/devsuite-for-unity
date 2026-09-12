@@ -125,7 +125,7 @@ namespace Ff.DevSuite.View
 
             if (clicked)
             {
-                var topRoot = DevSuiteUtils.GetTopRoot(this) ?? this;
+                var topRoot = DevSuiteUiUtils.GetTopRoot(this) ?? this;
                 var screenHeight = Screen.height > 0 ? Screen.height : 600f;
                 var screenWidth = Screen.width > 0 ? Screen.width : 800f;
                 var panelWidth = topRoot?.layout.width > 0 ? topRoot.layout.width : topRoot?.resolvedStyle.width > 0 ? topRoot.resolvedStyle.width : screenWidth;
@@ -180,7 +180,7 @@ namespace Ff.DevSuite.View
             _pickPopupScrollView = new ScrollView();
             _pickPopupScrollView.AddToClassList("pick-selection-popup-scroll");
             _pickPopupScrollView.pickingMode = PickingMode.Position;
-            DevSuiteUtils.SetupScrollView(_pickPopupScrollView);
+            DevSuiteUiUtils.SetupScrollView(_pickPopupScrollView);
             _pickPopup.Add(_pickPopupScrollView);
 
             Add(_pickPopup);

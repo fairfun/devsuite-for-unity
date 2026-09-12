@@ -37,9 +37,9 @@ namespace Ff.DevSuite.View
 
             var scrollView = this.Q<ScrollView>("commands-scroll-view");
             scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            DevSuiteUtils.SetupScrollView(scrollView);
+            DevSuiteUiUtils.SetupScrollView(scrollView);
 
-            DevSuiteUtils.SetupTooltips(this);
+            DevSuiteUiUtils.SetupTooltips(this);
         }
 
         private void RegisterTooltip(VisualElement element, string text)
@@ -145,7 +145,7 @@ namespace Ff.DevSuite.View
 
                     var filterInput = new TextField();
                     filterInput.AddToClassList("ff-commands-filter-input");
-                    DevSuiteUtils.SetupInputFieldFocus(filterInput);
+                    DevSuiteUiUtils.SetupInputFieldFocus(filterInput);
                     Button clearFilterButton = null;
                     Action<string> updateClearFilterVisibility = value =>
                     {
@@ -588,7 +588,7 @@ namespace Ff.DevSuite.View
                     // Default TextField representation
                     var field = new TextField();
                     field.AddToClassList("ff-commands-unit-text");
-                    DevSuiteUtils.SetupInputFieldFocus(field);
+                    DevSuiteUiUtils.SetupInputFieldFocus(field);
                     if (command.HeightMultiplier > 1)
                     {
                         field.multiline = true;

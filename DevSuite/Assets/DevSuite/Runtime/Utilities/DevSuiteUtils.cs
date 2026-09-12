@@ -2,13 +2,12 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Ff.DevSuite
 {
     using System;
     using System.Collections.Generic;
-    using Ff.DevSuite.Commands;
+    using Commands;
 
     internal static class DevSuiteUtils
     {
@@ -572,25 +571,6 @@ namespace Ff.DevSuite
             return tokens;
         }
 
-        public static void ShowIconButtonClickedFeedback(Button button)
-        {
-            if (button.userData is string)
-            {
-                return; // already showing feedback
-            }
-
-            var originalIcon = button.text;
-            button.userData = originalIcon;
-            button.text = "\uf00c";
-            button.schedule.Execute(
-                () =>
-                {
-                    button.text = originalIcon;
-                    button.userData = null;
-                }
-            ).StartingIn(500);
-        }
-
         private static readonly Regex AllUppercaseLetters = new(@"([A-Z]|[0-9]+)|(?:\\ )+", RegexOptions.Compiled);
 
         public static readonly Regex AlwaysMatch = new(@".*", RegexOptions.Compiled);
@@ -704,6 +684,16 @@ namespace Ff.DevSuite
             }
         }
 
+        [System.Runtime.InteropServices.DllImport("__Internal")]
+        private static extern void CopyToClipboardWebGL(string text);
+
+        private static bool IsWebGl =>
+#if UNITY_WEBGL && !UNITY_EDITOR
+            true;
+#else
+            false;
+#endif
+
         public static string GetGameObjectPath(GameObject go)
         {
             if (go == null)
@@ -720,434 +710,53 @@ namespace Ff.DevSuite
             return go.scene.name + "/" + path;
         }
 
-        public static bool IsVisible(this VisualElement e)
-        {
-            return e.visible && e.style.display != DisplayStyle.None &&
-                   (e.parent == null || IsVisible(e.parent));
-        }
-
-        public static void SetupInputFieldFocus(TextField textField)
-        {
-            textField.focusable = false;
-            textField.tabIndex = -1;
-
-            void ConfigureTextInput(VisualElement input)
-            {
-                if (input != null)
-                {
-                    input.tabIndex = -1;
-                    input.focusable = false;
-                }
-            }
-
-            var textInput = textField.Q("unity-text-input");
-            if (textInput != null)
-            {
-                ConfigureTextInput(textInput);
-            }
-            else
-            {
-                textField.RegisterCallback<AttachToPanelEvent>(
-                    evt =>
-                    {
-                        ConfigureTextInput(textField.Q("unity-text-input"));
-                    }
-                );
-            }
-
-            textField.RegisterCallback<PointerDownEvent>(
-                evt =>
-                {
-                    textField.focusable = true;
-                    var input = textField.Q("unity-text-input");
-                    input.focusable = true;
-                },
-                TrickleDown.TrickleDown
-            );
-
-            textField.RegisterCallback<FocusOutEvent>(
-                evt =>
-                {
-                    textField.focusable = false;
-                    var input = textField.Q("unity-text-input");
-                    input.focusable = false;
-                }
-            );
-        }
-
-        public const float DefaultUnity2022MouseWheelScrollSize = 1000f;
-
-        public static void SetupScrollView(ScrollView scrollView)
-        {
-            // Mouse wheel speed in Unity 6 works fine natively, but in Unity 2022 it is terribly slow in Player/Runtime by default.
-            // In Unity Editor windows (ContextType.Editor), the default scroll size is already correct and applying Player scroll size causes extreme speed.
-#if UNITY_6000_0_OR_NEWER
-            return;
-#endif
-            var scrollSize = DefaultUnity2022MouseWheelScrollSize;
-
-            var defaultScrollSize = scrollView.mouseWheelScrollSize > 0f
-                ? scrollView.mouseWheelScrollSize
-                : 18f;
-
-            void Apply(IPanel panel)
-            {
-                if (panel != null && panel.contextType == ContextType.Editor)
-                {
-                    scrollView.mouseWheelScrollSize = defaultScrollSize;
-                    return;
-                }
-
-                scrollView.mouseWheelScrollSize = scrollSize;
-            }
-
-            Apply(scrollView.panel);
-
-            scrollView.RegisterCallback<AttachToPanelEvent>(evt => Apply(evt.destinationPanel));
-            scrollView.RegisterCallback<DetachFromPanelEvent>(_ => scrollView.mouseWheelScrollSize = defaultScrollSize);
-        }
-
-        [System.Runtime.InteropServices.DllImport("__Internal")] private static extern void CopyToClipboardWebGL(string text);
-
-        private static bool IsWebGl =>
-#if UNITY_WEBGL && !UNITY_EDITOR
-            true;
-#else
-            false;
-#endif
-
-        public static void SetupTooltips(VisualElement root)
-        {
-            var tooltipLabel = new Label();
-            tooltipLabel.enableRichText = true;
-            tooltipLabel.AddToClassList("ff-tooltip");
-            tooltipLabel.style.position = Position.Absolute;
-            tooltipLabel.pickingMode = PickingMode.Ignore;
-            tooltipLabel.style.display = DisplayStyle.None;
-            tooltipLabel.style.visibility = Visibility.Hidden;
-
-            // Apply theme styling programmatically to ensure it works across all panels
-            tooltipLabel.style.backgroundColor = new Color(42 / 255f, 42 / 255f, 42 / 255f, 0.95f);
-            tooltipLabel.style.color = new Color(238 / 255f, 238 / 255f, 238 / 255f, 1f);
-            tooltipLabel.style.paddingLeft = 10;
-            tooltipLabel.style.paddingRight = 10;
-            tooltipLabel.style.paddingTop = 6;
-            tooltipLabel.style.paddingBottom = 6;
-            tooltipLabel.style.borderBottomLeftRadius = 4;
-            tooltipLabel.style.borderBottomRightRadius = 4;
-            tooltipLabel.style.borderTopLeftRadius = 4;
-            tooltipLabel.style.borderTopRightRadius = 4;
-            tooltipLabel.style.borderLeftWidth = 1;
-            tooltipLabel.style.borderRightWidth = 1;
-            tooltipLabel.style.borderTopWidth = 1;
-            tooltipLabel.style.borderBottomWidth = 1;
-            tooltipLabel.style.borderLeftColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
-            tooltipLabel.style.borderRightColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
-            tooltipLabel.style.borderTopColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
-            tooltipLabel.style.borderBottomColor = new Color(68 / 255f, 68 / 255f, 68 / 255f, 1f);
-            tooltipLabel.style.fontSize = 12;
-            tooltipLabel.style.whiteSpace = WhiteSpace.Normal;
-            tooltipLabel.style.maxWidth = 300;
-
-            root.Add(tooltipLabel);
-
-            VisualElement currentTooltipElement = null;
-            string currentTooltipText = null;
-            IVisualElementScheduledItem tooltipTask = null;
-            var lastMousePosition = Vector2.zero;
-
-            void EnsureAttached()
-            {
-                bool isEditor = root.panel != null && root.panel.contextType == ContextType.Editor;
-                if (isEditor)
-                {
-                    if (tooltipLabel.parent != root)
-                    {
-                        tooltipLabel.RemoveFromHierarchy();
-                        root.Add(tooltipLabel);
-                    }
-                    tooltipLabel.BringToFront();
-                }
-                else
-                {
-                    var topRoot = GetTopRoot(root);
-                    if (topRoot != null)
-                    {
-                        if (tooltipLabel.parent != topRoot)
-                        {
-                            tooltipLabel.RemoveFromHierarchy();
-                            topRoot.Add(tooltipLabel);
-                        }
-                        tooltipLabel.BringToFront();
-                    }
-                }
-            }
-
-            root.RegisterCallback<DetachFromPanelEvent>(_ =>
-            {
-                HideTooltip(ref currentTooltipElement, ref currentTooltipText, tooltipTask, tooltipLabel);
-                if (tooltipLabel.parent != null && tooltipLabel.parent != root)
-                {
-                    tooltipLabel.RemoveFromHierarchy();
-                }
-            });
-
-            root.RegisterCallback<MouseOverEvent>(
-                evt =>
-                {
-                    lastMousePosition = evt.mousePosition;
-                    var target = evt.target as VisualElement;
-                    VisualElement tooltipElement = null;
-                    while (target != null && target != root)
-                    {
-                        if (!string.IsNullOrEmpty(target.tooltip))
-                        {
-                            tooltipElement = target;
-                            break;
-                        }
-                        target = target.parent;
-                    }
-
-                    if (tooltipElement != null)
-                    {
-                        if (currentTooltipElement != tooltipElement)
-                        {
-                            currentTooltipElement = tooltipElement;
-                            currentTooltipText = tooltipElement.tooltip;
-
-                            tooltipTask?.Pause();
-                            tooltipTask = root.schedule.Execute(
-                                () =>
-                                {
-                                    EnsureAttached();
-                                    tooltipLabel.text = currentTooltipText;
-                                    tooltipLabel.style.display = DisplayStyle.Flex;
-                                    tooltipLabel.style.visibility = Visibility.Hidden;
-                                    tooltipLabel.BringToFront();
-
-                                    EventCallback<GeometryChangedEvent> onGeometryChanged = null;
-                                    onGeometryChanged = (e) =>
-                                    {
-                                        tooltipLabel.UnregisterCallback<GeometryChangedEvent>(onGeometryChanged);
-                                        UpdateTooltipPosition(tooltipLabel, lastMousePosition);
-                                        tooltipLabel.style.visibility = Visibility.Visible;
-                                        tooltipLabel.BringToFront();
-                                    };
-                                    tooltipLabel.RegisterCallback<GeometryChangedEvent>(onGeometryChanged);
-                                }
-                            ).StartingIn(400);
-                        }
-                    }
-                    else
-                    {
-                        HideTooltip(ref currentTooltipElement, ref currentTooltipText, tooltipTask, tooltipLabel);
-                    }
-                },
-                TrickleDown.TrickleDown
-            );
-
-            root.RegisterCallback<MouseMoveEvent>(
-                evt =>
-                {
-                    lastMousePosition = evt.mousePosition;
-                    if (currentTooltipElement != null && tooltipLabel.style.display != DisplayStyle.None)
-                    {
-                        EnsureAttached();
-                        UpdateTooltipPosition(tooltipLabel, lastMousePosition);
-                    }
-                },
-                TrickleDown.TrickleDown
-            );
-
-            root.RegisterCallback<MouseOutEvent>(
-                evt =>
-                {
-                    if (currentTooltipElement != null)
-                    {
-                        var target = evt.target as VisualElement;
-                        if (target == currentTooltipElement)
-                        {
-                            HideTooltip(ref currentTooltipElement, ref currentTooltipText, tooltipTask, tooltipLabel);
-                        }
-                    }
-                },
-                TrickleDown.TrickleDown
-            );
-
-            root.RegisterCallback<MouseLeaveEvent>(
-                evt =>
-                {
-                    HideTooltip(ref currentTooltipElement, ref currentTooltipText, tooltipTask, tooltipLabel);
-                }
-            );
-        }
-
-        internal static VisualElement GetTopRoot(VisualElement element)
-        {
-            if (element == null) return null;
-            if (element.panel?.visualTree != null)
-            {
-                return element.panel.visualTree;
-            }
-            var topRoot = element;
-            while (topRoot.parent != null)
-            {
-                topRoot = topRoot.parent;
-            }
-            return topRoot;
-        }
-
-        private static void UpdateTooltipPosition(Label tooltipLabel, Vector2 mousePosition)
-        {
-            if (tooltipLabel == null || tooltipLabel.style.display == DisplayStyle.None)
-            {
-                return;
-            }
-
-            var parent = tooltipLabel.parent;
-            if (parent == null)
-            {
-                return;
-            }
-
-            bool isEditor = parent.panel != null && parent.panel.contextType == ContextType.Editor;
-            VisualElement topRoot;
-            if (isEditor)
-            {
-                topRoot = parent;
-            }
-            else
-            {
-                topRoot = GetTopRoot(parent);
-                if (topRoot != null && tooltipLabel.parent != topRoot)
-                {
-                    tooltipLabel.RemoveFromHierarchy();
-                    topRoot.Add(tooltipLabel);
-                    parent = topRoot;
-                }
-                else if (topRoot == null)
-                {
-                    topRoot = parent;
-                }
-            }
-            tooltipLabel.BringToFront();
-
-            var rootWidth = topRoot.layout.width;
-            if (float.IsNaN(rootWidth) || rootWidth <= 0)
-            {
-                rootWidth = topRoot.resolvedStyle.width;
-            }
-            if (!isEditor && (float.IsNaN(rootWidth) || rootWidth <= 0) && topRoot.panel?.visualTree != null)
-            {
-                rootWidth = topRoot.panel.visualTree.layout.width;
-                if (float.IsNaN(rootWidth) || rootWidth <= 0)
-                {
-                    rootWidth = topRoot.panel.visualTree.resolvedStyle.width;
-                }
-            }
-            if (float.IsNaN(rootWidth) || rootWidth <= 0)
-            {
-                rootWidth = parent.layout.width;
-            }
-            if (float.IsNaN(rootWidth) || rootWidth <= 0)
-            {
-                rootWidth = UnityEngine.Screen.width > 0 ? UnityEngine.Screen.width : 800f;
-            }
-
-            var rootHeight = topRoot.layout.height;
-            if (float.IsNaN(rootHeight) || rootHeight <= 0)
-            {
-                rootHeight = topRoot.resolvedStyle.height;
-            }
-            if (!isEditor && (float.IsNaN(rootHeight) || rootHeight <= 0) && topRoot.panel?.visualTree != null)
-            {
-                rootHeight = topRoot.panel.visualTree.layout.height;
-                if (float.IsNaN(rootHeight) || rootHeight <= 0)
-                {
-                    rootHeight = topRoot.panel.visualTree.resolvedStyle.height;
-                }
-            }
-            if (float.IsNaN(rootHeight) || rootHeight <= 0)
-            {
-                rootHeight = parent.layout.height;
-            }
-            if (float.IsNaN(rootHeight) || rootHeight <= 0)
-            {
-                rootHeight = UnityEngine.Screen.height > 0 ? UnityEngine.Screen.height : 600f;
-            }
-
-            var tooltipWidth = tooltipLabel.layout.width;
-            if (float.IsNaN(tooltipWidth) || tooltipWidth <= 0)
-            {
-                tooltipWidth = tooltipLabel.resolvedStyle.width;
-                if (float.IsNaN(tooltipWidth) || tooltipWidth <= 0)
-                {
-                    var text = tooltipLabel.text ?? "";
-                    tooltipWidth = Mathf.Clamp(text.Length * 6.5f + 24f, 60f, 300f);
-                }
-            }
-
-            var tooltipHeight = tooltipLabel.layout.height;
-            if (float.IsNaN(tooltipHeight) || tooltipHeight <= 0)
-            {
-                tooltipHeight = tooltipLabel.resolvedStyle.height;
-                if (float.IsNaN(tooltipHeight) || tooltipHeight <= 0)
-                {
-                    tooltipHeight = 24f;
-                }
-            }
-
-            var mouseInTopRoot = topRoot.WorldToLocal(mousePosition);
-
-            var targetX = mouseInTopRoot.x + 12f;
-            if (targetX + tooltipWidth > rootWidth - 4f)
-            {
-                targetX = mouseInTopRoot.x - tooltipWidth - 12f;
-            }
-            targetX = Mathf.Clamp(targetX, 4f, Mathf.Max(4f, rootWidth - tooltipWidth - 4f));
-
-            var targetY = mouseInTopRoot.y + 12f;
-            if (targetY + tooltipHeight > rootHeight - 4f)
-            {
-                targetY = mouseInTopRoot.y - tooltipHeight - 12f;
-            }
-            targetY = Mathf.Clamp(targetY, 4f, Mathf.Max(4f, rootHeight - tooltipHeight - 4f));
-
-            var targetInParent = topRoot.ChangeCoordinatesTo(parent, new Vector2(targetX, targetY));
-
-            tooltipLabel.style.left = targetInParent.x;
-            tooltipLabel.style.top = targetInParent.y;
-        }
-
-        private static void HideTooltip(ref VisualElement currentTooltipElement, ref string currentTooltipText, IVisualElementScheduledItem tooltipTask, Label tooltipLabel)
-        {
-            currentTooltipElement = null;
-            currentTooltipText = null;
-            tooltipTask?.Pause();
-            if (tooltipLabel != null)
-            {
-                tooltipLabel.style.display = DisplayStyle.None;
-                tooltipLabel.style.visibility = Visibility.Hidden;
-            }
-        }
-
         public static string GetFriendlyTypeName(Type t)
         {
-            if (t == null) return "object";
+            if (t == null)
+            {
+                return "object";
+            }
             var underlying = Nullable.GetUnderlyingType(t);
             if (underlying != null)
             {
                 return $"{GetFriendlyTypeName(underlying)}?";
             }
-            if (t == typeof(string)) return "string";
-            if (t == typeof(int)) return "int";
-            if (t == typeof(float)) return "float";
-            if (t == typeof(bool)) return "bool";
-            if (t == typeof(double)) return "double";
-            if (t == typeof(uint)) return "uint";
-            if (t == typeof(long)) return "long";
-            if (t == typeof(byte)) return "byte";
-            if (t == typeof(short)) return "short";
+            if (t == typeof(string))
+            {
+                return "string";
+            }
+            if (t == typeof(int))
+            {
+                return "int";
+            }
+            if (t == typeof(float))
+            {
+                return "float";
+            }
+            if (t == typeof(bool))
+            {
+                return "bool";
+            }
+            if (t == typeof(double))
+            {
+                return "double";
+            }
+            if (t == typeof(uint))
+            {
+                return "uint";
+            }
+            if (t == typeof(long))
+            {
+                return "long";
+            }
+            if (t == typeof(byte))
+            {
+                return "byte";
+            }
+            if (t == typeof(short))
+            {
+                return "short";
+            }
             return t.Name;
         }
 
@@ -1168,7 +777,7 @@ namespace Ff.DevSuite
             {
                 var cmdQuery = trimmed;
                 var matched = allCommands.FirstOrDefault(c => string.Equals(c.CliCommand, cmdQuery, StringComparison.OrdinalIgnoreCase))
-                           ?? allCommands.FirstOrDefault(c => c.CliCommand.StartsWith(cmdQuery, StringComparison.OrdinalIgnoreCase));
+                              ?? allCommands.FirstOrDefault(c => c.CliCommand.StartsWith(cmdQuery, StringComparison.OrdinalIgnoreCase));
 
                 if (matched != null)
                 {

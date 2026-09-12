@@ -123,7 +123,7 @@ namespace Ff.DevSuite.View
             _selectedObjectPathLabel = root.Q<Label>("selectedObjectPathLabel");
             _scrollView = root.Q<ScrollView>("inspectorScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            DevSuiteUtils.SetupScrollView(_scrollView);
+            DevSuiteUiUtils.SetupScrollView(_scrollView);
 
             // Header activity toggle — wired dynamically in RebuildInspector since it needs the current GO reference
             _goActivityToggle = root.Q<Toggle>("goActivityToggle");
@@ -145,7 +145,7 @@ namespace Ff.DevSuite.View
                 _refreshBtn.clicked += () =>
                 {
                     RefreshInspectorValues();
-                    DevSuiteUtils.ShowIconButtonClickedFeedback(_refreshBtn);
+                    DevSuiteUiUtils.ShowIconButtonClickedFeedback(_refreshBtn);
                 };
             }
 
@@ -199,12 +199,12 @@ namespace Ff.DevSuite.View
                     {
                         var inspectorText = GetInspectorText(_context.SelectedGameObjects);
                         DevSuiteUtils.CopyToClipboard(inspectorText, _context);
-                        DevSuiteUtils.ShowIconButtonClickedFeedback(_copyBtn);
+                        DevSuiteUiUtils.ShowIconButtonClickedFeedback(_copyBtn);
                     }
                 };
             }
 
-            DevSuiteUtils.SetupTooltips(this);
+            DevSuiteUiUtils.SetupTooltips(this);
         }
 
         public void Initialize(DevSuiteContext context)

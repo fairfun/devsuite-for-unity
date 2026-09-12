@@ -129,7 +129,7 @@ namespace Ff.DevSuite.View
             _expandButton.RegisterCallback<MouseUpEvent>(HandleExpandMouseUp, TrickleDown.TrickleDown);
             _expandButton.RegisterCallback<MouseLeaveEvent>(HandleExpandMouseUp, TrickleDown.TrickleDown);
             _expandButton.clicked += HandleExpandClicked;
-            DevSuiteUtils.SetupTooltips(this);
+            DevSuiteUiUtils.SetupTooltips(this);
 
             RegisterCallback<AttachToPanelEvent>(_ =>
             {
@@ -264,7 +264,7 @@ namespace Ff.DevSuite.View
                     {
                         Prefs.SavedPrefs.ClearAll();
                     }
-                    DevSuiteUtils.ShowIconButtonClickedFeedback(_resetButton);
+                    DevSuiteUiUtils.ShowIconButtonClickedFeedback(_resetButton);
                     UpdateView();
                 }
             }).Every(16);
@@ -375,7 +375,7 @@ namespace Ff.DevSuite.View
             }
 
             _context?.ClearSettings();
-            DevSuiteUtils.ShowIconButtonClickedFeedback(_resetButton);
+            DevSuiteUiUtils.ShowIconButtonClickedFeedback(_resetButton);
             UpdateView();
         }
 

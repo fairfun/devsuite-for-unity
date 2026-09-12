@@ -76,7 +76,7 @@ namespace Ff.DevSuite.View
             _refreshBtn.clicked += () =>
             {
                 _context.NotifyHierarchyChanged();
-                DevSuiteUtils.ShowIconButtonClickedFeedback(_refreshBtn);
+                DevSuiteUiUtils.ShowIconButtonClickedFeedback(_refreshBtn);
             };
 
             _copyBtn = root.Q<Button>("copyBtn");
@@ -87,12 +87,12 @@ namespace Ff.DevSuite.View
                 {
                     var hierarchyText = GetFullHierarchyAsText();
                     DevSuiteUtils.CopyToClipboard(hierarchyText, _context);
-                    DevSuiteUtils.ShowIconButtonClickedFeedback(_copyBtn);
+                    DevSuiteUiUtils.ShowIconButtonClickedFeedback(_copyBtn);
                 };
             }
 
             _filterField = root.Q<TextField>("filterField");
-            DevSuiteUtils.SetupInputFieldFocus(_filterField);
+            DevSuiteUiUtils.SetupInputFieldFocus(_filterField);
             _filterField.RegisterValueChangedCallback(evt => HandleSearchChanged(evt.newValue));
             _filterField.RegisterCallback<FocusOutEvent>(evt => _filterField.SetValueWithoutNotify(_context.HierarchyPattern));
 
@@ -148,8 +148,8 @@ namespace Ff.DevSuite.View
 
             _scrollView = root.Q<ScrollView>("hierarchyScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            DevSuiteUtils.SetupScrollView(_scrollView);
-            DevSuiteUtils.SetupTooltips(this);
+            DevSuiteUiUtils.SetupScrollView(_scrollView);
+            DevSuiteUiUtils.SetupTooltips(this);
 
             _topSpacer = new VisualElement { name = "hierarchyTopSpacer" };
             _topSpacer.style.flexShrink = 0;
@@ -317,7 +317,7 @@ namespace Ff.DevSuite.View
                 _pickOverlay.RegisterCallback<MouseUpEvent>(evt => evt.StopPropagation(), TrickleDown.TrickleDown);
             }
 
-            var topRoot = DevSuiteUtils.GetTopRoot(this) ?? this;
+            var topRoot = DevSuiteUiUtils.GetTopRoot(this) ?? this;
             if (_pickOverlay.parent != topRoot)
             {
                 _pickOverlay.RemoveFromHierarchy();

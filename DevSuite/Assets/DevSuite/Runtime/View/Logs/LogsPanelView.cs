@@ -63,7 +63,7 @@ namespace Ff.DevSuite.View
             var root = this.Q<VisualElement>("logs-panel-root") ?? this;
 
             _filterField = root.Q<TextField>("filterField");
-            DevSuiteUtils.SetupInputFieldFocus(_filterField);
+            DevSuiteUiUtils.SetupInputFieldFocus(_filterField);
             _filterField.RegisterValueChangedCallback(evt => HandleTextChanged(evt.newValue));
             _filterField.RegisterCallback<FocusOutEvent>(
                 evt =>
@@ -94,33 +94,33 @@ namespace Ff.DevSuite.View
             _copyButton.clicked += () =>
             {
                 HandleCopyPressed();
-                DevSuiteUtils.ShowIconButtonClickedFeedback(_copyButton);
+                DevSuiteUiUtils.ShowIconButtonClickedFeedback(_copyButton);
             };
 
             _saveButton = root.Q<Button>("saveButton");
             _saveButton.clicked += () =>
             {
                 HandleSavePressed();
-                DevSuiteUtils.ShowIconButtonClickedFeedback(_saveButton);
+                DevSuiteUiUtils.ShowIconButtonClickedFeedback(_saveButton);
             };
 
             _folderButton = root.Q<Button>("folderButton");
             _folderButton.clicked += () =>
             {
                 HandleFolderPressed();
-                DevSuiteUtils.ShowIconButtonClickedFeedback(_folderButton);
+                DevSuiteUiUtils.ShowIconButtonClickedFeedback(_folderButton);
             };
 
             _clearButton = root.Q<Button>("clearButton");
             _clearButton.clicked += () =>
             {
                 HandleClearPressed();
-                DevSuiteUtils.ShowIconButtonClickedFeedback(_clearButton);
+                DevSuiteUiUtils.ShowIconButtonClickedFeedback(_clearButton);
             };
 
             _scrollView = root.Q<ScrollView>("logsScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            DevSuiteUtils.SetupScrollView(_scrollView);
+            DevSuiteUiUtils.SetupScrollView(_scrollView);
             _scrollView.verticalScroller.valueChanged += _ => ClearHovers();
 
             _cliInputField = root.Q<TextField>("cliInputField");
@@ -128,7 +128,7 @@ namespace Ff.DevSuite.View
             _cliSendButton = root.Q<Button>("cliSendButton");
             _cliTooltipContainer = root.Q<VisualElement>("cliTooltipContainer");
             _cliTooltipScrollView = root.Q<ScrollView>("cliTooltipScrollView");
-            DevSuiteUtils.SetupScrollView(_cliTooltipScrollView);
+            DevSuiteUiUtils.SetupScrollView(_cliTooltipScrollView);
 
             if (_cliInputField != null)
             {
@@ -281,7 +281,7 @@ namespace Ff.DevSuite.View
                 cliTooltipHeader.RegisterCallback<PointerDownEvent>(evt => evt.StopImmediatePropagation());
             }
 
-            DevSuiteUtils.SetupTooltips(this);
+            DevSuiteUiUtils.SetupTooltips(this);
         }
 
         private void ClearHovers()
@@ -350,7 +350,7 @@ namespace Ff.DevSuite.View
                 evt =>
                 {
                     DevSuiteUtils.CopyToClipboard(msg.MessageAndCallStack(), _context);
-                    DevSuiteUtils.ShowIconButtonClickedFeedback(copyBtn);
+                    DevSuiteUiUtils.ShowIconButtonClickedFeedback(copyBtn);
                     Debug.Log("Copied the message into the clipboard");
                 }
             );
