@@ -58,22 +58,25 @@ namespace Ff.DevSuite.Performance
         public Func<double?> ReferenceValueProvider { get; set; }
         public bool? ExpandedByDefault { get; set; }
         public bool? Register { get; set; }
+        public string Tooltip { get; set; }
 
         public GraphDataProviderSettings()
         {
         }
 
-        public GraphDataProviderSettings(Func<double?> referenceValueProvider = null, bool? expandedByDefault = null, bool? register = null)
+        public GraphDataProviderSettings(Func<double?> referenceValueProvider = null, bool? expandedByDefault = null, bool? register = null, string tooltip = null)
         {
             ReferenceValueProvider = referenceValueProvider;
             ExpandedByDefault = expandedByDefault;
             Register = register;
+            Tooltip = tooltip;
         }
 
-        public GraphDataProviderSettings(bool expandedByDefault, bool register = true)
+        public GraphDataProviderSettings(bool expandedByDefault, bool register = true, string tooltip = null)
         {
             ExpandedByDefault = expandedByDefault;
             Register = register;
+            Tooltip = tooltip;
         }
     }
 }

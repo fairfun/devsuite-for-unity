@@ -18,7 +18,7 @@ namespace Ff.DevSuite.View
         private readonly Vertex[] _verticesBuffer = new Vertex[(MaxValuesCount + 1) * 4];
         private readonly ushort[] _indicesBuffer = CreateIndicesBuffer((MaxValuesCount + 1) * 6);
 
-        private static readonly Color ColorGood = new(118 / 255f, 194 / 255f, 37 / 255f);          // #79af55
+        private static readonly Color ColorGood = new(118 / 255f, 194 / 255f, 37 / 255f);           // #79af55
         private static readonly Color ColorBad = new(194 / 255f, 53 / 255f, 37 / 255f);             // #ca413c
         private static readonly Color ColorReference = new(148 / 255f, 53 / 255f, 30 / 255f, 0.5f); // #ca413c99
 
@@ -32,24 +32,27 @@ namespace Ff.DevSuite.View
 
             AddToClassList("graph-view");
             style.overflow = Overflow.Hidden;
+            tooltip = _dataProvider?.Settings?.Tooltip;
 
             _infoLabel = new Label
             {
-                pickingMode = PickingMode.Ignore
+                pickingMode = PickingMode.Ignore,
             };
             _infoLabel.AddToClassList("ff-performance-graph-info");
             Add(_infoLabel);
 
-            RegisterCallback<PointerDownEvent>(evt =>
-            {
-                if (evt.button == 0 && _context != null)
+            RegisterCallback<PointerDownEvent>(
+                evt =>
                 {
-                    bool isCollapsed = _context.IsPerformanceGraphCollapsed(_dataProvider);
-                    _context.SetPerformanceGraphCollapsed(_dataProvider, !isCollapsed);
-                    UpdateViewState();
-                    evt.StopPropagation();
+                    if (evt.button == 0 && _context != null)
+                    {
+                        var isCollapsed = _context.IsPerformanceGraphCollapsed(_dataProvider);
+                        _context.SetPerformanceGraphCollapsed(_dataProvider, !isCollapsed);
+                        UpdateViewState();
+                        evt.StopPropagation();
+                    }
                 }
-            });
+            );
 
             Subscribe();
             generateVisualContent += OnGenerateVisualContent;
@@ -65,7 +68,8 @@ namespace Ff.DevSuite.View
 
         internal void UpdateViewState()
         {
-            bool isCollapsed = _context != null && _context.IsPerformanceGraphCollapsed(_dataProvider);
+            tooltip = _dataProvider?.Settings?.Tooltip;
+            var isCollapsed = _context != null && _context.IsPerformanceGraphCollapsed(_dataProvider);
             if (isCollapsed)
             {
                 AddToClassList("graph-view--collapsed");
@@ -87,7 +91,7 @@ namespace Ff.DevSuite.View
             MarkDirtyRepaint();
         }
 
-        private StringBuilder _labelStringBuilder = new();
+        private readonly StringBuilder _labelStringBuilder = new();
         private (double? val, string str) _referenceValueCached;
 
         private void UpdateInfoLabel(BaseGraphDataProvider.DataPoint point)
@@ -104,7 +108,9 @@ namespace Ff.DevSuite.View
             {
                 _labelStringBuilder.Append(" / ");
                 if (_referenceValueCached.val != reference)
+                {
                     _referenceValueCached = (reference, reference.Value.ToString("0.0"));
+                }
                 _labelStringBuilder.Append(_referenceValueCached.str);
                 _labelStringBuilder.Append(' ');
                 _labelStringBuilder.AppendLine(_dataProvider.UnitName);
@@ -180,14 +186,16 @@ namespace Ff.DevSuite.View
             {
                 var val = _dataPointsBuffer[curIdx].CurrentValue;
                 if (val > maxOfValues)
+                {
                     maxOfValues = val;
+                }
                 curIdx = (curIdx + 1) % MaxValuesCount;
             }
 
             const float topPadding = 1.05f;
             const float minRefScale = 1.3f;
 
-            int lastIdx = (_dataPointsHead - 1 + MaxValuesCount) % MaxValuesCount;
+            var lastIdx = (_dataPointsHead - 1 + MaxValuesCount) % MaxValuesCount;
             var lastPoint = _dataPointsBuffer[lastIdx];
             var refValue = lastPoint.ReferenceValue;
 
@@ -203,7 +211,7 @@ namespace Ff.DevSuite.View
                 maxValue = 1f;
             }
 
-            var referenceValue = (refValue ?? maxOfValues);
+            var referenceValue = refValue ?? maxOfValues;
             var barWidth = rect.width / MaxValuesCount;
 
             var mesh = mgc.Allocate(_verticesBuffer.Length, _indicesBuffer.Length);
@@ -213,14 +221,14 @@ namespace Ff.DevSuite.View
             curIdx = startIdx;
             var dataStartIndex = MaxValuesCount - _dataPointsCount;
 
-            for (int i = 0; i < MaxValuesCount; i++)
+            for (var i = 0; i < MaxValuesCount; i++)
             {
                 var vOffset = i * 4;
-                float xMin = i * barWidth;
-                float xMax = xMin + barWidth;
-                float yMin = rect.height;
-                float yMax = rect.height;
-                Color finalColor = Color.clear;
+                var xMin = i * barWidth;
+                var xMax = xMin + barWidth;
+                var yMin = rect.height;
+                var yMax = rect.height;
+                var finalColor = Color.clear;
 
                 if (i >= dataStartIndex)
                 {
@@ -262,10 +270,30 @@ namespace Ff.DevSuite.View
                     curIdx = (curIdx + 1) % MaxValuesCount;
                 }
 
-                _verticesBuffer[vOffset + 0] = new Vertex { position = new Vector3(xMin, yMin, 0), tint = finalColor, uv = Vector2.zero };
-                _verticesBuffer[vOffset + 1] = new Vertex { position = new Vector3(xMax, yMin, 0), tint = finalColor, uv = Vector2.zero };
-                _verticesBuffer[vOffset + 2] = new Vertex { position = new Vector3(xMax, yMax, 0), tint = finalColor, uv = Vector2.zero };
-                _verticesBuffer[vOffset + 3] = new Vertex { position = new Vector3(xMin, yMax, 0), tint = finalColor, uv = Vector2.zero };
+                _verticesBuffer[vOffset + 0] = new Vertex
+                {
+                    position = new Vector3(xMin, yMin, 0),
+                    tint = finalColor,
+                    uv = Vector2.zero,
+                };
+                _verticesBuffer[vOffset + 1] = new Vertex
+                {
+                    position = new Vector3(xMax, yMin, 0),
+                    tint = finalColor,
+                    uv = Vector2.zero,
+                };
+                _verticesBuffer[vOffset + 2] = new Vertex
+                {
+                    position = new Vector3(xMax, yMax, 0),
+                    tint = finalColor,
+                    uv = Vector2.zero,
+                };
+                _verticesBuffer[vOffset + 3] = new Vertex
+                {
+                    position = new Vector3(xMin, yMax, 0),
+                    tint = finalColor,
+                    uv = Vector2.zero,
+                };
             }
 
             // Reference Line (last quad in buffer)
@@ -276,15 +304,38 @@ namespace Ff.DevSuite.View
                 var refY = rect.height - (rect.height * refHeightPercent);
                 const float refThickness = 2f;
 
-                _verticesBuffer[refVOffset + 0] = new Vertex { position = new Vector3(0, refY, 0), tint = ColorReference, uv = Vector2.zero };
-                _verticesBuffer[refVOffset + 1] = new Vertex { position = new Vector3(rect.width, refY, 0), tint = ColorReference, uv = Vector2.zero };
-                _verticesBuffer[refVOffset + 2] = new Vertex { position = new Vector3(rect.width, refY + refThickness, 0), tint = ColorReference, uv = Vector2.zero };
-                _verticesBuffer[refVOffset + 3] = new Vertex { position = new Vector3(0, refY + refThickness, 0), tint = ColorReference, uv = Vector2.zero };
+                _verticesBuffer[refVOffset + 0] = new Vertex
+                {
+                    position = new Vector3(0, refY, 0),
+                    tint = ColorReference,
+                    uv = Vector2.zero,
+                };
+                _verticesBuffer[refVOffset + 1] = new Vertex
+                {
+                    position = new Vector3(rect.width, refY, 0),
+                    tint = ColorReference,
+                    uv = Vector2.zero,
+                };
+                _verticesBuffer[refVOffset + 2] = new Vertex
+                {
+                    position = new Vector3(rect.width, refY + refThickness, 0),
+                    tint = ColorReference,
+                    uv = Vector2.zero,
+                };
+                _verticesBuffer[refVOffset + 3] = new Vertex
+                {
+                    position = new Vector3(0, refY + refThickness, 0),
+                    tint = ColorReference,
+                    uv = Vector2.zero,
+                };
             }
             else
             {
                 // Invisible reference line
-                for (int j = 0; j < 4; j++) _verticesBuffer[refVOffset + j] = default;
+                for (var j = 0; j < 4; j++)
+                {
+                    _verticesBuffer[refVOffset + j] = default;
+                }
             }
 
             mesh.SetAllVertices(_verticesBuffer);

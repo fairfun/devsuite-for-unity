@@ -703,6 +703,12 @@ namespace Ff.DevSuite
                 provider.Settings.ReferenceValueProvider = refProvider;
             }
 
+            var tooltip = overrideSettings?.Tooltip ?? settings?.Tooltip;
+            if (tooltip != null)
+            {
+                provider.Settings.Tooltip = tooltip;
+            }
+
             _performancePanelDefaultCollapsed[type] = !isExpanded;
             _performancePanelProviders.Add(provider);
             _onPerformancePanelDispatcher.Dispatch();
@@ -744,6 +750,18 @@ namespace Ff.DevSuite
                     if (provider is T p)
                     {
                         p.Settings.ReferenceValueProvider = settings.ReferenceValueProvider;
+                    }
+                }
+            }
+
+            if (settings.Tooltip != null)
+            {
+                currentSettings.Tooltip = settings.Tooltip;
+                foreach (var provider in _performancePanelProviders)
+                {
+                    if (provider is T p)
+                    {
+                        p.Settings.Tooltip = settings.Tooltip;
                     }
                 }
             }
