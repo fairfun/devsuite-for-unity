@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System;
+using UnityEngine.Serialization;
 
 namespace Ff.DevSuite.View
 {
@@ -21,7 +22,12 @@ namespace Ff.DevSuite.View
         [SerializeField] private Color _panelBackgroundColor = new Color(40 / 255f, 40 / 255f, 40 / 255f, 0.95f);
         [SerializeField] private Color _panelOutlineColor = new Color(1f, 1f, 1f, 0.25f);
         [SerializeField] private DevSuitePanelActivationMode _activationMode = DevSuitePanelActivationMode.SingleClick;
-        [SerializeField] private ControlPanelExpandButtonVisibility _expandButtonVisibility = ControlPanelExpandButtonVisibility.Visible;
+        /// <summary>
+        /// Controls the visibility of the expand button when the panel is collapsed.
+        /// </summary>
+        [FormerlySerializedAs("_expandButtonVisibility")]
+        [Tooltip("Configure expand button visibility when the panel is collapsed (Visible, Hidden, or ErrorOnly).")]
+        [SerializeField] private ControlPanelExpandButtonVisibility _buttonExpandVisibility = ControlPanelExpandButtonVisibility.Visible;
 
         [Header("Main Layout")]
         [SerializeField] private VisualTreeAsset _layoutLandscapeRightUxml;
@@ -146,7 +152,7 @@ namespace Ff.DevSuite.View
             _basicContainer = root.Q<VisualElement>("basic-container");
 
             _controlContainer = root.Q<VisualElement>("control-container");
-            _controlView = new ControlPanelView(_controlUxml, _controlUss, isLeft, _activationMode, _expandButtonVisibility);
+            _controlView = new ControlPanelView(_controlUxml, _controlUss, isLeft, _activationMode, _buttonExpandVisibility);
             _controlView.Initialize(_context);
             _controlContainer.Add(_controlView);
 

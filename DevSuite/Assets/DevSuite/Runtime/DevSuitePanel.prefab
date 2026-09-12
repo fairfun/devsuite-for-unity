@@ -70,7 +70,7 @@ MonoBehaviour:
   _panelBackgroundColor: {r: 0.15686275, g: 0.15686275, b: 0.15686275, a: 0.93}
   _panelOutlineColor: {r: 1, g: 1, b: 1, a: 0.1}
   _activationMode: 0
-  _expandButtonVisibility: 0
+  _buttonExpandVisibility: 0
   _layoutLandscapeRightUxml: {fileID: 9197481963319205126, guid: 6d10199c891ddc3548a5a83d7f1862f1, type: 3}
   _layoutLandscapeLeftUxml: {fileID: 9197481963319205126, guid: 40628888e2dc4360bb53378027010455, type: 3}
   _layoutPortraitUxml: {fileID: 9197481963319205126, guid: 47ca8fe5227f4836cabdf52e9a7dd59c, type: 3}

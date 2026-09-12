@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Ff.DevSuite.Commands
 {
-    internal class CommandUnitValue : BaseCommandUnit
+    public class CommandUnitValue : BaseCommandUnit
     {
         internal Type Type { get; }
         internal Func<object> GetValue { get; }

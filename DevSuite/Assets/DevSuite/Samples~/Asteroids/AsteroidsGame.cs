@@ -206,7 +206,7 @@ namespace Ff.DevSuite.Samples.Asteroids
             DevSuiteContext.Default.CommandsApi?.RegisterAdapter(_asteroidAdapter);
             DevSuiteContext.Default.CommandsApi?.RegisterValuesProvider(_asteroidValuesProvider);
 
-            DevSuiteContext.Default.AttributesParser?.RegisterInstance(this);
+            DevSuiteContext.Default.AttributesParserApi?.RegisterInstance(this);
 
             CreateShip();
             ResetGame();
@@ -219,7 +219,7 @@ namespace Ff.DevSuite.Samples.Asteroids
 
         private void OnDestroy()
         {
-            DevSuiteContext.Default.AttributesParser?.UnregisterInstance(this);
+            DevSuiteContext.Default.AttributesParserApi?.UnregisterInstance(this);
             if (_asteroidAdapter != null)
             {
                 DevSuiteContext.Default.CommandsApi?.UnregisterAdapter(_asteroidAdapter);

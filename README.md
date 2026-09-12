@@ -206,7 +206,7 @@ Refer to the documentation or sample scenes for more detailed configuration and 
         <p><strong>Editor</strong></p>
         <p>Open panels via <strong>Tools &gt; DevSuite</strong>; the context initializes automatically when you enter Play Mode.</p>
         <p><strong>Runtime registration</strong></p>
-        <p>After init, use <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Attributes/CommandAttributesParser.cs"><code>AttributesParser.RegisterStatic(type)</code></a> or <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Attributes/CommandAttributesParser.cs"><code>AttributesParser.RegisterInstance(object)</code></a> to add commands dynamically.</p>
+        <p>After init, use <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Attributes/CommandAttributesParserApi.cs"><code>AttributesParserApi.RegisterStatic(type)</code></a> or <a href="DevSuite/Assets/DevSuite/Runtime/Commands/Attributes/CommandAttributesParserApi.cs"><code>AttributesParserApi.RegisterInstance(object)</code></a> to add commands dynamically.</p>
       </td>
       <td style="padding: 10px; border: 1px solid #88888855; width: 33%;">
         <p>DevSuite uses <a href="DevSuite/Assets/DevSuite/Runtime/Prefs/SavedPrefs.cs"><code>SavedPrefs</code></a> for persistent settings (<a href="DevSuite/Assets/DevSuite/Runtime/Prefs/SavedPrefsProperty.cs"><code>SavedPrefsProperty&lt;T&gt;</code></a>, panel state). The serializer is selected automatically based on installed packages (via <code>DevSuite.asmdef</code> <code>versionDefines</code>):</p>
@@ -275,11 +275,11 @@ Refer to the documentation or sample scenes for more detailed configuration and 
         <ol>
           <li>Subclass <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/BaseGraphDataProvider.cs"><code>BaseGraphDataProvider</code></a></li>
           <li>Implement <code>GetCurrentValue()</code>, <code>Label</code>, and <code>UnitName</code></li>
-          <li>Use <code>SetPerformanceGraphSettings</code> to modify thresholds, change default expanded state, or hide/disable graphs</li>
-          <li>Call <code>RegisterPerformanceGraph(new <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/BaseGraphDataProvider.cs">MyGraphDataProvider</a>())</code></li>
+          <li>Use <a href="DevSuite/Assets/DevSuite/Runtime/DevSuitePerformanceGraphsApi.cs"><code>PerformanceGraphsApi.SetSettings</code></a> to modify thresholds, change default expanded state, or hide/disable graphs</li>
+          <li>Call <code>PerformanceGraphsApi.Register(new <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/BaseGraphDataProvider.cs">MyGraphDataProvider</a>())</code></li>
         </ol>
         <p><strong>Configure settings for performance graphs</strong></p>
-        <p>Use <code>SetPerformanceGraphSettings&lt;T&gt;(new GraphDataProviderSettings(referenceValueProvider: () =&gt; threshold, expandedByDefault: true, register: true))</code> where <code>T</code> is the provider type (e.g. <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/Providers/SystemRamGraphDataProvider.cs"><code>SystemRamGraphDataProvider</code></a>, <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/Providers/DrawCallsCountDataProvider.cs"><code>DrawCallsCountDataProvider</code></a>).</p>
+        <p>Use <code>DevSuiteContext.Default.PerformanceGraphsApi.SetSettings&lt;T&gt;(new GraphDataProviderSettings(referenceValueProvider: () =&gt; threshold, expandedByDefault: true, register: true))</code> where <code>T</code> is the provider type (e.g. <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/Providers/SystemRamGraphDataProvider.cs"><code>SystemRamGraphDataProvider</code></a>, <a href="DevSuite/Assets/DevSuite/Runtime/View/Performance/Providers/DrawCallsCountDataProvider.cs"><code>DrawCallsCountDataProvider</code></a>).</p>
         <p>Built-in <a href="DevSuite/Assets/DevSuite/Runtime/Utilities/CommonCommands.cs"><code>CommonCommands</code></a> exposes <strong>Target RAM</strong> and <strong>Target Draw Calls</strong> sliders that update these at runtime.</p>
         <p>Frame Time reference defaults to the target FPS budget (<code>1 / TargetFps * 1000 ms</code>).</p>
       </td>

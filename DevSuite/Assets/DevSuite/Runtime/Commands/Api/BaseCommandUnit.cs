@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Ff.DevSuite.Commands
 {
-    internal abstract class BaseCommandUnit : IComparable<BaseCommandUnit>
+    public abstract class BaseCommandUnit : IComparable<BaseCommandUnit>
     {
         private const float DefaultFlex = 1f;
 

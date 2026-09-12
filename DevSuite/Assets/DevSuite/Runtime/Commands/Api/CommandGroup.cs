@@ -2,7 +2,7 @@ using System;
 
 namespace Ff.DevSuite.Commands
 {
-    internal class CommandGroup : BaseCommandItem<CommandGroup>
+    public class CommandGroup : BaseCommandItem<CommandGroup>
     {
         public string CategoryId { get; }
 

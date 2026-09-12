@@ -10,7 +10,7 @@ using Key =
 
 namespace Ff.DevSuite.Commands
 {
-    internal class CommandUnitButton : BaseCommandUnit
+    public class CommandUnitButton : BaseCommandUnit
     {
         public string Text { get; }
         public string CliCommand { get; }

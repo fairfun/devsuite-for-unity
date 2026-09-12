@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Ff.DevSuite.Commands.Attributes
 {
-    public class CommandAttributesParser
+    public class CommandAttributesParserApi
     {
         private readonly DevSuiteContext _context;
 
@@ -29,7 +29,7 @@ namespace Ff.DevSuite.Commands.Attributes
             //new Regex(@"^System\.", RegexOptions.Compiled),
         };
 
-        public CommandAttributesParser(DevSuiteContext context)
+        public CommandAttributesParserApi(DevSuiteContext context)
         {
             _context = context;
         }
@@ -832,6 +832,14 @@ namespace Ff.DevSuite.Commands.Attributes
             {
             }
             return null;
+        }
+    }
+
+    [Obsolete("Use CommandAttributesParserApi instead. Will be removed in version 1.0.")]
+    public class CommandAttributesParser : CommandAttributesParserApi
+    {
+        public CommandAttributesParser(DevSuiteContext context) : base(context)
+        {
         }
     }
 }

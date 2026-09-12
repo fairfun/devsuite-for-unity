@@ -57,7 +57,7 @@ namespace Ff.DevSuite
             };
             foreach (var type in all)
             {
-                context.AttributesParser?.RegisterStatic(type);
+                context.AttributesParserApi?.RegisterStatic(type);
             }
 
             context.CommandsApi?.RegisterTargetForFunctionsProvider(new CommandFunctionsSourceProvider(typeof(DevSuiteCommandsTesting)));
@@ -65,14 +65,14 @@ namespace Ff.DevSuite
             context.CommandsApi?.RegisterTargetForFunctionsProvider(new CommandFunctionsSourceProvider(visibilityInstance, new HashSet<string>() { "IsVisiblePropertyFromInstance" } ));
 
             var inst1 = new DevSuiteTestingCategoryInstanceBased();
-            context.AttributesParser?.RegisterInstance(inst1);
+            context.AttributesParserApi?.RegisterInstance(inst1);
 
             var inst2 = new DevSuiteTestingCategoryInstanceBased();
-            context.AttributesParser?.RegisterInstance(inst2);
+            context.AttributesParserApi?.RegisterInstance(inst2);
 
             var inst3 = new DevSuiteTestingCategoryInstanceBased();
-            context.AttributesParser?.RegisterInstance(inst3);
-            context.AttributesParser?.UnregisterInstance(inst3);
+            context.AttributesParserApi?.RegisterInstance(inst3);
+            context.AttributesParserApi?.UnregisterInstance(inst3);
         }
 
         private static bool IsVisibleMethod()

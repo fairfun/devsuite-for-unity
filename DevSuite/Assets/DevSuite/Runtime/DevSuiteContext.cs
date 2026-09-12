@@ -38,13 +38,18 @@ namespace Ff.DevSuite
 {
     public interface IDevSuiteContext : IDisposable
     {
-        CommandAttributesParser AttributesParser { get; }
+        CommandAttributesParserApi AttributesParserApi { get; }
+        [Obsolete("Use AttributesParserApi instead. Will be removed in version 1.0.")]
+        CommandAttributesParserApi AttributesParser { get; }
         DevSuiteCommandsApi CommandsApi { get; }
+        DevSuitePerformanceGraphsApi PerformanceGraphsApi { get; }
         IDisposable SuspendEvents(object requestor);
         bool Disposed { get; }
         void Initialize(MonoBehaviour coroutineStarter, IList<Assembly> staticCommandsAssemblies = null, ISavedPrefs savedPrefs = null, bool registerCommonCommands = true);
         void Reset();
+        [Obsolete("Use PerformanceGraphsApi.Register instead. Will be removed in version 1.0.")]
         void RegisterPerformanceGraph<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider;
+        [Obsolete("Use PerformanceGraphsApi.SetSettings instead. Will be removed in version 1.0.")]
         void SetPerformanceGraphSettings<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider;
         Func<string> BuildVersionToDisplay { get; set; }
         CopyToClipboardAction CopyToClipboardAction { get; set; }
@@ -167,8 +172,13 @@ namespace Ff.DevSuite
         public Func<string> BuildVersionToDisplay { get; set; } = GetDefaultBuildVersionToDisplay;
         public CopyToClipboardAction CopyToClipboardAction { get; set; } = t => (CopyToClipboardContinueType.ContinueDefault, t);
 
-        public CommandAttributesParser AttributesParser { get; internal set; }
+        public CommandAttributesParserApi AttributesParserApi { get; internal set; }
+
+        [Obsolete("Use AttributesParserApi instead. Will be removed in version 1.0.")]
+        public CommandAttributesParserApi AttributesParser => AttributesParserApi;
         public DevSuiteCommandsApi CommandsApi { get; internal set; }
+
+        public DevSuitePerformanceGraphsApi PerformanceGraphsApi { get; internal set; }
 
         public IDisposable SuspendEvents(object requestor)
         {
@@ -590,8 +600,9 @@ namespace Ff.DevSuite
 
             using var _ = Block.SetAndTrack(true, 1, this);
 
-            AttributesParser = new CommandAttributesParser(this);
+            AttributesParserApi = new CommandAttributesParserApi(this);
             CommandsApi = new DevSuiteCommandsApi(this);
+            PerformanceGraphsApi = new DevSuitePerformanceGraphsApi(this);
 
             foreach (var defaultAdapter in DefaultCommandValueAdapters.Get())
             {
@@ -603,24 +614,24 @@ namespace Ff.DevSuite
                 CommandsApi.RegisterValuesProvider(valueProvider, true);
             }
 
-            RegisterPerformanceGraph(new FrameTimeGraphDataProvider());
-            RegisterPerformanceGraph(new CpuFrameTimeGraphDataProvider());
-            RegisterPerformanceGraph(new GpuFrameTimeGraphDataProvider());
-            RegisterPerformanceGraph(new CpuRenderThreadFrameTimeGraphDataProvider());
-            RegisterPerformanceGraph(new FpsGraphDataProvider());
-            RegisterPerformanceGraph(new GcMemoryGraphDataProvider());
-            RegisterPerformanceGraph(new SystemRamGraphDataProvider());
-            RegisterPerformanceGraph(new DrawCallsCountDataProvider());
-            RegisterPerformanceGraph(new BatchesCountDataProvider());
-            RegisterPerformanceGraph(new TrianglesCountDataProvider());
-            RegisterPerformanceGraph(new BatteryDrainRateGraphDataProvider());
+            PerformanceGraphsApi.Register(new FrameTimeGraphDataProvider());
+            PerformanceGraphsApi.Register(new CpuFrameTimeGraphDataProvider());
+            PerformanceGraphsApi.Register(new GpuFrameTimeGraphDataProvider());
+            PerformanceGraphsApi.Register(new CpuRenderThreadFrameTimeGraphDataProvider());
+            PerformanceGraphsApi.Register(new FpsGraphDataProvider());
+            PerformanceGraphsApi.Register(new GcMemoryGraphDataProvider());
+            PerformanceGraphsApi.Register(new SystemRamGraphDataProvider());
+            PerformanceGraphsApi.Register(new DrawCallsCountDataProvider());
+            PerformanceGraphsApi.Register(new BatchesCountDataProvider());
+            PerformanceGraphsApi.Register(new TrianglesCountDataProvider());
+            PerformanceGraphsApi.Register(new BatteryDrainRateGraphDataProvider());
 
             if (registerCommonCommands)
             {
-                AttributesParser.RegisterStatic(typeof(CommonCommands));
+                AttributesParserApi.RegisterStatic(typeof(CommonCommands));
                 CommonCommands.RegisterScenes();
             }
-            AttributesParser.RegisterStatic(staticCommandsAssemblies);
+            AttributesParserApi.RegisterStatic(staticCommandsAssemblies);
             _apiCalledDispatcher.Dispatch();
 
             Subscribe();
@@ -640,8 +651,9 @@ namespace Ff.DevSuite
             _pauseHandlerGameSpeed.Remove(1, this);
             _pauseHandlerGameSpeed.Remove(2, this);
 
-            AttributesParser = null;
+            AttributesParserApi = null;
             CommandsApi = null;
+            PerformanceGraphsApi = null;
 
             ClearLogs();
             Tree?.AsEditable().Clear();
@@ -703,11 +715,17 @@ namespace Ff.DevSuite
             }
         }
 
+        [Obsolete("Use PerformanceGraphsApi.Register instead. Will be removed in version 1.0.")]
         public void RegisterPerformanceGraph<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider
+        {
+            (PerformanceGraphsApi ??= new DevSuitePerformanceGraphsApi(this)).Register(provider, overrideSettings);
+        }
+
+        internal void RegisterPerformanceGraphInternal<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider
         {
             if (overrideSettings != null)
             {
-                SetPerformanceGraphSettings<T>(overrideSettings);
+                SetPerformanceGraphSettingsInternal<T>(overrideSettings);
             }
 
             var type = provider.GetType();
@@ -756,7 +774,13 @@ namespace Ff.DevSuite
             OnPerformanceGraphCollapsedChanged?.Invoke(provider, collapsed);
         }
 
+        [Obsolete("Use PerformanceGraphsApi.SetSettings instead. Will be removed in version 1.0.")]
         public void SetPerformanceGraphSettings<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider
+        {
+            (PerformanceGraphsApi ??= new DevSuitePerformanceGraphsApi(this)).SetSettings<T>(settings);
+        }
+
+        internal void SetPerformanceGraphSettingsInternal<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider
         {
             var type = typeof(T);
 
@@ -3027,7 +3051,7 @@ namespace Ff.DevSuite
         }
     }
 
-    internal struct CategoryKey : IEquatable<CategoryKey>
+    public struct CategoryKey : IEquatable<CategoryKey>
     {
         public string Id;
 
@@ -3052,7 +3076,7 @@ namespace Ff.DevSuite
         }
     }
 
-    internal struct GroupKey : IEquatable<GroupKey>
+    public struct GroupKey : IEquatable<GroupKey>
     {
         public string Id;
         public string CategoryId;
@@ -3079,7 +3103,7 @@ namespace Ff.DevSuite
         }
     }
 
-    internal struct CommandKey : IEquatable<CommandKey>
+    public struct CommandKey : IEquatable<CommandKey>
     {
         public string Id;
         public string GroupId;

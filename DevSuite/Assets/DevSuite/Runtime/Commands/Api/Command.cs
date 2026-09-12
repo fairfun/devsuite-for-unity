@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Ff.DevSuite.Commands
 {
-    internal class Command : BaseCommandItem<Command>
+    public class Command : BaseCommandItem<Command>
     {
         public string CategoryId { get; }
         public string GroupId { get; }

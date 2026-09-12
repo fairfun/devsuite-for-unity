@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Ff.DevSuite.Commands
 {
-    internal abstract class BaseCommandItem<T> : BaseCommandItem, IComparable<T> where T : BaseCommandItem<T>
+    public abstract class BaseCommandItem<T> : BaseCommandItem, IComparable<T> where T : BaseCommandItem<T>
     {
         protected BaseCommandItem(string id, float priority, Func<bool> visibility) :
             base(id, priority, visibility)
@@ -61,7 +61,7 @@ namespace Ff.DevSuite.Commands
         }
     }
 
-    internal abstract class BaseCommandItem
+    public abstract class BaseCommandItem
     {
         public string Id { get; }
         public string Description { get; protected set; }

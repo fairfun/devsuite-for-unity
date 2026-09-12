@@ -1,6 +1,6 @@
 namespace Ff.DevSuite
 {
-    internal readonly struct NumberRange<T>
+    public readonly struct NumberRange<T>
     {
         public T Min { get; }
         public T Max { get; }

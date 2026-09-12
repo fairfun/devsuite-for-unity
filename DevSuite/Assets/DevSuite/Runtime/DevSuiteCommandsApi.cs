@@ -15,7 +15,7 @@ namespace Ff.DevSuite
             _context = context;
         }
 
-        internal void AddCategory(CommandCategory category, bool silent = false)
+        public void AddCategory(CommandCategory category, bool silent = false)
         {
             var key = new CategoryKey(category.Id);
             if (_context.Categories.ContainsKey(key) && !silent)
@@ -24,13 +24,13 @@ namespace Ff.DevSuite
             _context.ApiCalledDispatcher.Dispatch();
         }
 
-        internal void RemoveCategory(string categoryId)
+        public void RemoveCategory(string categoryId)
         {
             if (_context.Categories.Remove(new CategoryKey(categoryId)))
                 _context.ApiCalledDispatcher.Dispatch();
         }
 
-        internal void AddGroup(CommandGroup group, bool silent = false)
+        public void AddGroup(CommandGroup group, bool silent = false)
         {
             var key = new GroupKey(group.Id, group.CategoryId);
             if (_context.Groups.ContainsKey(key) && !silent)
@@ -40,14 +40,14 @@ namespace Ff.DevSuite
             _context.ApiCalledDispatcher.Dispatch();
         }
 
-        internal void RemoveGroup(string id, string catagoryId)
+        public void RemoveGroup(string id, string categoryId)
         {
-            var key = new GroupKey(id, catagoryId);
+            var key = new GroupKey(id, categoryId);
             if (_context.Groups.Remove(key))
                 _context.ApiCalledDispatcher.Dispatch();
         }
 
-        internal void AddCommand(Command command, bool silent = false)
+        public void AddCommand(Command command, bool silent = false)
         {
             var key = new CommandKey(command.Id, command.GroupId, command.CategoryId, command.TargetInstance);
             if (_context.Commands.ContainsKey(key) && !silent)
@@ -57,14 +57,20 @@ namespace Ff.DevSuite
             _context.ApiCalledDispatcher.Dispatch();
         }
 
-        internal void RemoveCommand(string id, string groupId, string categoryId, object instance)
+        public void RemoveCommand(string id, string groupId, string categoryId, object instance = null)
         {
             var key = new CommandKey(id, groupId, categoryId, instance);
             if (_context.Commands.Remove(key))
                 _context.ApiCalledDispatcher.Dispatch();
         }
 
-        internal void AttachCommandUnit(CommandKey commandKey, BaseCommandUnit unit, bool silent = false)
+        public void RemoveCommand(CommandKey commandKey)
+        {
+            if (_context.Commands.Remove(commandKey))
+                _context.ApiCalledDispatcher.Dispatch();
+        }
+
+        public void AttachCommandUnit(CommandKey commandKey, BaseCommandUnit unit, bool silent = false)
         {
             if (!_context.Commands.ContainsKey(commandKey) && !silent)
             {
@@ -79,6 +85,11 @@ namespace Ff.DevSuite
             command.Units.Add(unit);
             _context.ValidateCommandUnit(unit);
             _context.ApiCalledDispatcher.Dispatch();
+        }
+
+        public void AttachCommandUnit(string commandId, string groupId, string categoryId, BaseCommandUnit unit, object instance = null, bool silent = false)
+        {
+            AttachCommandUnit(new CommandKey(commandId, groupId, categoryId, instance), unit, silent);
         }
 
         public void RegisterAdapter(CommandValueAdapter valueAdapter, bool silent = false)

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Ff.DevSuite.Commands
 {
-    internal class CommandUnitButtonParameter : CommandUnitValue
+    public class CommandUnitButtonParameter : CommandUnitValue
     {
         public CommandUnitButton OwnerButton { get; }
         public int ParameterIndex { get; }

@@ -147,13 +147,13 @@ namespace Ff.DevSuite
             context.Settings = new SavedPrefsProperty<PersistentSettings>("DevSuiteContext_Settings", new PersistentSettings(), true, prefs);
             context.Settings.Value.InitializeDefaultsIfNeeded();
             context.CommandsApi = new DevSuiteCommandsApi(context);
-            context.AttributesParser = new CommandAttributesParser(context);
+            context.AttributesParserApi = new CommandAttributesParserApi(context);
             DevSuiteContext.Default = context;
             foreach (var defaultAdapter in DefaultCommandValueAdapters.Get())
             {
                 context.CommandsApi.RegisterAdapter(defaultAdapter, true);
             }
-            context.AttributesParser.RegisterStatic(typeof(TestCommandsContainer));
+            context.AttributesParserApi.RegisterStatic(typeof(TestCommandsContainer));
 
             var activeCommands = context.GetActiveCliCommands();
             Assert(activeCommands.Any(c => c.CliCommand == "TestParameterless"), "Found TestParameterless CLI command");
@@ -238,7 +238,7 @@ namespace Ff.DevSuite
                 Assert(reorderedHistory[reorderedHistory.Count - 1] == "cmd_10 arg", "Duplicate command moved to most recent position");
 
                 // Test 12: Help command
-                context.AttributesParser.RegisterStatic(typeof(CommonCommands));
+                context.AttributesParserApi.RegisterStatic(typeof(CommonCommands));
                 logs.Clear();
                 context.ExecuteCliCommand("help");
                 var helpLog = logs.FirstOrDefault(l => l.Contains("Available CLI Commands"));
@@ -306,8 +306,8 @@ namespace Ff.DevSuite
                 Assert(tabUnpause && compUnpause == "unpause ", "Tab completes unpause command");
 
                 // Test 15: Path-first sorting of CLI commands
-                context.AttributesParser.RegisterStatic(typeof(TestSortingCatA));
-                context.AttributesParser.RegisterStatic(typeof(TestSortingCatZ));
+                context.AttributesParserApi.RegisterStatic(typeof(TestSortingCatA));
+                context.AttributesParserApi.RegisterStatic(typeof(TestSortingCatZ));
                 var sortedCmds = context.GetActiveCliCommands();
                 var alphaIdx = sortedCmds.FindIndex(c => c.CliCommand == "Alpha");
                 var zuluIdx = sortedCmds.FindIndex(c => c.CliCommand == "Zulu");
