@@ -323,9 +323,12 @@ namespace Ff.DevSuite.View
                 _pickOverlay.RemoveFromHierarchy();
                 topRoot.Insert(0, _pickOverlay);
             }
+            else if (topRoot.IndexOf(_pickOverlay) != 0)
+            {
+                topRoot.Insert(0, _pickOverlay);
+            }
 
             _pickOverlay.style.display = DisplayStyle.Flex;
-            _pickOverlay.SendToBack();
         }
 
         private void HidePickOverlay()

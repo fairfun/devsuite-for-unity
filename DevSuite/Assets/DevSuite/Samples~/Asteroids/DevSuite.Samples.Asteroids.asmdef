@@ -3,7 +3,8 @@
     "rootNamespace": "Ff.DevSuite.Samples.Asteroids",
     "references": [
         "DevSuite",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

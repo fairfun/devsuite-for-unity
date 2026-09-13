@@ -143,10 +143,17 @@ namespace Ff.DevSuite
                 return true;
             }
 
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Touchscreen.current != null && UnityEngine.InputSystem.Touchscreen.current.primaryTouch.press.isPressed)
+            {
+                return true;
+            }
+#else
             if (Input.touchCount > 0)
             {
                 return true;
             }
+#endif
 
             if (evt.pointerType == UnityEngine.UIElements.PointerType.mouse)
             {

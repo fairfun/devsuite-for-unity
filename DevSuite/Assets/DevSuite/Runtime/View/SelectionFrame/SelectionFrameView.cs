@@ -61,7 +61,6 @@ namespace Ff.DevSuite.View
             Add(_tagsContainer);
 
             generateVisualContent += OnGenerateVisualContent;
-            RegisterCallback<AttachToPanelEvent>(_ => SendToBack());
         }
 
         public void Initialize(DevSuiteContext context)
