@@ -1,0 +1,72 @@
+name: Release UnityPackage
+
+'on':
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag name to attach unitypackage to (e.g. 0.6.0 or v0.6.0)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          ref: ${{ github.event.release.tag_name || inputs.tag_name || github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Resolve Release Tag
+        id: vars
+        run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag_name }}"
+          if [ -z "$TAG" ]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Target tag: $TAG"
+
+      - name: Build UnityPackage
+        run: |
+          TAG="${{ steps.vars.outputs.tag }}"
+          if [ -n "$TAG" ]; then
+            VERSIONED_PKG="DevSuite-${TAG}.unitypackage"
+            python3 scripts/create_unitypackage.py --output "$VERSIONED_PKG"
+            cp "$VERSIONED_PKG" DevSuite.unitypackage
+          else
+            python3 scripts/create_unitypackage.py --output DevSuite.unitypackage
+          fi
+
+      - name: Upload UnityPackage to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.vars.outputs.tag }}"
+          if [ -z "$TAG" ]; then
+            echo "Error: No release tag could be determined."
+            exit 1
+          fi
+
+          echo "Uploading packages to release: $TAG"
+          UPLOAD_FILES=()
+          if [ -f "DevSuite-${TAG}.unitypackage" ]; then
+            UPLOAD_FILES+=("DevSuite-${TAG}.unitypackage")
+          fi
+          if [ -f "DevSuite.unitypackage" ]; then
+            UPLOAD_FILES+=("DevSuite.unitypackage")
+          fi
+
+          gh release upload "$TAG" "${UPLOAD_FILES[@]}" --clobber
+          echo "Successfully uploaded packages to release $TAG"

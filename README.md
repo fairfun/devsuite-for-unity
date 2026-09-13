@@ -140,6 +140,13 @@ openupm add com.ff.devsuite
    ```text
    https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.6.0
    ```
+
+### Via .unitypackage (Direct Import)
+
+1. Download the latest `DevSuite-<version>.unitypackage` (or `DevSuite.unitypackage`) from the [GitHub Releases](https://github.com/fairfun/devsuite-for-unity/releases) page.
+2. In your Unity Editor, select **Assets > Import Package > Custom Package...** and choose the downloaded file (or drag and drop it directly into the Unity Project window).
+3. Click **Import** in the package import dialog.
+
 ## Getting Started
 
 There are several ways to use DevSuite depending on your needs:
