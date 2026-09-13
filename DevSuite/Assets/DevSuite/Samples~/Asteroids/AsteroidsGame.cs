@@ -145,11 +145,18 @@ namespace Ff.DevSuite.Samples.Asteroids
             {
                 if (_lineMaterial == null)
                 {
-                    var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color");
+                    var shader = Shader.Find("DevSuite/AsteroidsLine")
+                        ?? Shader.Find("Universal Render Pipeline/Unlit")
+                        ?? Shader.Find("Sprites/Default")
+                        ?? Shader.Find("Unlit/Color");
                     _lineMaterial = new Material(shader)
                     {
                         hideFlags = HideFlags.DontSave,
                     };
+                    if (_lineMaterial.HasProperty("_MainTex") && _lineMaterial.mainTexture == null)
+                    {
+                        _lineMaterial.mainTexture = Texture2D.whiteTexture;
+                    }
                 }
                 return _lineMaterial;
             }
@@ -177,6 +184,10 @@ namespace Ff.DevSuite.Samples.Asteroids
             Instance = this;
             EnsureInputModuleCompatibility();
             _mainCamera = Camera.main;
+            if (_mainCamera != null)
+            {
+                _mainCamera.backgroundColor = Color.black;
+            }
             UpdateScreenBounds();
             if (_hudText == null)
             {
