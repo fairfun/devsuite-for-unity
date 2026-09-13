@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | DevSuite</title>
+    <title>Unity Web Player | DevSuite</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
   </head>
@@ -18,19 +18,13 @@
       </div>
       <div id="unity-warning"> </div>
       <div id="unity-footer">
-        <div id="unity-webgl-logo"></div>
+        <div id="unity-logo-title-footer"></div>
         <div id="unity-fullscreen-button"></div>
         <div id="unity-build-title">DevSuite</div>
       </div>
     </div>
     <script>
-
-      var container = document.querySelector("#unity-container");
       var canvas = document.querySelector("#unity-canvas");
-      var loadingBar = document.querySelector("#unity-loading-bar");
-      var progressBarFull = document.querySelector("#unity-progress-bar-full");
-      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
-      var warningBanner = document.querySelector("#unity-warning");
 
       // Shows a temporary message banner/ribbon for a few seconds, or
       // a permanent error message on top of the canvas if type=='error'.
@@ -39,6 +33,7 @@
       // way that non-critical warnings and error messages are presented to the
       // user.
       function unityShowBanner(msg, type) {
+        var warningBanner = document.querySelector("#unity-warning");
         function updateBannerVisibility() {
           warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
         }
@@ -59,6 +54,7 @@
       var buildUrl = "Build";
       var loaderUrl = buildUrl + "/docs.loader.js";
       var config = {
+        arguments: [],
         dataUrl: buildUrl + "/docs.data",
         frameworkUrl: buildUrl + "/docs.framework.js",
         codeUrl: buildUrl + "/docs.wasm",
@@ -67,6 +63,12 @@
         productName: "DevSuite",
         productVersion: "0.5.0",
         showBanner: unityShowBanner,
+        // errorHandler: function(err, url, line) {
+        //    alert("error " + err + " occurred at line " + line);
+        //    // Return 'true' if you handled this error and don't want Unity
+        //    // to process it further, 'false' otherwise.
+        //    return true;
+        // },
       };
 
       // By default, Unity keeps WebGL canvas render target size matched with
@@ -92,7 +94,7 @@
         meta.name = 'viewport';
         meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
         document.getElementsByTagName('head')[0].appendChild(meta);
-        container.className = "unity-mobile";
+        document.querySelector("#unity-container").className = "unity-mobile";
         canvas.className = "unity-mobile";
 
         // To lower canvas resolution on mobile devices to gain some
@@ -102,23 +104,23 @@
 
       } else {
         // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
-
         canvas.style.width = "1280px";
         canvas.style.height = "720px";
       }
 
-      loadingBar.style.display = "block";
+      document.querySelector("#unity-loading-bar").style.display = "block";
 
       var script = document.createElement("script");
       script.src = loaderUrl;
       script.onload = () => {
         createUnityInstance(canvas, config, (progress) => {
-          progressBarFull.style.width = 100 * progress + "%";
+          document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
               }).then((unityInstance) => {
-                loadingBar.style.display = "none";
-                fullscreenButton.onclick = () => {
+                document.querySelector("#unity-loading-bar").style.display = "none";
+                document.querySelector("#unity-fullscreen-button").onclick = () => {
                   unityInstance.SetFullscreen(1);
                 };
+
               }).catch((message) => {
                 alert(message);
               });
