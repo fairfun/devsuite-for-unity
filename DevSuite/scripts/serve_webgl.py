@@ -42,7 +42,7 @@ class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
 
 if __name__ == "__main__":
-    server_address = ("127.0.0.1", PORT)
+    server_address = ("0.0.0.0", PORT)
     httpd = ThreadingHTTPServer(server_address, UnityWebGLHandler)
     print(f"Serving Unity WebGL from {DIRECTORY} at http://localhost:{PORT}")
     sys.stdout.flush()

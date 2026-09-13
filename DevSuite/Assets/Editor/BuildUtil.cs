@@ -100,7 +100,7 @@ public static class BuildUtil
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[BuildUtil] Could not copy Asteroids sample directory: {ex.Message}");
+                Debug.LogWarning($"[BuildUtil] Could not sync Asteroids sample directory: {ex.Message}");
             }
         }
 
@@ -119,6 +119,24 @@ public static class BuildUtil
         foreach (var file in Directory.GetFiles(sourceDir))
         {
             var destFile = Path.Combine(destinationDir, Path.GetFileName(file));
+            if (File.Exists(destFile))
+            {
+                try
+                {
+                    var srcInfo = new FileInfo(file);
+                    var dstInfo = new FileInfo(destFile);
+                    if (string.Equals(srcInfo.FullName, dstInfo.FullName, StringComparison.OrdinalIgnoreCase) ||
+                        srcInfo.Length == dstInfo.Length)
+                    {
+                        continue;
+                    }
+                }
+                catch
+                {
+                    // If file inspection fails, avoid unsafe overwrite
+                    continue;
+                }
+            }
             File.Copy(file, destFile, true);
         }
         foreach (var dir in Directory.GetDirectories(sourceDir))
@@ -221,10 +239,16 @@ public static class BuildUtil
             // GitHub Pages does not support custom Content-Encoding headers for pre-compressed Brotli/Gzip.
             // Disabling compression ensures GitHub Pages serves .wasm and .data files directly,
             // while the hosting CDN handles standard HTTP compression on the fly.
+            PlayerSettings.WebGL.template = "PROJECT:DevSuite";
+            PlayerSettings.colorSpace = ColorSpace.Gamma;
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
             PlayerSettings.WebGL.decompressionFallback = false;
             PlayerSettings.WebGL.dataCaching = true;
-            Debug.Log("[BuildUtil] Configured WebGL PlayerSettings for GitHub Pages (Compression: Disabled, DataCaching: Enabled).");
+            PlayerSettings.WebGL.initialMemorySize = 256;
+            PlayerSettings.WebGL.maximumMemorySize = 1024;
+            PlayerSettings.WebGL.memoryGrowthMode = WebGLMemoryGrowthMode.Geometric;
+            PlayerSettings.WebGL.powerPreference = WebGLPowerPreference.Default;
+            Debug.Log("[BuildUtil] Configured WebGL PlayerSettings for GitHub Pages (Template: DevSuite, ColorSpace: Gamma, Memory: 256MB initial / 1024MB max, Compression: Disabled, DataCaching: Enabled).");
         }
 
         Debug.Log($"[BuildUtil] Starting build for target: {target} to path: {outputPath}");
@@ -265,6 +289,7 @@ public static class BuildUtil
                 if (target == BuildTarget.WebGL)
                 {
                     CreateNoJekyllFile(outputPath);
+                    PatchWebGLOutput(outputPath);
                 }
                 break;
 
@@ -295,6 +320,51 @@ public static class BuildUtil
         catch (Exception ex)
         {
             Debug.LogWarning($"[BuildUtil] Failed to create .nojekyll in '{outputPath}': {ex.Message}");
+        }
+    }
+
+    private static void PatchWebGLOutput(string outputPath)
+    {
+        try
+        {
+            if (!Directory.Exists(outputPath))
+            {
+                return;
+            }
+
+            var cssPath = Path.Combine(outputPath, "TemplateData", "style.css");
+            if (File.Exists(cssPath))
+            {
+                var css = File.ReadAllText(cssPath);
+                var patched = css.Replace("#unity-canvas { background: #231F20 }", "#unity-canvas { background: #000000 }");
+                patched = patched.Replace("body { padding: 0; margin: 0; background: #000000; }", "body { padding: 0; margin: 0 }");
+                if (patched != css)
+                {
+                    File.WriteAllText(cssPath, patched);
+                    Debug.Log($"[BuildUtil] Patched '{cssPath}' for solid black canvas background.");
+                }
+            }
+
+            var indexPath = Path.Combine(outputPath, "index.html");
+            if (File.Exists(indexPath))
+            {
+                var html = File.ReadAllText(indexPath);
+                if (!html.Contains("webglContextAttributes"))
+                {
+                    const string marker = "showBanner: unityShowBanner,";
+                    const string attrInjection = "showBanner: unityShowBanner,\n        webglContextAttributes: { alpha: false, depth: true, stencil: true, antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: false, powerPreference: \"default\" },";
+                    if (html.Contains(marker))
+                    {
+                        html = html.Replace(marker, attrInjection);
+                        File.WriteAllText(indexPath, html);
+                        Debug.Log($"[BuildUtil] Injected webglContextAttributes with alpha:false into '{indexPath}'.");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[BuildUtil] Error while patching WebGL output in '{outputPath}': {ex.Message}");
         }
     }
 }
