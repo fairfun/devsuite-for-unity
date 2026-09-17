@@ -412,7 +412,10 @@ namespace Ff.DevSuite
                     // Restore default filter
                     context.HierarchySearchByComponentFilter = null;
                     Assert(context.HierarchySearchByComponentFilter != null, "HierarchySearchByComponentFilter setter restores non-null default");
-                    Assert(DevSuiteUtils.MatchesComponent(textMesh, "Hello", matchRegex, context), "MatchesComponent works after filter reset");
+                    Assert(DevSuiteUtils.MatchesComponent(textMesh, "Hello", matchRegex, context, out var tmDetail), "MatchesComponent works after filter reset with out detail");
+                    Assert(tmDetail == "TextMesh.text=Hello Search World", $"TextMesh match detail should format correctly, got: {tmDetail}");
+                    Assert(DevSuiteUtils.MatchesComponent(textMesh, "Hello", matchRegex, context, out var tmPrefix, out var tmValue), "MatchesComponent returns prefix and value");
+                    Assert(tmPrefix == "TextMesh.text=" && tmValue == "Hello Search World", $"Prefix and value should match, got prefix '{tmPrefix}' and value '{tmValue}'");
 
                     // Test TextMeshPro TMP_Text matching (if available in environment)
                     var tmpType = Type.GetType("TMPro.TextMeshPro, Unity.TextMeshPro");
@@ -448,7 +451,10 @@ namespace Ff.DevSuite
                         var shaderRegex = new System.Text.RegularExpressions.Regex(System.Text.RegularExpressions.Regex.Escape(shader.name), System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                         var texRegex = new System.Text.RegularExpressions.Regex("CustomSearchTexture", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-                        Assert(DevSuiteUtils.MatchesComponent(mr, "CustomSearchMaterial", matRegex, context), "MatchesComponent matches Material name");
+                        Assert(DevSuiteUtils.MatchesComponent(mr, "CustomSearchMaterial", matRegex, context, out var matDetail), "MatchesComponent matches Material name");
+                        Assert(matDetail == "MeshRenderer.material=CustomSearchMaterial", $"Material match detail should format correctly, got: {matDetail}");
+                        Assert(DevSuiteUtils.MatchesComponent(mr, "CustomSearchMaterial", matRegex, context, out var mrPrefix, out var mrValue), "MatchesComponent matches Material with prefix and value");
+                        Assert(mrPrefix == "MeshRenderer.material=" && mrValue == "CustomSearchMaterial", $"Material prefix/value should match, got '{mrPrefix}' and '{mrValue}'");
                         Assert(DevSuiteUtils.MatchesComponent(mr, shader.name, shaderRegex, context), "MatchesComponent matches Shader name");
                         Assert(DevSuiteUtils.MatchesComponent(mr, "CustomSearchTexture", texRegex, context), "MatchesComponent matches Texture name");
 

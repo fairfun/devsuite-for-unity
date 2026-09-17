@@ -53,6 +53,29 @@ namespace Ff.DevSuite.View
 
         private readonly HashSet<int> _matchingInstanceIds = new();
         private readonly HashSet<int> _descendantMatchingInstanceIds = new();
+        private readonly Dictionary<int, string> _matchDisplayNames = new();
+        private const string MatchHighlightColorHex = "#ffc800";
+
+        private static string HighlightMatches(string text, Regex regex)
+        {
+            if (string.IsNullOrEmpty(text) || regex == null)
+            {
+                return text;
+            }
+
+            try
+            {
+                return regex.Replace(text, match =>
+                {
+                    if (string.IsNullOrEmpty(match.Value)) return match.Value;
+                    return $"<color={MatchHighlightColorHex}>{match.Value}</color>";
+                });
+            }
+            catch
+            {
+                return text;
+            }
+        }
 
         private Regex _searchRegex;
         private VisualElement _pickOverlay;
@@ -526,6 +549,7 @@ namespace Ff.DevSuite.View
         {
             _matchingInstanceIds.Clear();
             _descendantMatchingInstanceIds.Clear();
+            _matchDisplayNames.Clear();
 
             if (_searchRegex == null)
             {
@@ -564,10 +588,12 @@ namespace Ff.DevSuite.View
                 return false;
             }
 
-            var selfMatches = Matches(go, regex, query, searchByName, searchByType, searchByComponent);
+            var selfMatches = Matches(go, regex, query, searchByName, searchByType, searchByComponent, out var displayName);
             if (selfMatches)
             {
-                _matchingInstanceIds.Add(go.GetInstanceID());
+                var id = go.GetInstanceID();
+                _matchingInstanceIds.Add(id);
+                _matchDisplayNames[id] = displayName;
             }
 
             var anyChildMatches = false;
@@ -591,16 +617,19 @@ namespace Ff.DevSuite.View
         private static readonly List<Component> _componentCache = new();
         private static readonly List<string> _typeNamesCache = new();
 
-        private bool Matches(GameObject go, Regex regex, string query, bool searchByName, bool searchByType, bool searchByComponent)
+        private bool Matches(GameObject go, Regex regex, string query, bool searchByName, bool searchByType, bool searchByComponent, out string displayName)
         {
-            if (searchByName)
+            displayName = null;
+            string highlightedName = null;
+            bool nameMatched = false;
+
+            if (searchByName && regex.IsMatch(go.name))
             {
-                if (regex.IsMatch(go.name))
-                {
-                    return true;
-                }
+                nameMatched = true;
+                highlightedName = HighlightMatches(go.name, regex);
             }
 
+            string matchExtra = null;
             if (searchByType || searchByComponent)
             {
                 _componentCache.Clear();
@@ -613,21 +642,36 @@ namespace Ff.DevSuite.View
 
                     if (searchByType && regex.IsMatch(comp.GetType().Name))
                     {
-                        _componentCache.Clear();
-                        return true;
+                        matchExtra = HighlightMatches(comp.GetType().Name, regex);
+                        break;
                     }
 
-                    if (searchByComponent && DevSuiteUtils.MatchesComponent(comp, query, regex, _context))
+                    if (searchByComponent && DevSuiteUtils.MatchesComponent(comp, query, regex, _context, out var prefix, out var value))
                     {
-                        _componentCache.Clear();
-                        return true;
+                        matchExtra = $"{prefix}{HighlightMatches(value, regex)}";
+                        break;
                     }
                 }
 
                 _componentCache.Clear();
             }
 
-            return false;
+            if (!nameMatched && matchExtra == null)
+            {
+                return false;
+            }
+
+            var baseName = nameMatched ? highlightedName : go.name;
+            if (matchExtra != null)
+            {
+                displayName = $"{baseName} ← <color=#888888>({matchExtra})</color>";
+            }
+            else
+            {
+                displayName = $"{baseName} ←";
+            }
+
+            return true;
         }
 
         private void RebuildTree()
@@ -701,6 +745,16 @@ namespace Ff.DevSuite.View
             var hasChildren = childCount > 0;
             var isExpanded = ExpandedGameObjectInstanceIds.Contains(instanceId) || (_searchRegex != null && hasMatchingDescendant);
 
+            string displayName = null;
+            if (isMatching && _matchDisplayNames.TryGetValue(instanceId, out var dn))
+            {
+                displayName = dn;
+            }
+            else if (_searchRegex != null && !isMatching && hasMatchingDescendant)
+            {
+                displayName = $"{go.name} ↓";
+            }
+
             var item = new HierarchyItem
             {
                 Type = HierarchyItemType.GameObject,
@@ -711,6 +765,7 @@ namespace Ff.DevSuite.View
                 IsExpanded = isExpanded,
                 IsMatching = isMatching,
                 HasMatchingDescendant = hasMatchingDescendant,
+                DisplayName = displayName,
                 BadgeKind = null // Lazily evaluated on bind
             };
 
@@ -1313,6 +1368,7 @@ namespace Ff.DevSuite.View
             public bool IsExpanded;
             public bool IsMatching;
             public bool HasMatchingDescendant;
+            public string DisplayName;
             public string BadgeKind;
         }
 
@@ -1325,6 +1381,7 @@ namespace Ff.DevSuite.View
             private readonly Toggle _activityToggle;
             private HierarchyItem _item;
             private bool _isBinding;
+            private string _cachedGoName;
 
             public HierarchyItem Item => _item;
 
@@ -1343,6 +1400,7 @@ namespace Ff.DevSuite.View
 
                 _itemLabel = new Label { name = "itemLabel" };
                 _itemLabel.AddToClassList("hierarchy-item-label");
+                _itemLabel.enableRichText = true;
                 Add(_itemLabel);
 
                 _badgeLabel = new Label { name = "badgeLabel" };
@@ -1456,6 +1514,7 @@ namespace Ff.DevSuite.View
                     if (go == null)
                     {
                         _itemLabel.text = "<Destroyed>";
+                        _cachedGoName = null;
                         _foldoutBtn.style.visibility = Visibility.Hidden;
                         _foldoutBtn.text = "";
                         _badgeLabel.style.display = DisplayStyle.None;
@@ -1466,7 +1525,8 @@ namespace Ff.DevSuite.View
                     }
                     else
                     {
-                        _itemLabel.text = go.name;
+                        _cachedGoName = go.name;
+                        _itemLabel.text = item.DisplayName ?? go.name;
 
                         bool isActive = go.activeSelf;
                         EnableInClassList("inactive", !isActive);
@@ -1545,9 +1605,12 @@ namespace Ff.DevSuite.View
                 if (_item?.GameObject == null) return;
                 var go = _item.GameObject;
 
-                if (_itemLabel.text != go.name)
+                if (_cachedGoName != go.name)
                 {
-                    _itemLabel.text = go.name;
+                    _cachedGoName = go.name;
+                    _itemLabel.text = (_owner._searchRegex != null && !_item.IsMatching && _item.HasMatchingDescendant)
+                        ? $"{go.name} ↓"
+                        : (_item.DisplayName ?? go.name);
                 }
 
                 bool isActive = go.activeSelf;
