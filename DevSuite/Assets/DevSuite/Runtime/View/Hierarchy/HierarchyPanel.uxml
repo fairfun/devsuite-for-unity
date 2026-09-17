@@ -4,13 +4,14 @@
         <ui:VisualElement class="hierarchy-toolbar">
             <ui:VisualElement class="hierarchy-filter-container">
                 <ui:Label text="&#xf002;" class="hierarchy-filter-icon"/>
-                <ui:TextField name="filterField" class="hierarchy-filter-field" tabindex="-1" focusable="false" tooltip="Search scene hierarchy.&#10;&#10;Supports Smart Search (camelCase abbreviation). Can match GameObject names, attached Component types, or regular expressions."/>
+                <ui:TextField name="filterField" class="hierarchy-filter-field" tabindex="-1" focusable="false" tooltip="Search scene hierarchy.&#10;&#10;Supports Smart Search (camelCase abbreviation). Can match GameObject names, attached Component types, Component data, or regular expressions."/>
             </ui:VisualElement>
             <ui:Button name="prevBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Previous search result"/>
             <ui:Button name="nextBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Next search result"/>
             <ui:Button name="regexBtn" class="hierarchy-btn hierarchy-regex-btn" tooltip="Toggle Regex Search mode.&#10;&#10;When enabled, the search query is evaluated as a C# regular expression."/>
             <ui:Button name="nameBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Filter by GameObject Name.&#10;&#10;Matches the search query against GameObject names."/>
             <ui:Button name="typeBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Filter by Component Type.&#10;&#10;Matches the search query against attached Component types (e.g. &quot;BoxCollider&quot;, &quot;Light&quot;, &quot;Camera&quot;)."/>
+            <ui:Button name="componentBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Filter by Component Content.&#10;&#10;Matches the search query against Component data (e.g. TextMeshPro texts, Material/Shader/Texture names, Audio clips, Meshes).&#10;&#10;&lt;b&gt;&lt;i&gt;Hint: &lt;/i&gt;&lt;/b&gt;Customize component search behavior via &lt;b&gt;&lt;color=#ffc800&gt;DevSuiteContext.Default.HierarchySearchByComponentFilter&lt;/color&gt;&lt;/b&gt;."/>
             <ui:Button name="dimBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Toggle Dim / Hide filter mode.&#10;&#10;When active, non-matching GameObjects are dimmed instead of hidden, preserving parent-child tree structure."/>
         </ui:VisualElement>
 
