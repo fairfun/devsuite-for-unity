@@ -224,7 +224,6 @@ namespace Ff.DevSuite.View
                         if (isEnter)
                         {
                             evt.StopImmediatePropagation();
-                            evt.PreventDefault();
                             HandleCliSend();
                         }
                         else if (isUp)
@@ -232,7 +231,6 @@ namespace Ff.DevSuite.View
                             if (NavigateCliHistory(-1))
                             {
                                 evt.StopImmediatePropagation();
-                                evt.PreventDefault();
                             }
                         }
                         else if (isDown)
@@ -240,13 +238,12 @@ namespace Ff.DevSuite.View
                             if (NavigateCliHistory(1))
                             {
                                 evt.StopImmediatePropagation();
-                                evt.PreventDefault();
                             }
                         }
                         else if (isTab)
                         {
                             evt.StopImmediatePropagation();
-                            evt.PreventDefault();
+                            _cliInputField.focusController?.IgnoreEvent(evt);
                             HandleCliTab();
                         }
                     },
@@ -261,7 +258,7 @@ namespace Ff.DevSuite.View
                             || evt.direction == NavigationMoveEvent.Direction.Next)
                         {
                             evt.StopImmediatePropagation();
-                            evt.PreventDefault();
+                            _cliInputField.focusController?.IgnoreEvent(evt);
                         }
                     },
                     TrickleDown.TrickleDown

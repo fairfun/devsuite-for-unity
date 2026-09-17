@@ -386,7 +386,6 @@ namespace Ff.DevSuite
                             suppressNextClick = true;
                             DismissActiveTooltip();
                             evt.StopImmediatePropagation();
-                            evt.PreventDefault();
                         }
                     }
                     else
@@ -410,7 +409,6 @@ namespace Ff.DevSuite
                     {
                         suppressNextClick = false;
                         evt.StopImmediatePropagation();
-                        evt.PreventDefault();
                     }
                 },
                 TrickleDown.TrickleDown
