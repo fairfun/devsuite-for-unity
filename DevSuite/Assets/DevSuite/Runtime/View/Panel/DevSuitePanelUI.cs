@@ -181,7 +181,7 @@ namespace Ff.DevSuite.View
             _inspectorPanelView.Initialize(_context);
 
             _selectionFrameView = new SelectionFrameView(_selectionFrameUss);
-            root.Add(_selectionFrameView);
+            root.Insert(0, _selectionFrameView);
             _selectionFrameView.Initialize(_context);
 
             _pickSelectionPanelView = new PickSelectionPanelView(_pickSelectionUss);

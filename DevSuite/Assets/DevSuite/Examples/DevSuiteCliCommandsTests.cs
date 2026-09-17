@@ -373,6 +373,122 @@ namespace Ff.DevSuite
                 var restored = context.CopyToClipboardAction("reset");
                 Assert(restored.ContinueType == CopyToClipboardContinueType.ContinueDefault && restored.ContinueTextIfNeedModifying == "reset", "CopyToClipboardAction restored to default");
 
+                // Test 15c: HierarchySearchByComponentFilter and HierarchySearchContinueType
+                Assert(context.HierarchySearchByComponentFilter != null, "Default HierarchySearchByComponentFilter is not null");
+                var defaultSearchRes = context.HierarchySearchByComponentFilter(null, "", null);
+                Assert(defaultSearchRes.ContinueType == HierarchySearchContinueType.ContinueDefault, "Default HierarchySearchByComponentFilter returns ContinueDefault");
+                Assert(!defaultSearchRes.IsMatch, "Default HierarchySearchByComponentFilter returns false for IsMatch");
+
+                var testGo = new GameObject("DevSuite_SearchTest_GO");
+                try
+                {
+                    var textMesh = testGo.AddComponent<TextMesh>();
+                    textMesh.text = "Hello Search World";
+
+                    var matchRegex = new System.Text.RegularExpressions.Regex("Hello", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    var noMatchRegex = new System.Text.RegularExpressions.Regex("NotFound", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                    // Default matching matches TextMesh text
+                    Assert(DevSuiteUtils.MatchesComponent(textMesh, "Hello", matchRegex, context), "DevSuiteUtils.MatchesComponent matches TextMesh text by default");
+                    Assert(!DevSuiteUtils.MatchesComponent(textMesh, "NotFound", noMatchRegex, context), "DevSuiteUtils.MatchesComponent does not match non-matching query");
+
+                    // Custom filter override: Break true -> matches immediately
+                    context.HierarchySearchByComponentFilter = (comp, q, r) => (HierarchySearchContinueType.Break, comp is TextMesh);
+                    Assert(DevSuiteUtils.MatchesComponent(textMesh, "NotFound", noMatchRegex, context), "Custom HierarchySearchByComponentFilter with Break forces match");
+
+                    // Custom filter override: Break false -> suppresses match even if default matches
+                    context.HierarchySearchByComponentFilter = (comp, q, r) => (HierarchySearchContinueType.Break, false);
+                    Assert(!DevSuiteUtils.MatchesComponent(textMesh, "Hello", matchRegex, context), "Custom HierarchySearchByComponentFilter with Break false suppresses match");
+
+                    // Custom filter: ContinueDefault with true -> matches immediately
+                    context.HierarchySearchByComponentFilter = (comp, q, r) => (HierarchySearchContinueType.ContinueDefault, comp is TextMesh tm && tm.text.StartsWith("Hello"));
+                    Assert(DevSuiteUtils.MatchesComponent(textMesh, "NotFound", noMatchRegex, context), "Custom HierarchySearchByComponentFilter with ContinueDefault true works");
+
+                    // Custom filter: ContinueDefault with false -> falls back to default logic
+                    context.HierarchySearchByComponentFilter = (comp, q, r) => (HierarchySearchContinueType.ContinueDefault, false);
+                    Assert(DevSuiteUtils.MatchesComponent(textMesh, "Hello", matchRegex, context), "Custom HierarchySearchByComponentFilter with ContinueDefault false falls back to default");
+                    Assert(!DevSuiteUtils.MatchesComponent(textMesh, "NotFound", noMatchRegex, context), "Custom HierarchySearchByComponentFilter with ContinueDefault false rejects non-matching");
+
+                    // Restore default filter
+                    context.HierarchySearchByComponentFilter = null;
+                    Assert(context.HierarchySearchByComponentFilter != null, "HierarchySearchByComponentFilter setter restores non-null default");
+                    Assert(DevSuiteUtils.MatchesComponent(textMesh, "Hello", matchRegex, context, out var tmDetail), "MatchesComponent works after filter reset with out detail");
+                    Assert(tmDetail == "TextMesh.text=Hello Search World", $"TextMesh match detail should format correctly, got: {tmDetail}");
+                    Assert(DevSuiteUtils.MatchesComponent(textMesh, "Hello", matchRegex, context, out var tmPrefix, out var tmValue), "MatchesComponent returns prefix and value");
+                    Assert(tmPrefix == "TextMesh.text=" && tmValue == "Hello Search World", $"Prefix and value should match, got prefix '{tmPrefix}' and value '{tmValue}'");
+
+                    // Test TextMeshPro TMP_Text matching (if available in environment)
+                    var tmpType = Type.GetType("TMPro.TextMeshPro, Unity.TextMeshPro");
+                    if (tmpType != null)
+                    {
+                        var tmpGo = new GameObject("TMP_Test");
+                        try
+                        {
+                            var tmpComp = tmpGo.AddComponent(tmpType);
+                            tmpType.GetProperty("text")?.SetValue(tmpComp, "Unique TMP Value");
+                            var tmpRegex = new System.Text.RegularExpressions.Regex("Unique TMP", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                            Assert(DevSuiteUtils.MatchesComponent(tmpComp, "Unique TMP", tmpRegex, context), "MatchesComponent matches TMP_Text text via cached reflection");
+                            Assert(!DevSuiteUtils.MatchesComponent(tmpComp, "NotFound", noMatchRegex, context), "MatchesComponent rejects non-matching on TMP_Text");
+                        }
+                        finally
+                        {
+                            UnityEngine.Object.DestroyImmediate(tmpGo);
+                        }
+                    }
+
+                    // Test Material, Shader, Texture matching
+                    var shader = Shader.Find("Hidden/InternalErrorShader") ?? Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                    if (shader != null)
+                    {
+                        var mat = new Material(shader) { name = "CustomSearchMaterial" };
+                        var tex = new Texture2D(2, 2) { name = "CustomSearchTexture" };
+                        mat.mainTexture = tex;
+
+                        var mr = testGo.AddComponent<MeshRenderer>();
+                        mr.sharedMaterial = mat;
+
+                        var matRegex = new System.Text.RegularExpressions.Regex("CustomSearchMaterial", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        var shaderRegex = new System.Text.RegularExpressions.Regex(System.Text.RegularExpressions.Regex.Escape(shader.name), System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        var texRegex = new System.Text.RegularExpressions.Regex("CustomSearchTexture", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                        Assert(DevSuiteUtils.MatchesComponent(mr, "CustomSearchMaterial", matRegex, context, out var matDetail), "MatchesComponent matches Material name");
+                        Assert(matDetail == "MeshRenderer.material=CustomSearchMaterial", $"Material match detail should format correctly, got: {matDetail}");
+                        Assert(DevSuiteUtils.MatchesComponent(mr, "CustomSearchMaterial", matRegex, context, out var mrPrefix, out var mrValue), "MatchesComponent matches Material with prefix and value");
+                        Assert(mrPrefix == "MeshRenderer.material=" && mrValue == "CustomSearchMaterial", $"Material prefix/value should match, got '{mrPrefix}' and '{mrValue}'");
+                        Assert(DevSuiteUtils.MatchesComponent(mr, shader.name, shaderRegex, context), "MatchesComponent matches Shader name");
+                        Assert(DevSuiteUtils.MatchesComponent(mr, "CustomSearchTexture", texRegex, context), "MatchesComponent matches Texture name");
+
+                        UnityEngine.Object.DestroyImmediate(mat);
+                        UnityEngine.Object.DestroyImmediate(tex);
+                        UnityEngine.Object.DestroyImmediate(mr);
+                    }
+
+                    // Test AudioSource matching
+                    var audioSource = testGo.AddComponent<AudioSource>();
+                    var clip = AudioClip.Create("CustomSearchClip", 100, 1, 44100, false);
+                    audioSource.clip = clip;
+                    var audioRegex = new System.Text.RegularExpressions.Regex("CustomSearchClip", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    Assert(DevSuiteUtils.MatchesComponent(audioSource, "CustomSearchClip", audioRegex, context), "MatchesComponent matches AudioClip name");
+                    UnityEngine.Object.DestroyImmediate(clip);
+                    UnityEngine.Object.DestroyImmediate(audioSource);
+
+                    // Test MeshFilter matching
+                    var mf = testGo.AddComponent<MeshFilter>();
+                    var mesh = new Mesh { name = "CustomSearchMesh" };
+                    mf.sharedMesh = mesh;
+                    var meshRegex = new System.Text.RegularExpressions.Regex("CustomSearchMesh", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    Assert(DevSuiteUtils.MatchesComponent(mf, "CustomSearchMesh", meshRegex, context), "MatchesComponent matches Mesh name");
+                    UnityEngine.Object.DestroyImmediate(mesh);
+                    UnityEngine.Object.DestroyImmediate(mf);
+                }
+                finally
+                {
+                    if (testGo != null)
+                    {
+                        UnityEngine.Object.DestroyImmediate(testGo);
+                    }
+                }
+
                 // Test 16: SavedPrefs and SavedPrefsProperty Invalidate & re-initialization
                 var prefs1 = new TestMemorySavedPrefs();
                 var prop = new SavedPrefsProperty<int>("test_invalidated_key", 10, true, prefs1);

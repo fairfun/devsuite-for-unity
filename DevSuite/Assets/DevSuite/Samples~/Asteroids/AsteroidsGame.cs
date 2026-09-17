@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 using Ff.DevSuite;
 using Ff.DevSuite.Commands;
 using Ff.DevSuite.Commands.Attributes;
@@ -142,11 +145,18 @@ namespace Ff.DevSuite.Samples.Asteroids
             {
                 if (_lineMaterial == null)
                 {
-                    var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color");
+                    var shader = Shader.Find("DevSuite/AsteroidsLine")
+                        ?? Shader.Find("Universal Render Pipeline/Unlit")
+                        ?? Shader.Find("Sprites/Default")
+                        ?? Shader.Find("Unlit/Color");
                     _lineMaterial = new Material(shader)
                     {
                         hideFlags = HideFlags.DontSave,
                     };
+                    if (_lineMaterial.HasProperty("_MainTex") && _lineMaterial.mainTexture == null)
+                    {
+                        _lineMaterial.mainTexture = Texture2D.whiteTexture;
+                    }
                 }
                 return _lineMaterial;
             }
@@ -172,7 +182,12 @@ namespace Ff.DevSuite.Samples.Asteroids
         private void Awake()
         {
             Instance = this;
+            EnsureInputModuleCompatibility();
             _mainCamera = Camera.main;
+            if (_mainCamera != null)
+            {
+                _mainCamera.backgroundColor = Color.black;
+            }
             UpdateScreenBounds();
             if (_hudText == null)
             {
@@ -187,6 +202,41 @@ namespace Ff.DevSuite.Samples.Asteroids
                     _arrowBasePos = _devSuiteArrow.anchoredPosition;
                 }
             }
+        }
+
+        private void EnsureInputModuleCompatibility()
+        {
+#if ENABLE_INPUT_SYSTEM
+#if UNITY_2023_1_OR_NEWER
+            var eventSystem = FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>();
+            var standalone = FindAnyObjectByType<UnityEngine.EventSystems.StandaloneInputModule>();
+#else
+            var eventSystem = FindObjectOfType<UnityEngine.EventSystems.EventSystem>();
+            var standalone = FindObjectOfType<UnityEngine.EventSystems.StandaloneInputModule>();
+#endif
+            if (standalone != null)
+            {
+                standalone.enabled = false;
+                Destroy(standalone);
+            }
+
+            if (eventSystem != null && eventSystem.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>() == null)
+            {
+                eventSystem.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            }
+#else
+#if UNITY_2023_1_OR_NEWER
+            var eventSystem = FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>();
+            var standalone = FindAnyObjectByType<UnityEngine.EventSystems.StandaloneInputModule>();
+#else
+            var eventSystem = FindObjectOfType<UnityEngine.EventSystems.EventSystem>();
+            var standalone = FindObjectOfType<UnityEngine.EventSystems.StandaloneInputModule>();
+#endif
+            if (eventSystem != null && standalone == null)
+            {
+                eventSystem.gameObject.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+#endif
         }
 
         private void EnsureFont(Text text)
@@ -245,10 +295,18 @@ namespace Ff.DevSuite.Samples.Asteroids
 
             if (_isGameOver)
             {
+#if ENABLE_INPUT_SYSTEM
+                var keyboard = Keyboard.current;
+                if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
+                {
+                    ResetGame();
+                }
+#else
                 if (Input.GetKeyDown(KeyCode.R))
                 {
                     ResetGame();
                 }
+#endif
                 return;
             }
 
@@ -316,6 +374,49 @@ namespace Ff.DevSuite.Samples.Asteroids
             }
 
             var horizontal = 0f;
+            var thrust = false;
+            var fire = false;
+
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            if (keyboard != null)
+            {
+                if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed)
+                {
+                    horizontal += 1f;
+                }
+                if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed)
+                {
+                    horizontal -= 1f;
+                }
+
+                thrust = keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed;
+                fire = keyboard.spaceKey.isPressed;
+            }
+
+            var mouse = Mouse.current;
+            if (mouse != null)
+            {
+                fire = fire || mouse.leftButton.isPressed;
+            }
+
+            var gamepad = Gamepad.current;
+            if (gamepad != null)
+            {
+                var stickX = gamepad.leftStick.x.ReadValue();
+                if (stickX < -0.2f || gamepad.dpad.left.isPressed)
+                {
+                    horizontal += 1f;
+                }
+                else if (stickX > 0.2f || gamepad.dpad.right.isPressed)
+                {
+                    horizontal -= 1f;
+                }
+
+                thrust = thrust || gamepad.buttonSouth.isPressed || gamepad.dpad.up.isPressed || gamepad.rightTrigger.isPressed;
+                fire = fire || gamepad.buttonWest.isPressed || gamepad.rightShoulder.isPressed;
+            }
+#else
             if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
             {
                 horizontal += 1f;
@@ -325,11 +426,13 @@ namespace Ff.DevSuite.Samples.Asteroids
                 horizontal -= 1f;
             }
 
-            var thrust = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
+            thrust = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
+            fire = Input.GetKey(KeyCode.Space) || Input.GetMouseButton(0);
+#endif
 
             _ship.HandleMovement(horizontal, thrust, _rotationSpeed, _shipSpeed, _drag);
 
-            if ((Input.GetKey(KeyCode.Space) || Input.GetMouseButton(0)) && Time.time >= _lastFireTime + (1f / _fireRate))
+            if (fire && Time.time >= _lastFireTime + (1f / _fireRate))
             {
                 _lastFireTime = Time.time;
                 FireBullet(_ship.transform.position + (_ship.transform.up * 0.4f), _ship.transform.up);

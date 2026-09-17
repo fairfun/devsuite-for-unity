@@ -2,6 +2,7 @@
 
 [![Unity](https://img.shields.io/badge/unity-2022.3.62+-000.svg?style=flat-square&logo=unity)](https://unity.com/)
 [![openupm](https://img.shields.io/npm/v/com.ff.devsuite?label=openupm&registry_uri=https://package.openupm.com&style=flat-square)](https://openupm.com/packages/com.ff.devsuite/)
+[![Live Demo](https://img.shields.io/badge/demo-webgl-orange.svg?style=flat-square)](https://fairfun.github.io/devsuite-for-unity/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/fairfun/devsuite-for-unity?style=social)](https://github.com/fairfun/devsuite-for-unity/stargazers)
 
@@ -10,6 +11,14 @@
 ## Why DevSuite?
 
 DevSuite serves as a modern, 100% free, and open-source alternative to popular Unity debug assets such as **SRDebugger**, **Lunar Mobile Console**, **In-game Debug Console**, **UnityRuntimeInspector** and others. By consolidating essential debugging features - including an in-game logs console, runtime hierarchy browser, GameObject inspector, performance monitor, and attribute-driven command system - into one lightweight and powerful package, DevSuite eliminates the need for fragmented, paid toolsets and provides a cohesive experience for efficient runtime troubleshooting.
+
+<p align="center">
+  <a href="https://fairfun.github.io/devsuite-for-unity/">
+    <img src="Images/Asteroids_Banner.png" alt="DevSuite Live Demo" width="600">
+  </a>
+  <br>
+  🎮 <strong><a href="https://fairfun.github.io/devsuite-for-unity/">Play Live WebGL Demo</a></strong> — Test DevSuite in your browser with the Asteroids sample game!
+</p>
 
 ### Feature Comparison
 
@@ -127,10 +136,17 @@ openupm add com.ff.devsuite
    ```text
    https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite
    ```
-   To pin a specific version, append the tag (e.g. `#0.5.0`):
+   To pin a specific version, append the tag (e.g. `#0.6.0`):
    ```text
-   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.5.0
+   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.6.0
    ```
+
+### Via .unitypackage (Direct Import)
+
+1. Download the latest `DevSuite-<version>.unitypackage` (or `DevSuite.unitypackage`) from the [GitHub Releases](https://github.com/fairfun/devsuite-for-unity/releases) page.
+2. In your Unity Editor, select **Assets > Import Package > Custom Package...** and choose the downloaded file (or drag and drop it directly into the Unity Project window).
+3. Click **Import** in the package import dialog.
+
 ## Getting Started
 
 There are several ways to use DevSuite depending on your needs:
@@ -169,6 +185,8 @@ Open the example scene [`DevSuite/Assets/DevSuite/Examples/ExampleManualInitiali
 ### 4. Asteroids Sample Game
 Import the **Asteroids Game** sample via Unity Package Manager (`Window > Package Manager > DevSuite for Unity > Samples > Import`), or open the scene at [`DevSuite/Assets/DevSuite/Samples~/Asteroids/Asteroids.unity`](DevSuite/Assets/DevSuite/Samples~/Asteroids/Asteroids.unity) to play a classic Asteroids game equipped with live DevSuite commands, tunable parameters, and runtime hierarchy inspection.
 
+You can also try the [Live Asteroids Demo](https://fairfun.github.io/devsuite-for-unity/) directly in your browser.
+
 ### 5. Disabling DevSuite
 - **Compile-time**: Define the scripting symbol `DEVSUITE_DISABLED` (e.g. in **Player Settings > Other Settings > Scripting Define Symbols**) to completely disable DevSuite.
 - **Runtime**: Set <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.Enabled = false</code></a> before <a href="DevSuite/Assets/DevSuite/Runtime/View/Panel/DevSuitePanelUI.cs"><code>DevSuitePanelUI.Awake</code></a> (execution order `-99`).
@@ -201,6 +219,7 @@ Refer to the documentation or sample scenes for more detailed configuration and 
           <li><code>registerCommonCommands: false</code> - skip built-in <a href="DevSuite/Assets/DevSuite/Runtime/Utilities/CommonCommands.cs"><code>CommonCommands</code></a></li>
           <li><code>DevSuiteContext.Default.BuildVersionToDisplay</code> - override the version string shown in the UI (default: <code>"v" + Application.version</code> with bundle number if available) - see <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.cs</code></a></li>
           <li><code>DevSuiteContext.Default.CopyToClipboardAction</code> - intercept or customize what "copy to clipboard" buttons do across DevSuite; useful for connecting native sharing (e.g. mobile share sheets), custom clipboard handlers, or any preferred way of sharing logs (returns <code>(CopyToClipboardContinueType.Break, null)</code> to prevent default clipboard copying, or <code>(ContinueDefault, text)</code> with optional modified text) - see <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.cs</code></a></li>
+          <li><code>DevSuiteContext.Default.HierarchySearchByComponentFilter</code> - custom <code>HierarchySearchByComponentFilter</code> delegate to customize or augment Hierarchy component search; returns <code>(HierarchySearchContinueType.Break, isMatch)</code> to override matching, or <code>(ContinueDefault, isMatch)</code> to match immediately on <code>true</code> or fall back to default component search on <code>false</code> (TextMeshPro / Text strings, material, shader, texture names, meshes, audio clips, etc.) - see <a href="DevSuite/Assets/DevSuite/Runtime/DevSuiteContext.cs"><code>DevSuiteContext.cs</code></a></li>
         </ul>
         <p>See example scene: <a href="DevSuite/Assets/DevSuite/Examples/ExampleManualInitialization.unity"><code>ExampleManualInitialization.unity</code></a> <em>(needs to be copied into the <code>Assets</code> folder to be opened if imported as a package)</em></p>
         <p><strong>Editor</strong></p>
