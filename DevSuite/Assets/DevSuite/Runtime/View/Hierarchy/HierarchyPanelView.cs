@@ -293,6 +293,8 @@ namespace Ff.DevSuite.View
                 _context.OnEveryFrame -= HandleOnEveryFrame;
                 _context.OnPickModeChanged -= HandlePickModeChanged;
                 _context.OnHierarchyChanged -= HandleHierarchyChanged;
+                SceneManager.sceneLoaded -= HandleSceneLoaded;
+                SceneManager.sceneUnloaded -= HandleSceneUnloaded;
             }
 
             _context = context;
@@ -301,6 +303,8 @@ namespace Ff.DevSuite.View
             _context.OnEveryFrame += HandleOnEveryFrame;
             _context.OnPickModeChanged += HandlePickModeChanged;
             _context.OnHierarchyChanged += HandleHierarchyChanged;
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+            SceneManager.sceneUnloaded += HandleSceneUnloaded;
 
             _pickBtn.EnableInClassList("active", _context.PickModeActive);
             if (_context.PickModeActive)
@@ -360,11 +364,23 @@ namespace Ff.DevSuite.View
                 _context.OnEveryFrame -= HandleOnEveryFrame;
                 _context.OnPickModeChanged -= HandlePickModeChanged;
                 _context.OnHierarchyChanged -= HandleHierarchyChanged;
+                SceneManager.sceneLoaded -= HandleSceneLoaded;
+                SceneManager.sceneUnloaded -= HandleSceneUnloaded;
             }
 
             _flatItems.Clear();
             UpdateVisibleRows();
             UpdateAutoRefreshState();
+        }
+
+        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            Refresh();
+        }
+
+        private void HandleSceneUnloaded(Scene scene)
+        {
+            Refresh();
         }
 
         private void HandlePickModeChanged(bool active)
