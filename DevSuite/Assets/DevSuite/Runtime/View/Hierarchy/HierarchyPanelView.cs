@@ -19,6 +19,7 @@ namespace Ff.DevSuite.View
         private readonly Button _refreshBtn;
         private readonly Button _copyBtn;
         private readonly TextField _filterField;
+        private readonly Button _clearFilterBtn;
         private readonly Button _prevBtn;
         private readonly Button _nextBtn;
         private readonly Button _regexBtn;
@@ -119,7 +120,24 @@ namespace Ff.DevSuite.View
             _filterField = root.Q<TextField>("filterField");
             DevSuiteUiUtils.SetupInputFieldFocus(_filterField);
             _filterField.RegisterValueChangedCallback(evt => HandleSearchChanged(evt.newValue));
-            _filterField.RegisterCallback<FocusOutEvent>(evt => _filterField.SetValueWithoutNotify(_context.HierarchyPattern));
+            _filterField.RegisterCallback<FocusOutEvent>(evt =>
+            {
+                _filterField.SetValueWithoutNotify(_context.HierarchyPattern);
+                UpdateClearFilterButton();
+            });
+
+            _clearFilterBtn = root.Q<Button>("clearFilterBtn");
+            if (_clearFilterBtn != null)
+            {
+                _clearFilterBtn.text = "\uf00d";
+                _clearFilterBtn.clicked += () =>
+                {
+                    _context.HierarchyPattern = "";
+                    _filterField.value = "";
+                    UpdateClearFilterButton();
+                };
+            }
+            UpdateClearFilterButton();
 
             _prevBtn = root.Q<Button>("prevBtn");
             _prevBtn.text = "\uf104"; // angle-left
@@ -256,6 +274,7 @@ namespace Ff.DevSuite.View
             }
 
             _filterField.SetValueWithoutNotify(_context.HierarchyPattern);
+            UpdateClearFilterButton();
             _searchByRegex = _context.HierarchySearchRegex;
             _searchByName = _context.HierarchySearchByName;
             _searchByType = _context.HierarchySearchByType;
@@ -498,6 +517,7 @@ namespace Ff.DevSuite.View
             {
                 _filterField.SetValueWithoutNotify(_context.HierarchyPattern);
             }
+            UpdateClearFilterButton();
 
             _searchByRegex = _context.HierarchySearchRegex;
             _searchByName = _context.HierarchySearchByName;
@@ -513,6 +533,13 @@ namespace Ff.DevSuite.View
         private void HandleSearchChanged(string query)
         {
             _context.HierarchyPattern = query;
+            UpdateClearFilterButton();
+        }
+
+        private void UpdateClearFilterButton()
+        {
+            var hasText = !string.IsNullOrEmpty(_filterField?.value);
+            _clearFilterBtn.style.display = hasText ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private void HandleSearchOptionsChanged()

@@ -5,6 +5,7 @@
             <ui:VisualElement class="hierarchy-filter-container">
                 <ui:Label text="&#xf002;" class="hierarchy-filter-icon"/>
                 <ui:TextField name="filterField" class="hierarchy-filter-field" tabindex="-1" focusable="false" tooltip="Search scene hierarchy.&#10;&#10;Supports Smart Search (camelCase abbreviation). Can match GameObject names, attached Component types, Component data, or regular expressions."/>
+                <ui:Button name="clearFilterBtn" class="hierarchy-filter-clear-button ff-filter-clear-button" text="&#xf00d;" tooltip="Clear search" style="display: none;"/>
             </ui:VisualElement>
             <ui:Button name="prevBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Previous search result"/>
             <ui:Button name="nextBtn" class="hierarchy-btn hierarchy-icon-btn" tooltip="Next search result"/>

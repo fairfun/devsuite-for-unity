@@ -4,6 +4,7 @@
             <ui:VisualElement class="logs-filter-container">
                 <ui:Label text="&#xf0b0;" class="logs-filter-icon"/>
                 <ui:TextField name="filterField" class="logs-filter-field" tabindex="-1" focusable="false" tooltip="Filter log messages and stack traces.&#10;&#10;Supports Smart Search (e.g. &quot;NRE&quot; matches NullReferenceException) or exact substrings. Toggle &quot;.*&quot; for Regex mode."/>
+                <ui:Button name="clearFilterBtn" class="logs-filter-clear-button ff-filter-clear-button" text="&#xf00d;" tooltip="Clear filter" style="display: none;"/>
             </ui:VisualElement>
             <ui:Button name="regexButton" text=".*" class="logs-severity-btn logs-regex-btn" tooltip="Toggle Regex filter mode.&#10;&#10;When enabled, the search query is evaluated as a C# regular expression against message text and stack traces."/>
             <ui:Button name="ordinaryButton" class="logs-severity-btn ordinary" tooltip="Toggle Info logs visibility.&#10;&#10;Click to show/hide. Badge displays message count.">
