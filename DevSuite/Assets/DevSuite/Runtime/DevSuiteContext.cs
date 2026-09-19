@@ -1612,7 +1612,7 @@ namespace Ff.DevSuite
 
             var pinnedCategoryKey = new CategoryKey(PinnedCategoryId);
             Categories.Remove(pinnedCategoryKey);
-            _categoryPinned ??= new CommandCategory(PinnedCategoryId, float.MaxValue, null);
+            _categoryPinned ??= new CommandCategory(PinnedCategoryId, float.MaxValue, null).WithDescription(PinnedCategoryDescription);
             _groupPinned ??= new CommandGroup(DefaultGroupId, _categoryPinned.Id, default, default);
             Categories.Add(pinnedCategoryKey, _categoryPinned);
 
@@ -2952,12 +2952,14 @@ namespace Ff.DevSuite
             }
         }
 
+        private static string PinnedCategoryDescription { get; set; } = "Pinned commands.\n\nPinned commands stay accessible in the quick-access bar and persist across sessions via ISavedPrefs.\n\n<b><i>Hint: </i></b>Click the pin icon on any command to pin or unpin, or use <b><color=#ffc800>[Command(AlwaysPin = true)]</color></b> in code to pin permanently.";
+
         internal List<TreeCategory> GetPinnedList()
         {
             return new List<TreeCategory>
             {
                 new(
-                    new CommandCategory(PinnedMockId, 0, null),
+                    new CommandCategory(PinnedMockId, 0, null).WithDescription(PinnedCategoryDescription),
                     new List<TreeGroup>
                     {
                         new(
