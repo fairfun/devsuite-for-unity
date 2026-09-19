@@ -85,8 +85,11 @@ namespace Ff.DevSuite.View
         private VisualElement _inspectorContainer;
         private bool _lastHierarchyVisible;
 
+        private int _lastScreenWidth;
+        private int _lastScreenHeight;
+
         private bool? _isPortrait;
-        private bool IsPortrait =>_isPortrait ??= _layoutMode switch
+        private bool IsPortrait => _isPortrait ??= _layoutMode switch
         {
             LayoutMode.Auto => Screen.height > Screen.width,
             LayoutMode.Portrait => true,
@@ -148,6 +151,19 @@ namespace Ff.DevSuite.View
 
         private void LateUpdate()
         {
+            if (_lastScreenWidth != Screen.width || _lastScreenHeight != Screen.height)
+            {
+                _lastScreenWidth = Screen.width;
+                _lastScreenHeight = Screen.height;
+                var wasPortrait = _isPortrait;
+                _isPortrait = null;
+                if (wasPortrait.HasValue && wasPortrait.Value != IsPortrait)
+                {
+                    BuildUI();
+                    return;
+                }
+            }
+
 #if UNITY_EDITOR
             if (Application.isPlaying && _uiDocument.rootVisualElement.childCount == 0)
             {
@@ -307,7 +323,6 @@ namespace Ff.DevSuite.View
             // Scale from the top-left corner
             root.style.transformOrigin = new StyleTransformOrigin(new TransformOrigin(0, 0, 0));
 
-            // Adjust size so the scaled element still covers the full screen
             float percent = 100f / _uiScale;
             root.style.width = Length.Percent(percent);
             root.style.height = Length.Percent(percent);

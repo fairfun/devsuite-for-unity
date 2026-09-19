@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
@@ -16,6 +17,11 @@ namespace Ff.DevSuite.Samples.Asteroids
     {
         public static AsteroidsGame Instance { get; private set; }
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+        [DllImport("__Internal")]
+        private static extern void SetCanvasSizeWebGL(int width, int height);
+#endif
+
         [Header("Ship Settings")][CommandValue][SerializeField] private float _shipSpeed = 12f;
         [CommandValue][SerializeField] private float _rotationSpeed = 220f;
         [SerializeField] private float _drag = 1.2f;
@@ -28,6 +34,43 @@ namespace Ff.DevSuite.Samples.Asteroids
         [Header("Game State")][CommandValue][SerializeField] private int _lives = 3;
         [CommandValue(ReadOnly = true)][SerializeField] private int _score = 0;
         [CommandValue][SerializeField] private bool _godMode = false;
+
+        private bool _portraitMode = false;
+        private (int w, int h) _initialScreenSize;
+
+        public bool PortraitMode
+        {
+            get => _portraitMode;
+            set
+            {
+                _portraitMode = value;
+#if UNITY_WEBGL && !UNITY_EDITOR
+                if (_initialScreenSize.w <= 0 || _initialScreenSize.h <= 0)
+                {
+                    _initialScreenSize = (Screen.width, Screen.height);
+                }
+
+                if (_portraitMode)
+                {
+                    SetCanvasSizeWebGL((int)(_initialScreenSize.h / 16f * 9f), _initialScreenSize.h);
+                }
+                else
+                {
+                    SetCanvasSizeWebGL(_initialScreenSize.w, _initialScreenSize.h);
+                }
+#endif
+                UpdateScreenBounds();
+                UpdateUI();
+            }
+        }
+
+        public void ToggleOrientation()
+        {
+#if !UNITY_WEBGL && !UNITY_EDITOR
+            Debug.LogError($"[AsteroidsGame] Switching screen orientation is not supported on {Application.platform}.");
+#endif
+            PortraitMode = !(Screen.height > Screen.width);
+        }
 
         [CommandValue] public float AsteroidSpeed { get => _asteroidSpeedMultiplier; set => _asteroidSpeedMultiplier = value; }
         [CommandValue] public int ActiveAsteroidsCount => _asteroids.Count;
@@ -135,6 +178,8 @@ namespace Ff.DevSuite.Samples.Asteroids
         [SerializeField] private Text _hudText;
         [SerializeField] private Text _gameOverText;
         [SerializeField] private RectTransform _devSuiteArrow;
+        [SerializeField] private Button _orientationButton;
+        [SerializeField] private Text _orientationButtonText;
 
         private bool _devSuiteOpenedInSession;
         private Vector2 _arrowBasePos = new Vector2(-120f, -120f);
@@ -188,6 +233,7 @@ namespace Ff.DevSuite.Samples.Asteroids
             {
                 _mainCamera.backgroundColor = Color.black;
             }
+
             UpdateScreenBounds();
             if (_hudText == null)
             {
@@ -202,41 +248,62 @@ namespace Ff.DevSuite.Samples.Asteroids
                     _arrowBasePos = _devSuiteArrow.anchoredPosition;
                 }
             }
+
+            if (_orientationButton != null)
+            {
+                _orientationButton.onClick.RemoveListener(ToggleOrientation);
+                _orientationButton.onClick.AddListener(ToggleOrientation);
+                EnsureFont(_orientationButtonText);
+            }
         }
 
         private void EnsureInputModuleCompatibility()
         {
+#if UNITY_2023_1_OR_NEWER
+            var eventSystem = FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>();
+#else
+            var eventSystem = FindObjectOfType<UnityEngine.EventSystems.EventSystem>();
+#endif
+            if (eventSystem == null)
+            {
+                var esGo = new GameObject("EventSystem");
+                eventSystem = esGo.AddComponent<UnityEngine.EventSystems.EventSystem>();
+#if ENABLE_INPUT_SYSTEM
+                esGo.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+#else
+                esGo.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+#endif
+            }
+            else
+            {
 #if ENABLE_INPUT_SYSTEM
 #if UNITY_2023_1_OR_NEWER
-            var eventSystem = FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>();
-            var standalone = FindAnyObjectByType<UnityEngine.EventSystems.StandaloneInputModule>();
+                var standalone = FindAnyObjectByType<UnityEngine.EventSystems.StandaloneInputModule>();
 #else
-            var eventSystem = FindObjectOfType<UnityEngine.EventSystems.EventSystem>();
-            var standalone = FindObjectOfType<UnityEngine.EventSystems.StandaloneInputModule>();
+                var standalone = FindObjectOfType<UnityEngine.EventSystems.StandaloneInputModule>();
 #endif
-            if (standalone != null)
-            {
-                standalone.enabled = false;
-                Destroy(standalone);
-            }
+                if (standalone != null)
+                {
+                    standalone.enabled = false;
+                    Destroy(standalone);
+                }
 
-            if (eventSystem != null && eventSystem.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>() == null)
-            {
-                eventSystem.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
-            }
+                if (eventSystem.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>() == null)
+                {
+                    eventSystem.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+                }
 #else
 #if UNITY_2023_1_OR_NEWER
-            var eventSystem = FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>();
-            var standalone = FindAnyObjectByType<UnityEngine.EventSystems.StandaloneInputModule>();
+                var standalone = FindAnyObjectByType<UnityEngine.EventSystems.StandaloneInputModule>();
 #else
-            var eventSystem = FindObjectOfType<UnityEngine.EventSystems.EventSystem>();
-            var standalone = FindObjectOfType<UnityEngine.EventSystems.StandaloneInputModule>();
+                var standalone = FindObjectOfType<UnityEngine.EventSystems.StandaloneInputModule>();
 #endif
-            if (eventSystem != null && standalone == null)
-            {
-                eventSystem.gameObject.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                if (standalone == null)
+                {
+                    eventSystem.gameObject.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                }
+#endif
             }
-#endif
         }
 
         private void EnsureFont(Text text)
@@ -331,6 +398,7 @@ namespace Ff.DevSuite.Samples.Asteroids
                 }
             }
 
+            _mainCamera.rect = new Rect(0f, 0f, 1f, 1f);
             _screenHalfHeight = _mainCamera.orthographicSize;
             _screenHalfWidth = _screenHalfHeight * _mainCamera.aspect;
         }
@@ -713,51 +781,6 @@ namespace Ff.DevSuite.Samples.Asteroids
 
             canvasGo.AddComponent<GraphicRaycaster>();
 
-            var hudGo = new GameObject("HUDText");
-            hudGo.transform.SetParent(canvasGo.transform, false);
-            var hudRect = hudGo.AddComponent<RectTransform>();
-            hudRect.anchorMin = new Vector2(0f, 1f);
-            hudRect.anchorMax = new Vector2(0f, 1f);
-            hudRect.pivot = new Vector2(0f, 1f);
-            hudRect.anchoredPosition = new Vector2(30f, -30f);
-            hudRect.sizeDelta = new Vector2(800f, 400f);
-
-            _hudText = hudGo.AddComponent<Text>();
-            _hudText.font = font;
-            _hudText.fontSize = 20;
-            _hudText.lineSpacing = 1.2f;
-            _hudText.color = Color.white;
-            _hudText.alignment = TextAnchor.UpperLeft;
-            _hudText.raycastTarget = false;
-
-            var hudShadow = hudGo.AddComponent<Shadow>();
-            hudShadow.effectColor = new Color(0f, 0f, 0f, 0.8f);
-            hudShadow.effectDistance = new Vector2(1f, -1f);
-
-            var gameOverGo = new GameObject("GameOverText");
-            gameOverGo.transform.SetParent(canvasGo.transform, false);
-            var gameOverRect = gameOverGo.AddComponent<RectTransform>();
-            gameOverRect.anchorMin = new Vector2(0.5f, 0.5f);
-            gameOverRect.anchorMax = new Vector2(0.5f, 0.5f);
-            gameOverRect.pivot = new Vector2(0.5f, 0.5f);
-            gameOverRect.anchoredPosition = Vector2.zero;
-            gameOverRect.sizeDelta = new Vector2(800f, 200f);
-
-            _gameOverText = gameOverGo.AddComponent<Text>();
-            _gameOverText.font = font;
-            _gameOverText.fontSize = 40;
-            _gameOverText.fontStyle = FontStyle.Bold;
-            _gameOverText.color = new Color(1f, 0.3f, 0.3f, 1f);
-            _gameOverText.alignment = TextAnchor.MiddleCenter;
-            _gameOverText.text = "GAME OVER\nPress R to Restart";
-            _gameOverText.raycastTarget = false;
-
-            var goShadow = gameOverGo.AddComponent<Shadow>();
-            goShadow.effectColor = new Color(0f, 0f, 0f, 0.8f);
-            goShadow.effectDistance = new Vector2(2f, -2f);
-
-            gameOverGo.SetActive(false);
-
             var arrowGo = new GameObject("DevSuiteArrow");
             arrowGo.transform.SetParent(canvasGo.transform, false);
             _devSuiteArrow = arrowGo.AddComponent<RectTransform>();
@@ -772,14 +795,16 @@ namespace Ff.DevSuite.Samples.Asteroids
             img.raycastTarget = false;
             img.sprite = Resources.Load<Sprite>("DevSuiteArrow");
 
-            var arrowShadow = arrowGo.AddComponent<Shadow>();
-            arrowShadow.effectColor = new Color(0f, 0f, 0f, 0.75f);
-            arrowShadow.effectDistance = new Vector2(2f, -2f);
         }
 
         private void UpdateUI()
         {
             UpdateDevSuiteArrow();
+
+            if (_orientationButtonText != null)
+            {
+                _orientationButtonText.text = Screen.height > Screen.width ? "To Landscape" : "To Portrait";
+            }
 
             if (_hudText != null)
             {
