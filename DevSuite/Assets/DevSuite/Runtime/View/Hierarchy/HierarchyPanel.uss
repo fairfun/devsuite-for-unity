@@ -147,6 +147,50 @@
     font-size: 13px;
 }
 
+.hierarchy-text-btn {
+    font-size: 11px;
+    padding: 0 6px;
+    height: 24px;
+    margin-left: 2px;
+    color: var(--text-color-inactive);
+    background-color: rgba(40, 40, 40, 0);
+    border-width: 0;
+    border-radius: 4px;
+}
+
+.hierarchy-text-btn:hover {
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.hierarchy-text-btn.active {
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.hierarchy-auto-btn {
+    margin-left: 2px;
+}
+
+.hierarchy-info-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 3px 8px;
+    background-color: rgba(30, 30, 30, 0.35);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--divider-color);
+}
+
+.hierarchy-info-row .hierarchy-info-label,
+.hierarchy-info-label {
+    font-size: 11px;
+    color: var(--color-orange, rgb(255, 204, 0)) !important;
+    -unity-font-style: normal;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .hierarchy-list-view {
     flex-grow: 1;
     min-height: 0px;

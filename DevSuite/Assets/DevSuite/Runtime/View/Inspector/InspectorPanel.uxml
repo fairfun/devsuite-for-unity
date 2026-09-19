@@ -3,12 +3,16 @@
         <!-- Top Toolbar / Header Row -->
         <ui:VisualElement class="inspector-toolbar">
             <ui:Button name="refreshBtn" class="inspector-btn inspector-icon-btn" tooltip="Refresh inspected object values.&#10;&#10;Re-reads all serialized fields, public fields, and properties of components on the selected GameObject(s)."/>
-            <ui:Button name="autoRefreshBtn" text="Auto" class="inspector-btn inspector-text-btn inspector-auto-btn" tooltip="Auto-Refresh mode.&#10;&#10;Continuously polls and updates reflected property values every frame via DevSuiteContext.OnEveryFrame."/>
-            <ui:Button name="autoPauseBtn" text="Auto Pause" class="inspector-btn inspector-text-btn inspector-auto-pause-btn" tooltip="Auto-Pause mode.&#10;&#10;Automatically pauses the game (Time.timeScale = 0) when an object is selected via Hierarchy or Pick mode, allowing inspection of frozen state."/>
-            <ui:Button name="selectionFrameBtn" text="Frame" class="inspector-btn inspector-text-btn inspector-frame-btn active" tooltip="Selection Frame mode.&#10;&#10;Shows a 3D/2D visual selection frame and bounding box in Game View for objects selected via DevSuite."/>
+            <ui:Button name="autoRefreshBtn" text="&lt;s&gt;Auto&lt;/s&gt;" class="inspector-btn inspector-text-btn inspector-auto-btn" tooltip="Auto-Refresh mode.&#10;&#10;Continuously polls and updates reflected property values every frame via DevSuiteContext.OnEveryFrame." enable-rich-text="true"/>
+            <ui:Button name="autoPauseBtn" text="&lt;s&gt;Auto Pause&lt;/s&gt;" class="inspector-btn inspector-text-btn inspector-auto-pause-btn" tooltip="Auto-Pause mode.&#10;&#10;Automatically pauses the game (Time.timeScale = 0) when an object is selected via Hierarchy or Pick mode, allowing inspection of frozen state." enable-rich-text="true"/>
+            <ui:Button name="selectionFrameBtn" text="Frame" class="inspector-btn inspector-text-btn inspector-frame-btn active" tooltip="Selection Frame mode.&#10;&#10;Shows a 3D/2D visual selection frame and bounding box in Game View for objects selected via DevSuite." enable-rich-text="true"/>
             <ui:Button name="unselectAllBtn" text="Unselect All" class="inspector-btn inspector-text-btn inspector-unselect-all-btn" tooltip="Unselect all GameObjects.&#10;&#10;Clears current selection and restores original game speed if Auto-Pause was active."/>
             <ui:VisualElement style="flex-grow: 1;"/>
             <ui:Button name="copyBtn" class="inspector-btn inspector-icon-btn" tooltip="Copy component properties to clipboard.&#10;&#10;Exports all reflected components, fields, and properties of the selected GameObject as formatted text.&#10;&#10;&lt;b&gt;&lt;i&gt;Hint: &lt;/i&gt;&lt;/b&gt;Customize copy behavior via &lt;b&gt;&lt;color=#ffc800&gt;DevSuiteContext.Default.CopyToClipboardAction&lt;/color&gt;&lt;/b&gt;."/>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="autoRefreshInfoRow" class="inspector-info-row" tooltip="Use the &quot;Auto&quot; button above to enable auto-updating.">
+            <ui:Label name="autoRefreshInfoLabel" text="&#x26a0; &lt;i&gt;Auto-refresh mode is disabled&lt;/i&gt;" class="inspector-info-label" tooltip="Use the &quot;Auto&quot; button above to enable auto-updating." enable-rich-text="true"/>
         </ui:VisualElement>
 
         <!-- Title and top info -->

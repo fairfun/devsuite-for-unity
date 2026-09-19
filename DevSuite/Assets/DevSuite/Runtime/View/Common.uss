@@ -11,6 +11,7 @@
     --text-color: rgb(230, 230, 230);
     --text-color-inactive: rgb(140, 140, 140);
     --accent-color: rgb(128, 200, 255);
+    --color-orange: rgb(255, 204, 0);
     --unity-colors-label-text: var(--text-color);
     --unity-colors-default-text: var(--text-color);
 }
@@ -20,6 +21,7 @@
 .editor .ff-panel {
     --text-color: rgb(255, 255, 255);
     --text-color-inactive: rgb(160, 160, 160);
+    --color-orange: rgb(255, 204, 0);
     --unity-colors-label-text: var(--text-color);
     --unity-colors-default-text: var(--text-color);
     --button-bg-color: rgba(240, 240, 240, 0.20);
