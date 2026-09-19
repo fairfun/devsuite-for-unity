@@ -94,6 +94,7 @@ namespace Ff.DevSuite.View
         };
 
         private DevSuiteContext _context;
+        private UIDocument _uiDocument;
 
         internal static DevSuitePanelUI Instance { get; set; }
 
@@ -117,11 +118,36 @@ namespace Ff.DevSuite.View
                 DevSuiteContext.Default.Initialize(this);
             }
 
+            _uiDocument = GetComponent<UIDocument>();
             _context = DevSuiteContext.DefaultInternal;
             _context.OnChanged += UpdateVisibility;
 
-            var uiDocument = GetComponent<UIDocument>();
-            var root = uiDocument.rootVisualElement;
+            BuildUI();
+        }
+
+        private void OnEnable()
+        {
+            if (Application.isPlaying && _uiDocument.rootVisualElement.childCount == 0)
+            {
+                BuildUI();
+            }
+        }
+
+        private void LateUpdate()
+        {
+#if UNITY_EDITOR
+            if (Application.isPlaying && _uiDocument.rootVisualElement.childCount == 0)
+            {
+                BuildUI();
+            }
+#endif
+        }
+
+        private void BuildUI()
+        {
+            ResetViews();
+
+            var root = _uiDocument.rootVisualElement;
             root.Clear();
 
             ApplyScale(root);
@@ -129,6 +155,7 @@ namespace Ff.DevSuite.View
             root.style.backgroundColor = StyleKeyword.Null; // Ensure it's not overridden
             root.RegisterCallback<AttachToPanelEvent>(_ => ApplyColors(root));
 
+            _isPortrait = null;
             var isLeft = _panelSide == PanelSide.Left;
             var layout = IsPortrait
                 ? _layoutPortraitUxml
@@ -206,6 +233,11 @@ namespace Ff.DevSuite.View
                 _context = null;
             }
 
+            ResetViews();
+        }
+
+        private void ResetViews()
+        {
             _logsPanelView?.Reset();
             _commandsFullPanelView?.Reset();
             _commandsPinnedPanelView?.Reset();
@@ -215,6 +247,25 @@ namespace Ff.DevSuite.View
             _inspectorPanelView?.Reset();
             _pickSelectionPanelView?.Reset();
             _selectionFrameView?.Reset();
+
+            _logsPanelView = null;
+            _commandsFullPanelView = null;
+            _commandsPinnedPanelView = null;
+            _performancePanelView = null;
+            _controlView = null;
+            _hierarchyPanelView = null;
+            _inspectorPanelView = null;
+            _pickSelectionPanelView = null;
+            _selectionFrameView = null;
+
+            _logsContainer = null;
+            _commandsFullContainer = null;
+            _basicContainer = null;
+            _pinnedContainer = null;
+            _performancePanelContainer = null;
+            _controlContainer = null;
+            _hierarchyContainer = null;
+            _inspectorContainer = null;
         }
 
         private void ApplyColors(VisualElement root)
@@ -253,6 +304,13 @@ namespace Ff.DevSuite.View
             var uiDocument = GetComponent<UIDocument>();
             if (uiDocument != null && uiDocument.rootVisualElement != null)
             {
+#if UNITY_EDITOR
+                if (Application.isPlaying && uiDocument.rootVisualElement.childCount == 0 && _uiDocument != null)
+                {
+                    BuildUI();
+                    return;
+                }
+#endif
                 ApplyScale(uiDocument.rootVisualElement);
                 ApplyColors(uiDocument.rootVisualElement);
             }
