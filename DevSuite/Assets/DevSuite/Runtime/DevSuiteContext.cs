@@ -1250,6 +1250,24 @@ namespace Ff.DevSuite
             set => SetSettingsValue(() => Settings.Value.InspectorAutoRefresh, v => Settings.Value.InspectorAutoRefresh = v, value);
         }
 
+        internal bool InspectorAutoUpdate
+        {
+            get => InspectorAutoRefresh;
+            set => InspectorAutoRefresh = value;
+        }
+
+        internal bool HierarchyAutoRefresh
+        {
+            get => (Settings?.Ready ?? false) && Settings.Value.HierarchyAutoRefresh;
+            set => SetSettingsValue(() => Settings.Value.HierarchyAutoRefresh, v => Settings.Value.HierarchyAutoRefresh = v, value);
+        }
+
+        internal bool HierarchyAutoUpdate
+        {
+            get => HierarchyAutoRefresh;
+            set => HierarchyAutoRefresh = value;
+        }
+
         internal bool InspectorAutoPause
         {
             get => !(Settings?.Ready ?? false) || Settings.Value.InspectorAutoPause;
@@ -3007,6 +3025,7 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(23)][Key(23)] public List<string> CliCommandHistory { get; set; } = new();
         [DataMember][MemoryPackOrder(24)][Key(24)] public bool ShowSelectionFrame { get; set; } = true;
         [DataMember][MemoryPackOrder(25)][Key(25)] public bool HierarchySearchByComponent { get; set; }
+        [DataMember][MemoryPackOrder(26)][Key(26)] public bool HierarchyAutoRefresh { get; set; }
 
         public void InitializeDefaultsIfNeeded()
         {

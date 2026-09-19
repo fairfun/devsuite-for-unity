@@ -83,6 +83,7 @@ namespace Ff.DevSuite.View
         private VisualElement _controlContainer;
         private VisualElement _hierarchyContainer;
         private VisualElement _inspectorContainer;
+        private bool _lastHierarchyVisible;
 
         private bool? _isPortrait;
         private bool IsPortrait =>_isPortrait ??= _layoutMode switch
@@ -216,6 +217,7 @@ namespace Ff.DevSuite.View
             _pickSelectionPanelView.Initialize(_context);
 
             ApplyColors(root);
+            _lastHierarchyVisible = _context.PanelExpanded && _context.HierarchyVisible;
             UpdateVisibility();
         }
 
@@ -238,6 +240,7 @@ namespace Ff.DevSuite.View
 
         private void ResetViews()
         {
+            _lastHierarchyVisible = false;
             _logsPanelView?.Reset();
             _commandsFullPanelView?.Reset();
             _commandsPinnedPanelView?.Reset();
@@ -329,11 +332,18 @@ namespace Ff.DevSuite.View
                 _basicContainer.style.width = expanded ? _controlWidth : StyleKeyword.Null;
             }
 
+            var isHierarchyVisible = expanded && _context.HierarchyVisible;
+            if (isHierarchyVisible && !_lastHierarchyVisible)
+            {
+                _hierarchyPanelView?.Refresh();
+            }
+            _lastHierarchyVisible = isHierarchyVisible;
+
             _logsContainer.style.display = expanded && _context.LogsVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _commandsFullContainer.style.display = expanded && _context.CommandsVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _pinnedContainer.style.display = expanded && _context.PinnedCommandsVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _performancePanelContainer.style.display = expanded && _context.MetricsVisible ? DisplayStyle.Flex : DisplayStyle.None;
-            _hierarchyContainer.style.display = expanded && _context.HierarchyVisible ? DisplayStyle.Flex : DisplayStyle.None;
+            _hierarchyContainer.style.display = isHierarchyVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _inspectorContainer.style.display = expanded && _context.InspectorVisible ? DisplayStyle.Flex : DisplayStyle.None;
 
             if ((!expanded || !_context.HierarchyVisible) && _context.PickModeActive)

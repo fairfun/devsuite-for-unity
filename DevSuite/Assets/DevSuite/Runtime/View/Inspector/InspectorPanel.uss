@@ -24,6 +24,25 @@
     border-bottom-color: var(--divider-color);
 }
 
+.inspector-info-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 3px 8px;
+    background-color: rgba(30, 30, 30, 0.35);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--divider-color);
+}
+
+.inspector-info-row .inspector-info-label,
+.inspector-info-label {
+    font-size: 11px;
+    color: var(--color-orange, rgb(255, 204, 0)) !important;
+    -unity-font-style: normal;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .inspector-header-row {
     flex-direction: row;
     align-items: center;
