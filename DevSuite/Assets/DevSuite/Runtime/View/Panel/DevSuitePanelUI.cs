@@ -126,11 +126,23 @@ namespace Ff.DevSuite.View
             BuildUI();
         }
 
+        private void Start()
+        {
+            if (_context != null && _context.PanelExpanded && _context.HierarchyVisible)
+            {
+                _hierarchyPanelView?.Refresh();
+            }
+        }
+
         private void OnEnable()
         {
             if (Application.isPlaying && _uiDocument.rootVisualElement.childCount == 0)
             {
                 BuildUI();
+            }
+            else if (_context != null && _context.PanelExpanded && _context.HierarchyVisible)
+            {
+                _hierarchyPanelView?.Refresh();
             }
         }
 
@@ -217,7 +229,6 @@ namespace Ff.DevSuite.View
             _pickSelectionPanelView.Initialize(_context);
 
             ApplyColors(root);
-            _lastHierarchyVisible = _context.PanelExpanded && _context.HierarchyVisible;
             UpdateVisibility();
         }
 
