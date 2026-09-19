@@ -19,16 +19,19 @@ namespace Ff.DevSuite.View
         private readonly Button _refreshBtn;
         private readonly Button _copyBtn;
         private readonly TextField _filterField;
+        private readonly Button _clearFilterBtn;
         private readonly Button _prevBtn;
         private readonly Button _nextBtn;
         private readonly Button _regexBtn;
         private readonly Button _nameBtn;
         private readonly Button _typeBtn;
+        private readonly Button _componentBtn;
         private readonly Button _dimBtn;
 
         private bool _searchByRegex = false;
         private bool _searchByName = true;
         private bool _searchByType = true;
+        private bool _searchByComponent = false;
         private bool _keepDimmed = true;
 
         private readonly ScrollView _scrollView;
@@ -51,6 +54,29 @@ namespace Ff.DevSuite.View
 
         private readonly HashSet<int> _matchingInstanceIds = new();
         private readonly HashSet<int> _descendantMatchingInstanceIds = new();
+        private readonly Dictionary<int, string> _matchDisplayNames = new();
+        private const string MatchHighlightColorHex = "#ffc800";
+
+        private static string HighlightMatches(string text, Regex regex)
+        {
+            if (string.IsNullOrEmpty(text) || regex == null)
+            {
+                return text;
+            }
+
+            try
+            {
+                return regex.Replace(text, match =>
+                {
+                    if (string.IsNullOrEmpty(match.Value)) return match.Value;
+                    return $"<color={MatchHighlightColorHex}>{match.Value}</color>";
+                });
+            }
+            catch
+            {
+                return text;
+            }
+        }
 
         private Regex _searchRegex;
         private VisualElement _pickOverlay;
@@ -94,7 +120,24 @@ namespace Ff.DevSuite.View
             _filterField = root.Q<TextField>("filterField");
             DevSuiteUiUtils.SetupInputFieldFocus(_filterField);
             _filterField.RegisterValueChangedCallback(evt => HandleSearchChanged(evt.newValue));
-            _filterField.RegisterCallback<FocusOutEvent>(evt => _filterField.SetValueWithoutNotify(_context.HierarchyPattern));
+            _filterField.RegisterCallback<FocusOutEvent>(evt =>
+            {
+                _filterField.SetValueWithoutNotify(_context.HierarchyPattern);
+                UpdateClearFilterButton();
+            });
+
+            _clearFilterBtn = root.Q<Button>("clearFilterBtn");
+            if (_clearFilterBtn != null)
+            {
+                _clearFilterBtn.text = "\uf00d";
+                _clearFilterBtn.clicked += () =>
+                {
+                    _context.HierarchyPattern = "";
+                    _filterField.value = "";
+                    UpdateClearFilterButton();
+                };
+            }
+            UpdateClearFilterButton();
 
             _prevBtn = root.Q<Button>("prevBtn");
             _prevBtn.text = "\uf104"; // angle-left
@@ -133,6 +176,19 @@ namespace Ff.DevSuite.View
                 UpdateButtonStates();
                 HandleSearchOptionsChanged();
             };
+
+            _componentBtn = root.Q<Button>("componentBtn");
+            if (_componentBtn != null)
+            {
+                _componentBtn.text = "\uf0c9"; // bars
+                _componentBtn.clicked += () =>
+                {
+                    _searchByComponent = !_searchByComponent;
+                    _context.HierarchySearchByComponent = _searchByComponent;
+                    UpdateButtonStates();
+                    HandleSearchOptionsChanged();
+                };
+            }
 
             _dimBtn = root.Q<Button>("dimBtn");
             _dimBtn.text = "\uf042"; // adjust
@@ -218,9 +274,11 @@ namespace Ff.DevSuite.View
             }
 
             _filterField.SetValueWithoutNotify(_context.HierarchyPattern);
+            UpdateClearFilterButton();
             _searchByRegex = _context.HierarchySearchRegex;
             _searchByName = _context.HierarchySearchByName;
             _searchByType = _context.HierarchySearchByType;
+            _searchByComponent = _context.HierarchySearchByComponent;
             _keepDimmed = _context.HierarchyKeepDimmed;
             UpdateButtonStates();
             UpdateSearchRegex(_filterField.value);
@@ -350,12 +408,14 @@ namespace Ff.DevSuite.View
             var regex = _context.HierarchySearchRegex;
             var name = _context.HierarchySearchByName;
             var type = _context.HierarchySearchByType;
+            var component = _context.HierarchySearchByComponent;
             var dim = _context.HierarchyKeepDimmed;
-            if (regex != _searchByRegex || name != _searchByName || type != _searchByType || dim != _keepDimmed)
+            if (regex != _searchByRegex || name != _searchByName || type != _searchByType || component != _searchByComponent || dim != _keepDimmed)
             {
                 _searchByRegex = regex;
                 _searchByName = name;
                 _searchByType = type;
+                _searchByComponent = component;
                 _keepDimmed = dim;
                 UpdateButtonStates();
                 HandleSearchOptionsChanged();
@@ -457,10 +517,12 @@ namespace Ff.DevSuite.View
             {
                 _filterField.SetValueWithoutNotify(_context.HierarchyPattern);
             }
+            UpdateClearFilterButton();
 
             _searchByRegex = _context.HierarchySearchRegex;
             _searchByName = _context.HierarchySearchByName;
             _searchByType = _context.HierarchySearchByType;
+            _searchByComponent = _context.HierarchySearchByComponent;
             _keepDimmed = _context.HierarchyKeepDimmed;
             UpdateButtonStates();
             UpdateSearchRegex(_filterField.value);
@@ -471,6 +533,13 @@ namespace Ff.DevSuite.View
         private void HandleSearchChanged(string query)
         {
             _context.HierarchyPattern = query;
+            UpdateClearFilterButton();
+        }
+
+        private void UpdateClearFilterButton()
+        {
+            var hasText = !string.IsNullOrEmpty(_filterField?.value);
+            _clearFilterBtn.style.display = hasText ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private void HandleSearchOptionsChanged()
@@ -507,6 +576,7 @@ namespace Ff.DevSuite.View
         {
             _matchingInstanceIds.Clear();
             _descendantMatchingInstanceIds.Clear();
+            _matchDisplayNames.Clear();
 
             if (_searchRegex == null)
             {
@@ -515,11 +585,14 @@ namespace Ff.DevSuite.View
 
             var searchByName = _searchByName;
             var searchByType = _searchByType;
+            var searchByComponent = _searchByComponent;
 
-            if (!searchByName && !searchByType)
+            if (!searchByName && !searchByType && !searchByComponent)
             {
                 return;
             }
+
+            var query = _context?.HierarchyPattern ?? _filterField.value;
 
             for (var i = 0; i < SceneManager.sceneCount; i++)
             {
@@ -530,29 +603,31 @@ namespace Ff.DevSuite.View
                 }
                 foreach (var go in scene.GetRootGameObjects())
                 {
-                    CheckMatchesRecursive(go, _searchRegex, searchByName, searchByType);
+                    CheckMatchesRecursive(go, _searchRegex, query, searchByName, searchByType, searchByComponent);
                 }
             }
         }
 
-        private bool CheckMatchesRecursive(GameObject go, Regex regex, bool searchByName, bool searchByType)
+        private bool CheckMatchesRecursive(GameObject go, Regex regex, string query, bool searchByName, bool searchByType, bool searchByComponent)
         {
             if (go == null)
             {
                 return false;
             }
 
-            var selfMatches = Matches(go, regex, searchByName, searchByType);
+            var selfMatches = Matches(go, regex, query, searchByName, searchByType, searchByComponent, out var displayName);
             if (selfMatches)
             {
-                _matchingInstanceIds.Add(go.GetInstanceID());
+                var id = go.GetInstanceID();
+                _matchingInstanceIds.Add(id);
+                _matchDisplayNames[id] = displayName;
             }
 
             var anyChildMatches = false;
             for (var i = 0; i < go.transform.childCount; i++)
             {
                 var child = go.transform.GetChild(i);
-                if (child != null && CheckMatchesRecursive(child.gameObject, regex, searchByName, searchByType))
+                if (child != null && CheckMatchesRecursive(child.gameObject, regex, query, searchByName, searchByType, searchByComponent))
                 {
                     anyChildMatches = true;
                 }
@@ -569,34 +644,61 @@ namespace Ff.DevSuite.View
         private static readonly List<Component> _componentCache = new();
         private static readonly List<string> _typeNamesCache = new();
 
-        private bool Matches(GameObject go, Regex regex, bool searchByName, bool searchByType)
+        private bool Matches(GameObject go, Regex regex, string query, bool searchByName, bool searchByType, bool searchByComponent, out string displayName)
         {
-            if (searchByName)
+            displayName = null;
+            string highlightedName = null;
+            bool nameMatched = false;
+
+            if (searchByName && regex.IsMatch(go.name))
             {
-                if (regex.IsMatch(go.name))
-                {
-                    return true;
-                }
+                nameMatched = true;
+                highlightedName = HighlightMatches(go.name, regex);
             }
 
-            if (searchByType)
+            string matchExtra = null;
+            if (searchByType || searchByComponent)
             {
                 _componentCache.Clear();
                 go.GetComponents(typeof(Component), _componentCache);
-                for (var i = 0; i < _componentCache.Count; i++)
+                var compCount = _componentCache.Count;
+                for (var i = 0; i < compCount; i++)
                 {
                     var comp = _componentCache[i];
-                    if (comp != null && regex.IsMatch(comp.GetType().Name))
+                    if (comp == null) continue;
+
+                    if (searchByType && regex.IsMatch(comp.GetType().Name))
                     {
-                        _componentCache.Clear();
-                        return true;
+                        matchExtra = HighlightMatches(comp.GetType().Name, regex);
+                        break;
+                    }
+
+                    if (searchByComponent && DevSuiteUtils.MatchesComponent(comp, query, regex, _context, out var prefix, out var value))
+                    {
+                        matchExtra = $"{prefix}{HighlightMatches(value, regex)}";
+                        break;
                     }
                 }
 
                 _componentCache.Clear();
             }
 
-            return false;
+            if (!nameMatched && matchExtra == null)
+            {
+                return false;
+            }
+
+            var baseName = nameMatched ? highlightedName : go.name;
+            if (matchExtra != null)
+            {
+                displayName = $"{baseName} ← <color=#888888>({matchExtra})</color>";
+            }
+            else
+            {
+                displayName = $"{baseName} ←";
+            }
+
+            return true;
         }
 
         private void RebuildTree()
@@ -670,6 +772,16 @@ namespace Ff.DevSuite.View
             var hasChildren = childCount > 0;
             var isExpanded = ExpandedGameObjectInstanceIds.Contains(instanceId) || (_searchRegex != null && hasMatchingDescendant);
 
+            string displayName = null;
+            if (isMatching && _matchDisplayNames.TryGetValue(instanceId, out var dn))
+            {
+                displayName = dn;
+            }
+            else if (_searchRegex != null && !isMatching && hasMatchingDescendant)
+            {
+                displayName = $"{go.name} ↓";
+            }
+
             var item = new HierarchyItem
             {
                 Type = HierarchyItemType.GameObject,
@@ -680,6 +792,7 @@ namespace Ff.DevSuite.View
                 IsExpanded = isExpanded,
                 IsMatching = isMatching,
                 HasMatchingDescendant = hasMatchingDescendant,
+                DisplayName = displayName,
                 BadgeKind = null // Lazily evaluated on bind
             };
 
@@ -1074,6 +1187,7 @@ namespace Ff.DevSuite.View
             _regexBtn.EnableInClassList("active", _searchByRegex);
             _nameBtn.EnableInClassList("active", _searchByName);
             _typeBtn.EnableInClassList("active", _searchByType);
+            _componentBtn?.EnableInClassList("active", _searchByComponent);
             _dimBtn.EnableInClassList("active", _keepDimmed);
         }
 
@@ -1281,6 +1395,7 @@ namespace Ff.DevSuite.View
             public bool IsExpanded;
             public bool IsMatching;
             public bool HasMatchingDescendant;
+            public string DisplayName;
             public string BadgeKind;
         }
 
@@ -1293,6 +1408,7 @@ namespace Ff.DevSuite.View
             private readonly Toggle _activityToggle;
             private HierarchyItem _item;
             private bool _isBinding;
+            private string _cachedGoName;
 
             public HierarchyItem Item => _item;
 
@@ -1311,6 +1427,7 @@ namespace Ff.DevSuite.View
 
                 _itemLabel = new Label { name = "itemLabel" };
                 _itemLabel.AddToClassList("hierarchy-item-label");
+                _itemLabel.enableRichText = true;
                 Add(_itemLabel);
 
                 _badgeLabel = new Label { name = "badgeLabel" };
@@ -1424,6 +1541,7 @@ namespace Ff.DevSuite.View
                     if (go == null)
                     {
                         _itemLabel.text = "<Destroyed>";
+                        _cachedGoName = null;
                         _foldoutBtn.style.visibility = Visibility.Hidden;
                         _foldoutBtn.text = "";
                         _badgeLabel.style.display = DisplayStyle.None;
@@ -1434,7 +1552,8 @@ namespace Ff.DevSuite.View
                     }
                     else
                     {
-                        _itemLabel.text = go.name;
+                        _cachedGoName = go.name;
+                        _itemLabel.text = item.DisplayName ?? go.name;
 
                         bool isActive = go.activeSelf;
                         EnableInClassList("inactive", !isActive);
@@ -1513,9 +1632,12 @@ namespace Ff.DevSuite.View
                 if (_item?.GameObject == null) return;
                 var go = _item.GameObject;
 
-                if (_itemLabel.text != go.name)
+                if (_cachedGoName != go.name)
                 {
-                    _itemLabel.text = go.name;
+                    _cachedGoName = go.name;
+                    _itemLabel.text = (_owner._searchRegex != null && !_item.IsMatching && _item.HasMatchingDescendant)
+                        ? $"{go.name} ↓"
+                        : (_item.DisplayName ?? go.name);
                 }
 
                 bool isActive = go.activeSelf;

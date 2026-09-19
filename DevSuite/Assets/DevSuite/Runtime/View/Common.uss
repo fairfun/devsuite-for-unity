@@ -152,3 +152,31 @@
 .ff-custom-font-resource {
     -unity-text-generator: standard;
 }
+
+/* Shared search/filter clear button ('x') */
+.ff-filter-clear-button,
+.ff-filter-clear-button.unity-button {
+    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-text-generator: standard;
+    background-color: transparent;
+    border-width: 0;
+    color: var(--text-color-inactive);
+    font-size: 12px;
+    min-width: 0;
+    min-height: 0;
+    width: 10px;
+    height: 16px;
+    max-height: 16px;
+    margin: 0;
+    margin-left: 2px;
+    padding: 0;
+    -unity-text-align: middle-center;
+}
+
+.ff-filter-clear-button:hover {
+    color: var(--text-color);
+}
+
+.ff-filter-clear-button:active {
+    color: rgb(255, 255, 255);
+}

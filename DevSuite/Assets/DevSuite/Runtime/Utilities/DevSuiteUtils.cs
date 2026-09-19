@@ -376,6 +376,9 @@ namespace Ff.DevSuite
             _membersByName?.Clear();
             _isSubclassOfRawGeneric?.Clear();
             _getTypeImplementationsCache?.Clear();
+            _tmpInitialized = false;
+            _tmpTextType = null;
+            _tmpTextProperty = null;
         }
 
         public static bool IsInteger(this Type type)
@@ -693,6 +696,396 @@ namespace Ff.DevSuite
 #else
             false;
 #endif
+
+        private static Type _tmpTextType;
+        private static PropertyInfo _tmpTextProperty;
+        private static bool _tmpInitialized;
+
+        private static void EnsureTmpInitialized()
+        {
+            if (_tmpInitialized) return;
+            _tmpInitialized = true;
+
+            _tmpTextType = Type.GetType("TMPro.TMP_Text, Unity.TextMeshPro");
+
+            if (_tmpTextType == null)
+            {
+                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    _tmpTextType = asm.GetType("TMPro.TMP_Text");
+                    if (_tmpTextType != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            _tmpTextProperty = _tmpTextType?.GetProperty("text", BindingFlags.Public | BindingFlags.Instance);
+        }
+
+        private static string TruncateSnippet(string text, Regex regex, int maxLen = 30)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            text = text.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ').Trim();
+            if (text.Length <= maxLen)
+            {
+                return text;
+            }
+
+            var match = regex?.Match(text);
+            if (match == null || !match.Success)
+            {
+                return text.Substring(0, maxLen) + "...";
+            }
+
+            var matchStart = match.Index;
+            var matchLen = match.Length;
+            var contextLen = Math.Max(0, (maxLen - matchLen) / 2);
+
+            var start = Math.Max(0, matchStart - contextLen);
+            var end = Math.Min(text.Length, matchStart + matchLen + contextLen);
+
+            var snippet = text.Substring(start, end - start);
+            if (start > 0) snippet = "..." + snippet;
+            if (end < text.Length) snippet = snippet + "...";
+
+            return snippet;
+        }
+
+        public static bool MatchesComponent(Component comp, string query, Regex regex, IDevSuiteContext context, out string matchPrefix, out string matchValue)
+        {
+            matchPrefix = null;
+            matchValue = null;
+            if (comp == null || regex == null)
+            {
+                return false;
+            }
+
+            if (context?.HierarchySearchByComponentFilter != null)
+            {
+                try
+                {
+                    var (continueType, isMatch) = context.HierarchySearchByComponentFilter.Invoke(comp, query, regex);
+                    if (continueType == HierarchySearchContinueType.Break)
+                    {
+                        if (isMatch)
+                        {
+                            matchPrefix = comp.GetType().Name;
+                            matchValue = string.Empty;
+                        }
+                        return isMatch;
+                    }
+
+                    if (isMatch)
+                    {
+                        matchPrefix = comp.GetType().Name;
+                        matchValue = string.Empty;
+                        return true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
+
+            return DefaultMatchesComponent(comp, regex, out matchPrefix, out matchValue);
+        }
+
+        public static bool MatchesComponent(Component comp, string query, Regex regex, IDevSuiteContext context, out string matchDetail)
+        {
+            if (MatchesComponent(comp, query, regex, context, out var prefix, out var value))
+            {
+                matchDetail = string.IsNullOrEmpty(value) ? prefix : $"{prefix}{value}";
+                return true;
+            }
+
+            matchDetail = null;
+            return false;
+        }
+
+        public static bool MatchesComponent(Component comp, string query, Regex regex, IDevSuiteContext context)
+        {
+            return MatchesComponent(comp, query, regex, context, out _, out _);
+        }
+
+        public static bool DefaultMatchesComponent(Component comp, Regex regex, out string matchPrefix, out string matchValue)
+        {
+            matchPrefix = null;
+            matchValue = null;
+            if (comp == null || regex == null)
+            {
+                return false;
+            }
+
+            var typeName = comp.GetType().Name;
+
+            EnsureTmpInitialized();
+            if (_tmpTextType != null && _tmpTextType.IsInstanceOfType(comp))
+            {
+                var txt = _tmpTextProperty?.GetValue(comp) as string;
+                if (!string.IsNullOrEmpty(txt) && regex.IsMatch(txt))
+                {
+                    matchPrefix = $"{typeName}.text=";
+                    matchValue = TruncateSnippet(txt, regex);
+                    return true;
+                }
+            }
+
+            if (comp is TextMesh textMesh && !string.IsNullOrEmpty(textMesh.text) && regex.IsMatch(textMesh.text))
+            {
+                matchPrefix = $"{typeName}.text=";
+                matchValue = TruncateSnippet(textMesh.text, regex);
+                return true;
+            }
+
+            if (comp is UnityEngine.UI.Text uiText && !string.IsNullOrEmpty(uiText.text) && regex.IsMatch(uiText.text))
+            {
+                matchPrefix = $"{typeName}.text=";
+                matchValue = TruncateSnippet(uiText.text, regex);
+                return true;
+            }
+
+            if (comp is UnityEngine.UI.InputField uiInput && !string.IsNullOrEmpty(uiInput.text) && regex.IsMatch(uiInput.text))
+            {
+                matchPrefix = $"{typeName}.text=";
+                matchValue = TruncateSnippet(uiInput.text, regex);
+                return true;
+            }
+
+            if (comp is Renderer renderer)
+            {
+                var materials = renderer.sharedMaterials;
+                if (materials != null)
+                {
+                    for (var i = 0; i < materials.Length; i++)
+                    {
+                        var mat = materials[i];
+                        if (mat == null) continue;
+
+                        if (regex.IsMatch(mat.name))
+                        {
+                            matchPrefix = $"{typeName}.material=";
+                            matchValue = mat.name;
+                            return true;
+                        }
+
+                        var shader = mat.shader;
+                        if (shader != null && regex.IsMatch(shader.name))
+                        {
+                            matchPrefix = $"{typeName}.shader=";
+                            matchValue = shader.name;
+                            return true;
+                        }
+
+                        try
+                        {
+                            var texPropNames = mat.GetTexturePropertyNames();
+                            if (texPropNames != null)
+                            {
+                                for (var j = 0; j < texPropNames.Length; j++)
+                                {
+                                    var tex = mat.GetTexture(texPropNames[j]);
+                                    if (tex != null && regex.IsMatch(tex.name))
+                                    {
+                                        matchPrefix = $"{typeName}.texture=";
+                                        matchValue = tex.name;
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Some shaders or dynamic materials might not support texture property inspection
+                        }
+                    }
+                }
+            }
+
+            if (comp is SpriteRenderer spriteRenderer)
+            {
+                var sprite = spriteRenderer.sprite;
+                if (sprite != null)
+                {
+                    if (regex.IsMatch(sprite.name))
+                    {
+                        matchPrefix = $"{typeName}.sprite=";
+                        matchValue = sprite.name;
+                        return true;
+                    }
+
+                    var tex = sprite.texture;
+                    if (tex != null && regex.IsMatch(tex.name))
+                    {
+                        matchPrefix = $"{typeName}.texture=";
+                        matchValue = tex.name;
+                        return true;
+                    }
+                }
+            }
+
+            if (comp is UnityEngine.UI.Image img)
+            {
+                var sprite = img.sprite;
+                if (sprite != null)
+                {
+                    if (regex.IsMatch(sprite.name))
+                    {
+                        matchPrefix = $"{typeName}.sprite=";
+                        matchValue = sprite.name;
+                        return true;
+                    }
+
+                    var tex = sprite.texture;
+                    if (tex != null && regex.IsMatch(tex.name))
+                    {
+                        matchPrefix = $"{typeName}.texture=";
+                        matchValue = tex.name;
+                        return true;
+                    }
+                }
+
+                var mat = img.material;
+                if (mat != null)
+                {
+                    if (regex.IsMatch(mat.name))
+                    {
+                        matchPrefix = $"{typeName}.material=";
+                        matchValue = mat.name;
+                        return true;
+                    }
+
+                    if (mat.shader != null && regex.IsMatch(mat.shader.name))
+                    {
+                        matchPrefix = $"{typeName}.shader=";
+                        matchValue = mat.shader.name;
+                        return true;
+                    }
+                }
+            }
+            else if (comp is UnityEngine.UI.RawImage rawImg)
+            {
+                var tex = rawImg.texture;
+                if (tex != null && regex.IsMatch(tex.name))
+                {
+                    matchPrefix = $"{typeName}.texture=";
+                    matchValue = tex.name;
+                    return true;
+                }
+
+                var mat = rawImg.material;
+                if (mat != null)
+                {
+                    if (regex.IsMatch(mat.name))
+                    {
+                        matchPrefix = $"{typeName}.material=";
+                        matchValue = mat.name;
+                        return true;
+                    }
+
+                    if (mat.shader != null && regex.IsMatch(mat.shader.name))
+                    {
+                        matchPrefix = $"{typeName}.shader=";
+                        matchValue = mat.shader.name;
+                        return true;
+                    }
+                }
+            }
+
+            if (comp is MeshFilter mf && mf.sharedMesh != null && regex.IsMatch(mf.sharedMesh.name))
+            {
+                matchPrefix = $"{typeName}.sharedMesh=";
+                matchValue = mf.sharedMesh.name;
+                return true;
+            }
+
+            if (comp is SkinnedMeshRenderer smr && smr.sharedMesh != null && regex.IsMatch(smr.sharedMesh.name))
+            {
+                matchPrefix = $"{typeName}.sharedMesh=";
+                matchValue = smr.sharedMesh.name;
+                return true;
+            }
+
+            if (comp is AudioSource audioSource && audioSource.clip != null && regex.IsMatch(audioSource.clip.name))
+            {
+                matchPrefix = $"{typeName}.clip=";
+                matchValue = audioSource.clip.name;
+                return true;
+            }
+
+            if (comp is Animator animator && animator.runtimeAnimatorController != null && regex.IsMatch(animator.runtimeAnimatorController.name))
+            {
+                matchPrefix = $"{typeName}.runtimeAnimatorController=";
+                matchValue = animator.runtimeAnimatorController.name;
+                return true;
+            }
+
+            if (comp is Animation anim && anim.clip != null && regex.IsMatch(anim.clip.name))
+            {
+                matchPrefix = $"{typeName}.clip=";
+                matchValue = anim.clip.name;
+                return true;
+            }
+
+            if (comp is Collider col && col.sharedMaterial != null && regex.IsMatch(col.sharedMaterial.name))
+            {
+                matchPrefix = $"{typeName}.sharedMaterial=";
+                matchValue = col.sharedMaterial.name;
+                return true;
+            }
+
+            if (comp is Collider2D col2d && col2d.sharedMaterial != null && regex.IsMatch(col2d.sharedMaterial.name))
+            {
+                matchPrefix = $"{typeName}.sharedMaterial=";
+                matchValue = col2d.sharedMaterial.name;
+                return true;
+            }
+
+            if (comp is Camera cam && cam.targetTexture != null && regex.IsMatch(cam.targetTexture.name))
+            {
+                matchPrefix = $"{typeName}.targetTexture=";
+                matchValue = cam.targetTexture.name;
+                return true;
+            }
+
+            if (comp is Light light && light.cookie != null && regex.IsMatch(light.cookie.name))
+            {
+                matchPrefix = $"{typeName}.cookie=";
+                matchValue = light.cookie.name;
+                return true;
+            }
+
+            if (comp is Canvas canvas && !string.IsNullOrEmpty(canvas.sortingLayerName) && regex.IsMatch(canvas.sortingLayerName))
+            {
+                matchPrefix = $"{typeName}.sortingLayerName=";
+                matchValue = canvas.sortingLayerName;
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool DefaultMatchesComponent(Component comp, Regex regex, out string matchDetail)
+        {
+            if (DefaultMatchesComponent(comp, regex, out var prefix, out var value))
+            {
+                matchDetail = string.IsNullOrEmpty(value) ? prefix : $"{prefix}{value}";
+                return true;
+            }
+
+            matchDetail = null;
+            return false;
+        }
+
+        public static bool DefaultMatchesComponent(Component comp, Regex regex)
+        {
+            return DefaultMatchesComponent(comp, regex, out _, out _);
+        }
 
         public static string GetGameObjectPath(GameObject go)
         {

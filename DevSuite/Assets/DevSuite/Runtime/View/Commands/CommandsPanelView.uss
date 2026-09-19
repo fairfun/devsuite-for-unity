@@ -516,7 +516,8 @@
     font-size: 12px;
 }
 
-.ff-commands-filter-clear-button {
+.ff-commands-filter-clear-button,
+.ff-commands-filter-clear-button.unity-button {
     -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
     -unity-text-generator: standard;
     background-color: transparent;
@@ -524,16 +525,12 @@
     color: var(--text-color-inactive);
     font-size: 12px;
     min-width: 0;
+    min-height: 0;
     width: 10px;
     height: 16px;
-    margin-left: 2px;
-    padding: 0;
-}
-
-.ff-commands-filter-clear-button .unity-button {
-    background-color: transparent;
-    border-width: 0;
+    max-height: 16px;
     margin: 0;
+    margin-left: 2px;
     padding: 0;
 }
 

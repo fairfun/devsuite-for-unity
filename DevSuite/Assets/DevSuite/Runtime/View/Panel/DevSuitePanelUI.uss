@@ -46,7 +46,7 @@
 }
 
 .devsuite-panel-root > #hierarchy-container {
-    width: 380px;
+    width: 494px;
     flex-shrink: 0;
     flex-grow: 0;
     margin-right: var(--margin-size);

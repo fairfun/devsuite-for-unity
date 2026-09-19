@@ -89,6 +89,7 @@ namespace Ff.DevSuite
 #if UNITY_6000_0_OR_NEWER
             return;
 #endif
+#pragma warning disable CS0162
             var scrollSize = DefaultUnity2022MouseWheelScrollSize;
 
             var defaultScrollSize = scrollView.mouseWheelScrollSize > 0f
@@ -110,6 +111,7 @@ namespace Ff.DevSuite
 
             scrollView.RegisterCallback<AttachToPanelEvent>(evt => Apply(evt.destinationPanel));
             scrollView.RegisterCallback<DetachFromPanelEvent>(_ => scrollView.mouseWheelScrollSize = defaultScrollSize);
+#pragma warning restore CS0162
         }
 
         private static Label _activeTooltipLabel;
@@ -386,7 +388,6 @@ namespace Ff.DevSuite
                             suppressNextClick = true;
                             DismissActiveTooltip();
                             evt.StopImmediatePropagation();
-                            evt.PreventDefault();
                         }
                     }
                     else
@@ -410,7 +411,6 @@ namespace Ff.DevSuite
                     {
                         suppressNextClick = false;
                         evt.StopImmediatePropagation();
-                        evt.PreventDefault();
                     }
                 },
                 TrickleDown.TrickleDown

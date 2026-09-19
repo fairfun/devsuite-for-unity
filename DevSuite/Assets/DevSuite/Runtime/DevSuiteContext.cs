@@ -53,6 +53,7 @@ namespace Ff.DevSuite
         void SetPerformanceGraphSettings<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider;
         Func<string> BuildVersionToDisplay { get; set; }
         CopyToClipboardAction CopyToClipboardAction { get; set; }
+        HierarchySearchByComponentFilter HierarchySearchByComponentFilter { get; set; }
         string GetAllLogsText();
         void ClearLogs();
         void ClearSettings();
@@ -171,6 +172,21 @@ namespace Ff.DevSuite
 
         public Func<string> BuildVersionToDisplay { get; set; } = GetDefaultBuildVersionToDisplay;
         public CopyToClipboardAction CopyToClipboardAction { get; set; } = t => (CopyToClipboardContinueType.ContinueDefault, t);
+        private HierarchySearchByComponentFilter _hierarchySearchByComponentFilter = (c, q, r) => (HierarchySearchContinueType.ContinueDefault, false);
+        public HierarchySearchByComponentFilter HierarchySearchByComponentFilter
+        {
+            get => _hierarchySearchByComponentFilter;
+            set
+            {
+                _hierarchySearchByComponentFilter = value ?? ((c, q, r) => (HierarchySearchContinueType.ContinueDefault, false));
+                _onHierarchyPanelDispatcher?.Dispatch();
+            }
+        }
+
+        public bool MatchesHierarchyComponent(Component comp, string query, Regex regex)
+        {
+            return DevSuiteUtils.MatchesComponent(comp, query, regex, this);
+        }
 
         public CommandAttributesParserApi AttributesParserApi { get; internal set; }
 
@@ -1263,6 +1279,12 @@ namespace Ff.DevSuite
             set => SetSettingsValue(() => Settings.Value.HierarchySearchByType, v => Settings.Value.HierarchySearchByType = v, value);
         }
 
+        internal bool HierarchySearchByComponent
+        {
+            get => (Settings?.Ready ?? false) && Settings.Value.HierarchySearchByComponent;
+            set => SetSettingsValue(() => Settings.Value.HierarchySearchByComponent, v => Settings.Value.HierarchySearchByComponent = v, value);
+        }
+
         internal bool HierarchyKeepDimmed
         {
             get => !(Settings?.Ready ?? false) || Settings.Value.HierarchyKeepDimmed;
@@ -1590,7 +1612,7 @@ namespace Ff.DevSuite
 
             var pinnedCategoryKey = new CategoryKey(PinnedCategoryId);
             Categories.Remove(pinnedCategoryKey);
-            _categoryPinned ??= new CommandCategory(PinnedCategoryId, float.MaxValue, null);
+            _categoryPinned ??= new CommandCategory(PinnedCategoryId, float.MaxValue, null).WithDescription(PinnedCategoryDescription);
             _groupPinned ??= new CommandGroup(DefaultGroupId, _categoryPinned.Id, default, default);
             Categories.Add(pinnedCategoryKey, _categoryPinned);
 
@@ -2930,12 +2952,14 @@ namespace Ff.DevSuite
             }
         }
 
+        private static string PinnedCategoryDescription { get; set; } = "Pinned commands.\n\nPinned commands stay accessible in the quick-access bar and persist across sessions via ISavedPrefs.\n\n<b><i>Hint: </i></b>Click the pin icon on any command to pin or unpin, or use <b><color=#ffc800>[Command(AlwaysPin = true)]</color></b> in code to pin permanently.";
+
         internal List<TreeCategory> GetPinnedList()
         {
             return new List<TreeCategory>
             {
                 new(
-                    new CommandCategory(PinnedMockId, 0, null),
+                    new CommandCategory(PinnedMockId, 0, null).WithDescription(PinnedCategoryDescription),
                     new List<TreeGroup>
                     {
                         new(
@@ -2982,6 +3006,7 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(22)][Key(22)] public Dictionary<string, string> VirtualButtonParameters { get; set; } = new();
         [DataMember][MemoryPackOrder(23)][Key(23)] public List<string> CliCommandHistory { get; set; } = new();
         [DataMember][MemoryPackOrder(24)][Key(24)] public bool ShowSelectionFrame { get; set; } = true;
+        [DataMember][MemoryPackOrder(25)][Key(25)] public bool HierarchySearchByComponent { get; set; }
 
         public void InitializeDefaultsIfNeeded()
         {
@@ -3261,4 +3286,12 @@ namespace Ff.DevSuite
     }
 
     public delegate (CopyToClipboardContinueType ContinueType, string ContinueTextIfNeedModifying) CopyToClipboardAction(string text);
+
+    public enum HierarchySearchContinueType
+    {
+        ContinueDefault,
+        Break,
+    }
+
+    public delegate (HierarchySearchContinueType ContinueType, bool IsMatch) HierarchySearchByComponentFilter(Component component, string query, Regex regex);
 }

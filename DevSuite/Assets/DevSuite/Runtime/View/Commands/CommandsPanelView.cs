@@ -177,8 +177,10 @@ namespace Ff.DevSuite.View
                     })
                     {
                         text = "\uf00d",
+                        tooltip = "Clear filter",
                     };
                     clearFilterButton.AddToClassList("ff-commands-filter-clear-button");
+                    clearFilterButton.AddToClassList("ff-filter-clear-button");
                     updateClearFilterVisibility(filterInput.value);
 
                     filterPanel.Add(filterInput);
