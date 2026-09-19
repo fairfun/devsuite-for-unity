@@ -136,9 +136,9 @@ openupm add com.ff.devsuite
    ```text
    https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite
    ```
-   To pin a specific version, append the tag (e.g. `#0.6.0`):
+   To pin a specific version, append the tag (e.g. `#0.7.0`):
    ```text
-   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.6.0
+   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.7.0
    ```
 
 ### Via .unitypackage (Direct Import)
