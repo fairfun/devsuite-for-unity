@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Linq;
-using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Ff.DevSuite;
@@ -14,14 +13,13 @@ namespace Ff.DevSuite.Samples.Asteroids
     {
         public static DevSuiteDemoSequence Instance { get; private set; }
 
-#if UNITY_WEBGL && !UNITY_EDITOR
-        [DllImport("__Internal")]
-        private static extern void SetDemoSubtitleWebGL(string text);
-#endif
-
         private Coroutine _demoCoroutine;
         private VirtualCursorOverlay _cursor;
-        private string _currentSubtitle = "";
+        private string _targetSubtitle = "";
+        private string _displayedSubtitle = "";
+        private float _subtitleAlpha = 0f;
+        private bool _isFadingOut = false;
+        private GUIStyle _subtitleStyle;
 
         public bool IsRunning => _demoCoroutine != null;
 
@@ -64,28 +62,48 @@ namespace Ff.DevSuite.Samples.Asteroids
 
         public void SetSubtitle(string text)
         {
-            _currentSubtitle = text;
-
-            Debug.Log($"[DevSuiteDemo] {text}");
-
-#if UNITY_WEBGL && !UNITY_EDITOR
-            try
-            {
-                SetDemoSubtitleWebGL(text);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[DevSuiteDemo] WebGL subtitle error: {ex.Message}");
-            }
-#endif
+            _targetSubtitle = text ?? "";
+            Debug.Log($"[DevSuiteDemo] {_targetSubtitle}");
         }
 
-#if !UNITY_WEBGL || UNITY_EDITOR
-        private GUIStyle _subtitleStyle;
+        private void Update()
+        {
+            if (_isFadingOut)
+            {
+                _subtitleAlpha = Mathf.MoveTowards(_subtitleAlpha, 0f, Time.unscaledDeltaTime / 0.18f);
+                if (_subtitleAlpha <= 0f)
+                {
+                    _displayedSubtitle = _targetSubtitle;
+                    _isFadingOut = false;
+                }
+            }
+            else
+            {
+                if (_displayedSubtitle != _targetSubtitle)
+                {
+                    if (string.IsNullOrEmpty(_displayedSubtitle))
+                    {
+                        _displayedSubtitle = _targetSubtitle;
+                    }
+                    else
+                    {
+                        _isFadingOut = true;
+                    }
+                }
+                else if (!string.IsNullOrEmpty(_displayedSubtitle))
+                {
+                    _subtitleAlpha = Mathf.MoveTowards(_subtitleAlpha, 1f, Time.unscaledDeltaTime / 0.22f);
+                }
+                else
+                {
+                    _subtitleAlpha = Mathf.MoveTowards(_subtitleAlpha, 0f, Time.unscaledDeltaTime / 0.18f);
+                }
+            }
+        }
 
         private void OnGUI()
         {
-            if (string.IsNullOrEmpty(_currentSubtitle))
+            if (string.IsNullOrEmpty(_displayedSubtitle) || _subtitleAlpha <= 0f)
             {
                 return;
             }
@@ -101,17 +119,18 @@ namespace Ff.DevSuite.Samples.Asteroids
                     fontStyle = FontStyle.Bold,
                     wordWrap = true,
                 };
-                _subtitleStyle.normal.textColor = new Color(1f, 204f / 255f, 0f);
             }
 
             var width = Mathf.Min(Screen.width - 40f, 960f);
-            var content = new GUIContent(_currentSubtitle);
+            var content = new GUIContent(_displayedSubtitle);
             var textHeight = _subtitleStyle.CalcHeight(content, width);
-            var rect = new Rect((Screen.width - width) * 0.5f, Screen.height - textHeight - 20f, width, textHeight);
 
+            var yOffset = Mathf.Lerp(10f, 0f, Mathf.SmoothStep(0f, 1f, _subtitleAlpha));
+            var rect = new Rect((Screen.width - width) * 0.5f, Screen.height - textHeight - 20f + yOffset, width, textHeight);
+
+            _subtitleStyle.normal.textColor = new Color(1f, 204f / 255f, 0f, _subtitleAlpha);
             GUI.Label(rect, content, _subtitleStyle);
         }
-#endif
 
         private VisualElement GetElement(string elementName)
         {
@@ -471,7 +490,7 @@ namespace Ff.DevSuite.Samples.Asteroids
             );
             yield return new WaitForSecondsRealtime(1.0f);
 
-            SetSubtitle("DevSuite Demo Complete! Instant productivity for Unity WebGL & Editor. Press F1 anytime.");
+            SetSubtitle("DevSuite Demo Complete! Instant productivity for Unity WebGL & Editor. Press F2 anytime.");
             yield return new WaitForSecondsRealtime(2.0f);
 
             _cursor.ClearHover();

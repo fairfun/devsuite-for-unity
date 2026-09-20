@@ -160,9 +160,9 @@ namespace Ff.DevSuite.Samples.Asteroids
 
         [CommandButton(Title = "30s Demo", CliCommand = "run_demo", Color = "#00CC66", Priority = 100, Description = "Run the 30-second automated interactive demo of DevSuite.",
 #if ENABLE_INPUT_SYSTEM
-            Shortcut = new[] { UnityEngine.InputSystem.Key.F1 }
+            Shortcut = new[] { UnityEngine.InputSystem.Key.F2 }
 #else
-            Shortcut = new[] { KeyCode.F1 }
+            Shortcut = new[] { KeyCode.F2 }
 #endif
         )]
         public void StartDevSuiteDemo()
@@ -829,7 +829,7 @@ namespace Ff.DevSuite.Samples.Asteroids
                 _hudText.text = $"SCORE: {_score}\nLIVES: {_lives}{godModeStr}\nASTEROIDS: {_asteroids.Count}\n\n" +
                     "Fly: [W / Up] Thrust, [A/D / Left/Right] Rotate\n" +
                     "Fire: [Space] or Left Click | Restart: [R]\n" +
-                    "DevSuite: Press Ctrl + ` or toggle top-right panel | [F1] 30s Demo";
+                    "DevSuite: Press Ctrl + ` or toggle top-right panel | [F2] 30s Demo";
             }
 
             if (_gameOverText != null)
