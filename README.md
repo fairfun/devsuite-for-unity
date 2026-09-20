@@ -92,6 +92,7 @@ DevSuite serves as a modern, 100% free, and open-source alternative to popular U
 - 🌐 **Cross-Platform**: Supports running in the **Editor**, as well as **Desktop**, **Mobile**, and **WebGL** builds.
 - 📱 **Responsive Design**: Modern UI Toolkit-based interface that works seamlessly across different screen sizes.
 - 🏷️ **Commands with Extensive Attributes**: Highly customizable through attributes, allowing you to expose debug commands and data with minimal code.
+- 🎯 **Maximum Control, Minimum Magic**: Simple and predictable setup without hidden automation — settings and lifecycle are controlled explicitly via code or through the <a href="DevSuite/Assets/DevSuite/Runtime/View/Panel/DevSuitePanelUI.cs"><code>DevSuitePanelUI</code></a> component.
 - ⚙️ **Auto-Parameterized Command Buttons**: Methods with parameters annotated with `[CommandButton]` automatically generate inline editable inputs (fields, sliders, dropdowns) for their arguments without boilerplate.
 - 💻 **In-Game CLI (Command Line Interface)**: Integrated terminal at the bottom of the Logs console (`Ctrl+`` shortcut) with autocompletion, real-time ghost parameter placeholders, persistent command history (Up/Down arrows), and execution.
 - 📊 **Performance Monitor**: Integrated graphs and statistics for real-time performance tracking (FPS, memory, etc.), can add your own custom stats too.

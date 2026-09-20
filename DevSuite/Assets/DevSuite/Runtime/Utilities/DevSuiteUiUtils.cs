@@ -117,7 +117,7 @@ namespace Ff.DevSuite
         private static Label _activeTooltipLabel;
         private static Action _dismissActiveTooltip;
 
-        private static void DismissActiveTooltip()
+        internal static void DismissActiveTooltip()
         {
             if (_activeTooltipLabel != null)
             {
@@ -219,7 +219,7 @@ namespace Ff.DevSuite
             return tooltipLabel;
         }
 
-        private static Label ShowTooltip(VisualElement root, string text, Vector2 pointerPosition, bool isTouch, Func<Vector2> getCurrentPointerPosition = null)
+        internal static Label ShowTooltip(VisualElement root, string text, Vector2 pointerPosition, bool isTouch, Func<Vector2> getCurrentPointerPosition = null)
         {
             DismissActiveTooltip();
 

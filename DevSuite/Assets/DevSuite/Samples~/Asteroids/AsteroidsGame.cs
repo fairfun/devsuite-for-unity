@@ -22,8 +22,8 @@ namespace Ff.DevSuite.Samples.Asteroids
         private static extern void SetCanvasSizeWebGL(int width, int height);
 #endif
 
-        [Header("Ship Settings")][CommandValue][SerializeField] private float _shipSpeed = 12f;
-        [CommandValue][SerializeField] private float _rotationSpeed = 220f;
+        [Header("Ship Settings")][CommandValue(MinValue = 1f, MaxValue = 30f)][CommandValue][SerializeField] private float _shipSpeed = 12f;
+        [CommandValue(MinValue = 0f, MaxValue = 500f)][CommandValue][SerializeField] private float _rotationSpeed = 220f;
         [SerializeField] private float _drag = 1.2f;
         [CommandValue][SerializeField] private float _bulletSpeed = 22f;
         [CommandValue][SerializeField] private float _fireRate = 6f;
@@ -158,6 +158,22 @@ namespace Ff.DevSuite.Samples.Asteroids
             _lives += count;
         }
 
+        [CommandButton(Title = "30s Demo", CliCommand = "run_demo", Color = "#00CC66", Priority = 100, Description = "Run the 30-second automated interactive demo of DevSuite.",
+#if ENABLE_INPUT_SYSTEM
+            Shortcut = new[] { UnityEngine.InputSystem.Key.F1 }
+#else
+            Shortcut = new[] { KeyCode.F1 }
+#endif
+        )]
+        public void StartDevSuiteDemo()
+        {
+            if (DevSuiteDemoSequence.Instance == null)
+            {
+                gameObject.AddComponent<DevSuiteDemoSequence>();
+            }
+            DevSuiteDemoSequence.Instance.StartDemo();
+        }
+
         private Camera _mainCamera;
         private PlayerShip _ship;
         private readonly List<AsteroidEntity> _asteroids = new();
@@ -180,6 +196,7 @@ namespace Ff.DevSuite.Samples.Asteroids
         [SerializeField] private RectTransform _devSuiteArrow;
         [SerializeField] private Button _orientationButton;
         [SerializeField] private Text _orientationButtonText;
+        public Button OrientationButton => _orientationButton;
 
         private bool _devSuiteOpenedInSession;
         private Vector2 _arrowBasePos = new Vector2(-120f, -120f);
@@ -812,7 +829,7 @@ namespace Ff.DevSuite.Samples.Asteroids
                 _hudText.text = $"SCORE: {_score}\nLIVES: {_lives}{godModeStr}\nASTEROIDS: {_asteroids.Count}\n\n" +
                     "Fly: [W / Up] Thrust, [A/D / Left/Right] Rotate\n" +
                     "Fire: [Space] or Left Click | Restart: [R]\n" +
-                    "DevSuite: Press Ctrl + ` or toggle top-right panel";
+                    "DevSuite: Press Ctrl + ` or toggle top-right panel | [F1] 30s Demo";
             }
 
             if (_gameOverText != null)
