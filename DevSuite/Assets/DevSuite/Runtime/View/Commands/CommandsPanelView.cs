@@ -130,7 +130,7 @@ namespace Ff.DevSuite.View
                     return;
                 }
 
-                _selectedCategoryId ??= _context.SelectedCategory ?? (_context.Tree.Count > 0 ? _context.Tree[0].Category.Id : null);
+                _selectedCategoryId = _context.SelectedCategory ?? _selectedCategoryId ?? (_context.Tree.Count > 0 ? _context.Tree[0].Category.Id : null);
 
                 if (_categoriesContainer.childCount <= 0)
                 {

@@ -33,6 +33,7 @@ using Key =
 
 [assembly: InternalsVisibleTo("DevSuite.Editor")]
 [assembly: InternalsVisibleTo("DevSuite.Examples")]
+[assembly: InternalsVisibleTo("DevSuite.Samples.Asteroids")]
 
 namespace Ff.DevSuite
 {
