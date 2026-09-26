@@ -113,11 +113,12 @@ DevSuite serves as a modern, 100% free, and open-source alternative to popular U
 ## Requirements
 
 - **Minimum Tested Unity Version**: `2022.3.62`
-- **Dependencies**: UI Toolkit (Standard in Unity 2022.3+)
-- **Serialization (Recommended)**: It is strongly recommended to have one of the following packages installed for optimal functionality:
-  - [MemoryPack](https://github.com/Cysharp/MemoryPack)
-  - [MessagePack](https://github.com/MessagePack-CSharp/MessagePack-CSharp)
-  - [Newtonsoft.Json for Unity](https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html)
+- **Dependencies**:
+- - UI Toolkit (Standard in Unity 2022.3+)
+- -  **Serialization (Recommended)**: It is strongly recommended to have one of the following packages installed for optimal functionality:
+- - - [MemoryPack](https://github.com/Cysharp/MemoryPack)
+- - - [MessagePack](https://github.com/MessagePack-CSharp/MessagePack-CSharp)
+- - - [Newtonsoft.Json for Unity](https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html)
 
 ## Installation
 
@@ -137,9 +138,9 @@ openupm add com.ff.devsuite
    ```text
    https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite
    ```
-   To pin a specific version, append the tag (e.g. `#0.7.0`):
+   To pin a specific version, append the tag (e.g. `#1.0.0`):
    ```text
-   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.7.0
+   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#1.0.0
    ```
 
 ### Via .unitypackage (Direct Import)
