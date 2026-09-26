@@ -834,12 +834,4 @@ namespace Ff.DevSuite.Commands.Attributes
             return null;
         }
     }
-
-    [Obsolete("Use CommandAttributesParserApi instead. Will be removed in version 1.0.")]
-    public class CommandAttributesParser : CommandAttributesParserApi
-    {
-        public CommandAttributesParser(DevSuiteContext context) : base(context)
-        {
-        }
-    }
 }
