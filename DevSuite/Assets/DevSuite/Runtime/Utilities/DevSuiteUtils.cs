@@ -677,24 +677,16 @@ namespace Ff.DevSuite
 
         private static void DefaultCopyToClipboard(string text)
         {
-            if (IsWebGl)
-            {
-                CopyToClipboardWebGL(text);
-            }
-            else
-            {
-                GUIUtility.systemCopyBuffer = text;
-            }
+#if UNITY_WEBGL && !UNITY_EDITOR
+            CopyToClipboardWebGL(text);
+#else
+            GUIUtility.systemCopyBuffer = text;
+#endif
         }
 
+#if UNITY_WEBGL && !UNITY_EDITOR
         [System.Runtime.InteropServices.DllImport("__Internal")]
         private static extern void CopyToClipboardWebGL(string text);
-
-        private static bool IsWebGl =>
-#if UNITY_WEBGL && !UNITY_EDITOR
-            true;
-#else
-            false;
 #endif
 
         private static Type _tmpTextType;
