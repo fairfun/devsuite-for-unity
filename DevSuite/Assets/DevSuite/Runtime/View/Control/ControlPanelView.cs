@@ -8,6 +8,8 @@ namespace Ff.DevSuite.View
     {
         private DevSuiteContext _context;
 
+        private readonly VisualElement _root;
+        private readonly VisualElement _spacer;
         private readonly Button _resetButton;
         private readonly VisualElement _resetProgressBar;
         private readonly Button _logsButton;
@@ -92,16 +94,17 @@ namespace Ff.DevSuite.View
             _inspectorButton.text = IconInspector;
             _expandButton.text = IconExpand;
 
-            var root = this.Q<VisualElement>("ff-control-panel-root");
+            _root = this.Q<VisualElement>("ff-control-panel-root");
+            _spacer = this.Q<VisualElement>("spacer");
             if (reverse)
             {
-                root.style.flexDirection = FlexDirection.RowReverse;
+                _root.style.flexDirection = FlexDirection.RowReverse;
             }
 
-            var lastChild = root.ElementAt(reverse ? 0 : root.childCount - 1);
+            var lastChild = _root.ElementAt(reverse ? 0 : _root.childCount - 1);
             lastChild?.AddToClassList("last-item");
 
-            var firstChild = root.ElementAt(reverse ? root.childCount - 1 : 0);
+            var firstChild = _root.ElementAt(reverse ? _root.childCount - 1 : 0);
             firstChild?.AddToClassList("first-item");
 
             _activationMode = activationMode;
@@ -469,6 +472,12 @@ namespace Ff.DevSuite.View
             _isPaused = CheckIsPaused();
 
             EnableInClassList("collapsed", !expanded);
+
+            var containerPickingMode = expanded ? PickingMode.Position : PickingMode.Ignore;
+            pickingMode = containerPickingMode;
+            _root.pickingMode = containerPickingMode;
+            _spacer.pickingMode = containerPickingMode;
+            _expandButton.pickingMode = PickingMode.Position;
 
             _resetButton.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             _divider.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
