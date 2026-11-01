@@ -215,7 +215,7 @@ namespace Ff.DevSuite
             }
         }
 
-        [CommandButton(nameof(SystemInfoText), Title = "\uf021", Flex = 0f, FontResource = "Font Awesome 7 Free-Solid-900 SDF", CliEnabled = false, Description = "Reset system info.\n\nClears cached system info text.")]
+        [CommandButton(nameof(SystemInfoText), Title = "\ue145", Flex = 0f, FontResource = "Lucide SDF", CliEnabled = false, Description = "Reset system info.\n\nClears cached system info text.")]
         public static void SystemInfoReset()
         {
             _systemInfoText = null;
@@ -390,7 +390,7 @@ namespace Ff.DevSuite
             Debug.Log(FormatCliCommands(commands));
         }
 
-        [CommandButton(nameof(ShowCliCommands), Title = "\uf0c5", Flex = 0f, FontResource = "Font Awesome 7 Free-Solid-900 SDF", Description = "Copy CLI commands to clipboard.\n\nCopies formatted command list via <b><color=#ffc800>DevSuiteUtils.CopyToClipboard()</color></b>.\n\n<b><i>Hint: </i></b>Customize copy behavior via <b><color=#ffc800>DevSuiteContext.Default.CopyToClipboardAction</color></b>.", CliEnabled = false)]
+        [CommandButton(nameof(ShowCliCommands), Title = "\ue09e", Flex = 0f, FontResource = "Lucide SDF", Description = "Copy CLI commands to clipboard.\n\nCopies formatted command list via <b><color=#ffc800>DevSuiteUtils.CopyToClipboard()</color></b>.\n\n<b><i>Hint: </i></b>Customize copy behavior via <b><color=#ffc800>DevSuiteContext.Default.CopyToClipboardAction</color></b>.", CliEnabled = false)]
         public static void CopyCliCommands()
         {
             var commands = DevSuiteContext.DefaultInternal.GetActiveCliCommands();

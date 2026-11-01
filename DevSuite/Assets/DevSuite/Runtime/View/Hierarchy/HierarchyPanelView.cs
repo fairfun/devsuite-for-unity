@@ -98,11 +98,11 @@ namespace Ff.DevSuite.View
             var root = this.Q<VisualElement>("hierarchy-panel-root") ?? this;
 
             _pickBtn = root.Q<Button>("pickBtn");
-            _pickBtn.text = "\uf05b"; // crosshairs
+            _pickBtn.text = "\ue0ac"; // crosshair
             _pickBtn.clicked += TogglePickMode;
 
             _refreshBtn = root.Q<Button>("refreshBtn");
-            _refreshBtn.text = "\uf021"; // sync
+            _refreshBtn.text = "\ue145"; // refresh-cw
             _refreshBtn.clicked += () =>
             {
                 _context.NotifyHierarchyChanged();
@@ -143,7 +143,7 @@ namespace Ff.DevSuite.View
             _copyBtn = root.Q<Button>("copyBtn");
             if (_copyBtn != null)
             {
-                _copyBtn.text = "\uf0c5"; // copy icon
+                _copyBtn.text = "\ue09e"; // copy icon
                 _copyBtn.clicked += () =>
                 {
                     var hierarchyText = GetFullHierarchyAsText();
@@ -164,7 +164,7 @@ namespace Ff.DevSuite.View
             _clearFilterBtn = root.Q<Button>("clearFilterBtn");
             if (_clearFilterBtn != null)
             {
-                _clearFilterBtn.text = "\uf00d";
+                _clearFilterBtn.text = "\ue1b2";
                 _clearFilterBtn.clicked += () =>
                 {
                     _context.HierarchyPattern = "";
@@ -175,11 +175,11 @@ namespace Ff.DevSuite.View
             UpdateClearFilterButton();
 
             _prevBtn = root.Q<Button>("prevBtn");
-            _prevBtn.text = "\uf104"; // angle-left
+            _prevBtn.text = "\ue06e"; // chevron-left
             _prevBtn.clicked += HandlePrevResult;
 
             _nextBtn = root.Q<Button>("nextBtn");
-            _nextBtn.text = "\uf105"; // angle-right
+            _nextBtn.text = "\ue06f"; // chevron-right
             _nextBtn.clicked += HandleNextResult;
 
             _regexBtn = root.Q<Button>("regexBtn");
@@ -193,7 +193,7 @@ namespace Ff.DevSuite.View
             };
 
             _nameBtn = root.Q<Button>("nameBtn");
-            _nameBtn.text = "\uf02b"; // tag
+            _nameBtn.text = "\ue17f"; // tag
             _nameBtn.clicked += () =>
             {
                 _searchByName = !_searchByName;
@@ -203,7 +203,7 @@ namespace Ff.DevSuite.View
             };
 
             _typeBtn = root.Q<Button>("typeBtn");
-            _typeBtn.text = "\uf1b2"; // cube
+            _typeBtn.text = "\ue061"; // box
             _typeBtn.clicked += () =>
             {
                 _searchByType = !_searchByType;
@@ -215,7 +215,7 @@ namespace Ff.DevSuite.View
             _componentBtn = root.Q<Button>("componentBtn");
             if (_componentBtn != null)
             {
-                _componentBtn.text = "\uf0c9"; // bars
+                _componentBtn.text = "\ue115"; // menu
                 _componentBtn.clicked += () =>
                 {
                     _searchByComponent = !_searchByComponent;
@@ -226,7 +226,7 @@ namespace Ff.DevSuite.View
             }
 
             _dimBtn = root.Q<Button>("dimBtn");
-            _dimBtn.text = "\uf042"; // adjust
+            _dimBtn.text = "\ue09d"; // contrast
             _dimBtn.clicked += () =>
             {
                 _keepDimmed = !_keepDimmed;
@@ -1544,7 +1544,7 @@ namespace Ff.DevSuite.View
                 var checkmark = _activityToggle.Q<VisualElement>("unity-checkmark");
                 if (checkmark != null)
                 {
-                    var icon = new Label("\uf00c");
+                    var icon = new Label("\ue06c");
                     icon.AddToClassList("ff-toggle-icon");
                     checkmark.Add(icon);
                 }
@@ -1555,7 +1555,7 @@ namespace Ff.DevSuite.View
                         var cm = _activityToggle.Q<VisualElement>("unity-checkmark");
                         if (cm != null && cm.childCount == 0)
                         {
-                            var icon = new Label("\uf00c");
+                            var icon = new Label("\ue06c");
                             icon.AddToClassList("ff-toggle-icon");
                             cm.Add(icon);
                         }
@@ -1625,7 +1625,7 @@ namespace Ff.DevSuite.View
 
                     _itemLabel.text = $"Scene: {item.SceneName}";
                     _foldoutBtn.style.visibility = Visibility.Visible;
-                    _foldoutBtn.text = item.IsExpanded ? "\uf0d7" : "\uf0da";
+                    _foldoutBtn.text = item.IsExpanded ? "\ue06d" : "\ue06f";
                     _badgeLabel.style.display = DisplayStyle.None;
                     _activityToggle.style.display = DisplayStyle.None;
                 }
@@ -1661,7 +1661,7 @@ namespace Ff.DevSuite.View
                         if (item.HasChildren)
                         {
                             _foldoutBtn.style.visibility = Visibility.Visible;
-                            _foldoutBtn.text = item.IsExpanded ? "\uf0d7" : "\uf0da";
+                            _foldoutBtn.text = item.IsExpanded ? "\ue06d" : "\ue06f";
                         }
                         else
                         {

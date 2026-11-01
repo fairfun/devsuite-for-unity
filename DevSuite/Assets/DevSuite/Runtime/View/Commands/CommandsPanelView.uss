@@ -104,7 +104,7 @@
 }
 
 .ff-commands-group-toggle-indicator {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
     font-size: 12px;
     width: 14px;
@@ -140,7 +140,7 @@
 }
 
 .ff-commands-command-icon {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
     width: 20px;
     height: 20px;
@@ -368,7 +368,7 @@
 }
 
 .ff-commands-unit-toggle-icon {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
     color: var(--text-color); /* Check color moved to the tick itself */
     font-size: 13px;
@@ -492,9 +492,9 @@
 }
 
 .ff-commands-filter-icon {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
-    color: var(--text-color-inactive);
+    color: var(--text-color);
     font-size: 10px;
     margin-right: 1px;
     padding: 0;
@@ -523,7 +523,7 @@
 
 .ff-commands-filter-clear-button,
 .ff-commands-filter-clear-button.unity-button {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
     background-color: transparent;
     border-width: 0;

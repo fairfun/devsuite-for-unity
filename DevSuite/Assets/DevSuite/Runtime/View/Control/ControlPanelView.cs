@@ -47,15 +47,15 @@ namespace Ff.DevSuite.View
         private IVisualElementScheduledItem _warningTask;
         private float _lastToggleTime = -1f;
 
-        private const string IconReset = "\uf2ed";
-        private const string IconLogs = "\uf02d";
-        private const string IconCommands = "\uf04e";
-        private const string IconPinnedCommands = "\uf08d";
-        private const string IconMetrics = "\uf681";
-        private const string IconHierarchy = "\uf0e8";
-        private const string IconInspector = "\uf05a";
-        private const string IconExpand = "\uf0fe";
-        private const string IconCollapse = "\uf146";
+        private const string IconReset = "\ue18e";
+        private const string IconLogs = "\ue05e";
+        private const string IconCommands = "\ue3ea";
+        private const string IconPinnedCommands = "\ue259";
+        private const string IconMetrics = "\ue2a5";
+        private const string IconHierarchy = "\ue125";
+        private const string IconInspector = "\ue5ad";
+        private const string IconExpand = "\ue173";
+        private const string IconCollapse = "\ue171";
         private const int BlinkIntervalMs = 300;
 
         internal ControlPanelView(VisualTreeAsset uxml, StyleSheet uss, bool reverse, DevSuitePanelActivationMode activationMode, ControlPanelExpandButtonVisibility expandButtonVisibility)

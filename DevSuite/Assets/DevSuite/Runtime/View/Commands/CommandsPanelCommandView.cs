@@ -22,17 +22,17 @@ namespace Ff.DevSuite.View
             string pinTooltip;
             if (isAlwaysPinned)
             {
-                icon = "\uf023";
+                icon = "\ue10b";
                 pinTooltip = "Always Pinned.\n\n<b><i>Hint: </i></b>Configured in code via <b><color=#ffc800>[Command(AlwaysPin = true)]</color></b>.";
             }
             else if (isPinned)
             {
-                icon = "\uf08d";
+                icon = "\ue259";
                 pinTooltip = "Pinned to Pinned Commands panel.\n\nClick to unpin. Pinned commands stay accessible in the quick-access bar and persist across sessions via ISavedPrefs.\n\n<b><i>Hint: </i></b>Use <b><color=#ffc800>[Command(AlwaysPin = true)]</color></b> in code to pin permanently.";
             }
             else
             {
-                icon = "\ue68f";
+                icon = "\ue2b6";
                 pinTooltip = "Unpinned. Click to pin.\n\nPinned commands stay accessible in the quick-access bar and persist across sessions via ISavedPrefs.\n\n<b><i>Hint: </i></b>Use <b><color=#ffc800>[Command(AlwaysPin = true)]</color></b> in code to pin permanently.";
             }
 
@@ -50,7 +50,7 @@ namespace Ff.DevSuite.View
 
             var copyIcon = new Button
             {
-                text = "\uf0c5"
+                text = "\ue09e"
             };
             copyIcon.AddToClassList("ff-commands-command-icon");
             copyIcon.clicked += () =>
