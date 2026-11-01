@@ -13,6 +13,9 @@ namespace Ff.DevSuite.View.Editor
             var window = GetWindow<HierarchyPanelWindow>();
             var icon = EditorGUIUtility.IconContent("CustomTool")?.image;
             window.titleContent = new GUIContent("DevSuite: Hierarchy", icon);
+            window.Show();
+            window.Focus();
+            window._view?.Refresh();
         }
 
         private const string UxmlGuid = "d31a8ca9b28a49c693a7eb2db0d21051";
@@ -47,6 +50,12 @@ namespace Ff.DevSuite.View.Editor
         private void OnEnable()
         {
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            _view?.Refresh();
+        }
+
+        private void OnFocus()
+        {
+            _view?.Refresh();
         }
 
         private void OnDisable()
@@ -64,6 +73,7 @@ namespace Ff.DevSuite.View.Editor
             else if (state == PlayModeStateChange.EnteredPlayMode)
             {
                 _view?.Initialize(DevSuiteContext.DefaultInternal);
+                _view?.Refresh();
             }
         }
     }

@@ -19,6 +19,8 @@ namespace Ff.DevSuite.View
         private readonly Button _selectionFrameBtn;
         private readonly Button _unselectAllBtn;
         private readonly Button _copyBtn;
+        private readonly VisualElement _autoRefreshInfoRow;
+        private readonly Label _autoRefreshInfoLabel;
         private readonly Toggle _goActivityToggle;
         private EventCallback<ChangeEvent<bool>> _goActivityCallback;
 
@@ -152,6 +154,7 @@ namespace Ff.DevSuite.View
             _autoRefreshBtn = root.Q<Button>("autoRefreshBtn");
             if (_autoRefreshBtn != null)
             {
+                _autoRefreshBtn.enableRichText = true;
                 _autoRefreshBtn.clicked += () =>
                 {
                     _context.InspectorAutoRefresh = !_context.InspectorAutoRefresh;
@@ -162,6 +165,7 @@ namespace Ff.DevSuite.View
             _autoPauseBtn = root.Q<Button>("autoPauseBtn");
             if (_autoPauseBtn != null)
             {
+                _autoPauseBtn.enableRichText = true;
                 _autoPauseBtn.clicked += () =>
                 {
                     _context.InspectorAutoPause = !_context.InspectorAutoPause;
@@ -172,6 +176,7 @@ namespace Ff.DevSuite.View
             _selectionFrameBtn = root.Q<Button>("selectionFrameBtn");
             if (_selectionFrameBtn != null)
             {
+                _selectionFrameBtn.enableRichText = true;
                 _selectionFrameBtn.clicked += () =>
                 {
                     _context.ShowSelectionFrame = !_context.ShowSelectionFrame;
@@ -204,6 +209,22 @@ namespace Ff.DevSuite.View
                 };
             }
 
+            _autoRefreshInfoRow = root.Q<VisualElement>("autoRefreshInfoRow");
+            _autoRefreshInfoLabel = root.Q<Label>("autoRefreshInfoLabel");
+            const string autoRefreshHint = "Use the \"Auto\" button above to enable auto-updating.";
+            if (_autoRefreshInfoRow != null)
+            {
+                _autoRefreshInfoRow.tooltip = autoRefreshHint;
+            }
+            if (_autoRefreshInfoLabel != null)
+            {
+                _autoRefreshInfoLabel.enableRichText = true;
+                _autoRefreshInfoLabel.text = "⚠ <i>Auto-refresh mode is disabled</i>";
+                _autoRefreshInfoLabel.tooltip = autoRefreshHint;
+                _autoRefreshInfoLabel.style.color = new StyleColor(new Color(1f, 204f / 255f, 0f, 1f));
+                _autoRefreshInfoLabel.style.unityFontStyleAndWeight = FontStyle.Normal;
+            }
+
             DevSuiteUiUtils.SetupTooltips(this);
         }
 
@@ -224,6 +245,8 @@ namespace Ff.DevSuite.View
                 _context.OnEveryFrame -= HandleOnEveryFrame;
                 _context = null;
             }
+
+            UpdateButtonStates();
         }
 
         private void HandleContextChanged()
@@ -234,10 +257,33 @@ namespace Ff.DevSuite.View
 
         private void UpdateButtonStates()
         {
-            _autoRefreshBtn?.EnableInClassList("active", _context.InspectorAutoRefresh);
-            _autoPauseBtn?.EnableInClassList("active", _context.InspectorAutoPause);
-            _selectionFrameBtn?.EnableInClassList("active", _context.ShowSelectionFrame);
-            _unselectAllBtn?.EnableInClassList("has-selection", _context.SelectedGameObjects.Count > 0);
+            var autoRefresh = _context != null && _context.InspectorAutoRefresh;
+            if (_autoRefreshBtn != null)
+            {
+                _autoRefreshBtn.EnableInClassList("active", autoRefresh);
+                _autoRefreshBtn.text = autoRefresh ? "Auto" : "<s>Auto</s>";
+            }
+
+            var autoPause = _context != null && _context.InspectorAutoPause;
+            if (_autoPauseBtn != null)
+            {
+                _autoPauseBtn.EnableInClassList("active", autoPause);
+                _autoPauseBtn.text = autoPause ? "Auto Pause" : "<s>Auto Pause</s>";
+            }
+
+            var frame = _context != null && _context.ShowSelectionFrame;
+            if (_selectionFrameBtn != null)
+            {
+                _selectionFrameBtn.EnableInClassList("active", frame);
+                _selectionFrameBtn.text = frame ? "Frame" : "<s>Frame</s>";
+            }
+
+            _unselectAllBtn?.EnableInClassList("has-selection", _context != null && _context.SelectedGameObjects.Count > 0);
+
+            if (_autoRefreshInfoRow != null)
+            {
+                _autoRefreshInfoRow.style.display = autoRefresh ? DisplayStyle.None : DisplayStyle.Flex;
+            }
         }
 
         private void UpdateInspector()

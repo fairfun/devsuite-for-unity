@@ -92,6 +92,7 @@ DevSuite serves as a modern, 100% free, and open-source alternative to popular U
 - 🌐 **Cross-Platform**: Supports running in the **Editor**, as well as **Desktop**, **Mobile**, and **WebGL** builds.
 - 📱 **Responsive Design**: Modern UI Toolkit-based interface that works seamlessly across different screen sizes.
 - 🏷️ **Commands with Extensive Attributes**: Highly customizable through attributes, allowing you to expose debug commands and data with minimal code.
+- 🎯 **Maximum Control, Minimum Magic**: Simple and predictable setup without hidden automation — settings and lifecycle are controlled explicitly via code or through the <a href="DevSuite/Assets/DevSuite/Runtime/View/Panel/DevSuitePanelUI.cs"><code>DevSuitePanelUI</code></a> component.
 - ⚙️ **Auto-Parameterized Command Buttons**: Methods with parameters annotated with `[CommandButton]` automatically generate inline editable inputs (fields, sliders, dropdowns) for their arguments without boilerplate.
 - 💻 **In-Game CLI (Command Line Interface)**: Integrated terminal at the bottom of the Logs console (`Ctrl+`` shortcut) with autocompletion, real-time ghost parameter placeholders, persistent command history (Up/Down arrows), and execution.
 - 📊 **Performance Monitor**: Integrated graphs and statistics for real-time performance tracking (FPS, memory, etc.), can add your own custom stats too.
@@ -112,11 +113,12 @@ DevSuite serves as a modern, 100% free, and open-source alternative to popular U
 ## Requirements
 
 - **Minimum Tested Unity Version**: `2022.3.62`
-- **Dependencies**: UI Toolkit (Standard in Unity 2022.3+)
-- **Serialization (Recommended)**: It is strongly recommended to have one of the following packages installed for optimal functionality:
-  - [MemoryPack](https://github.com/Cysharp/MemoryPack)
-  - [MessagePack](https://github.com/MessagePack-CSharp/MessagePack-CSharp)
-  - [Newtonsoft.Json for Unity](https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html)
+- **Dependencies**:
+- - UI Toolkit (Standard in Unity 2022.3+)
+- -  **Serialization (Recommended)**: It is strongly recommended to have one of the following packages installed for optimal functionality:
+- - - [MemoryPack](https://github.com/Cysharp/MemoryPack)
+- - - [MessagePack](https://github.com/MessagePack-CSharp/MessagePack-CSharp)
+- - - [Newtonsoft.Json for Unity](https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html)
 
 ## Installation
 
@@ -136,9 +138,9 @@ openupm add com.ff.devsuite
    ```text
    https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite
    ```
-   To pin a specific version, append the tag (e.g. `#0.6.0`):
+   To pin a specific version, append the tag (e.g. `#1.0.0`):
    ```text
-   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#0.6.0
+   https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#1.0.0
    ```
 
 ### Via .unitypackage (Direct Import)

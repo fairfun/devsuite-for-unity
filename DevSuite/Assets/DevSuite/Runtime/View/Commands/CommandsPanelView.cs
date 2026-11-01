@@ -130,7 +130,7 @@ namespace Ff.DevSuite.View
                     return;
                 }
 
-                _selectedCategoryId ??= _context.SelectedCategory ?? (_context.Tree.Count > 0 ? _context.Tree[0].Category.Id : null);
+                _selectedCategoryId = _context.SelectedCategory ?? _selectedCategoryId ?? (_context.Tree.Count > 0 ? _context.Tree[0].Category.Id : null);
 
                 if (_categoriesContainer.childCount <= 0)
                 {
@@ -177,8 +177,10 @@ namespace Ff.DevSuite.View
                     })
                     {
                         text = "\uf00d",
+                        tooltip = "Clear filter",
                     };
                     clearFilterButton.AddToClassList("ff-commands-filter-clear-button");
+                    clearFilterButton.AddToClassList("ff-filter-clear-button");
                     updateClearFilterVisibility(filterInput.value);
 
                     filterPanel.Add(filterInput);

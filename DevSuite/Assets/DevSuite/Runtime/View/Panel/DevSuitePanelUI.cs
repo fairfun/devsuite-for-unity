@@ -83,9 +83,15 @@ namespace Ff.DevSuite.View
         private VisualElement _controlContainer;
         private VisualElement _hierarchyContainer;
         private VisualElement _inspectorContainer;
+        private VisualElement _panelRootLayout;
+        private bool _lastHierarchyVisible;
+
+        private (int width, int height, Rect safeArea, float uiScale)? _lastScreen;
+
+        private (float left, float top, float right, float bottom)? _lastSafeAreaInsets;
 
         private bool? _isPortrait;
-        private bool IsPortrait =>_isPortrait ??= _layoutMode switch
+        private bool IsPortrait => _isPortrait ??= _layoutMode switch
         {
             LayoutMode.Auto => Screen.height > Screen.width,
             LayoutMode.Portrait => true,
@@ -94,6 +100,7 @@ namespace Ff.DevSuite.View
         };
 
         private DevSuiteContext _context;
+        private UIDocument _uiDocument;
 
         internal static DevSuitePanelUI Instance { get; set; }
 
@@ -117,18 +124,92 @@ namespace Ff.DevSuite.View
                 DevSuiteContext.Default.Initialize(this);
             }
 
+            _uiDocument = GetComponent<UIDocument>();
             _context = DevSuiteContext.DefaultInternal;
             _context.OnChanged += UpdateVisibility;
 
-            var uiDocument = GetComponent<UIDocument>();
-            var root = uiDocument.rootVisualElement;
+            _lastScreen = (Screen.width, Screen.height, Screen.safeArea, _uiScale);
+
+            BuildUI();
+        }
+
+        private void Start()
+        {
+            if (_context != null && _context.PanelExpanded && _context.HierarchyVisible)
+            {
+                _hierarchyPanelView?.Refresh();
+            }
+        }
+
+        private void OnEnable()
+        {
+            if (Application.isPlaying && _uiDocument.rootVisualElement.childCount == 0)
+            {
+                BuildUI();
+            }
+            else if (_context != null && _context.PanelExpanded && _context.HierarchyVisible)
+            {
+                _hierarchyPanelView?.Refresh();
+            }
+        }
+
+        private void LateUpdate()
+        {
+            var screenSizeChanged = !_lastScreen.HasValue || _lastScreen.Value.width != Screen.width || _lastScreen.Value.height != Screen.height;
+            var safeAreaChanged = !_lastScreen.HasValue || _lastScreen.Value.safeArea != Screen.safeArea;
+            var scaleChanged = !_lastScreen.HasValue || !Mathf.Approximately(_lastScreen.Value.uiScale, _uiScale);
+
+            if (screenSizeChanged)
+            {
+                var wasPortrait = _isPortrait;
+                _isPortrait = null;
+                if (wasPortrait.HasValue && wasPortrait.Value != IsPortrait)
+                {
+                    _lastScreen = (Screen.width, Screen.height, Screen.safeArea, _uiScale);
+                    BuildUI();
+                    return;
+                }
+            }
+
+            if (scaleChanged)
+            {
+                if (_uiDocument != null && _uiDocument.rootVisualElement != null)
+                {
+                    ApplyScale(_uiDocument.rootVisualElement);
+                }
+            }
+
+            if (screenSizeChanged || safeAreaChanged || scaleChanged)
+            {
+                _lastScreen = (Screen.width, Screen.height, Screen.safeArea, _uiScale);
+                ApplySafeArea();
+            }
+
+#if UNITY_EDITOR
+            if (Application.isPlaying && _uiDocument.rootVisualElement.childCount == 0)
+            {
+                BuildUI();
+            }
+#endif
+        }
+
+        private void BuildUI()
+        {
+            ResetViews();
+
+            var root = _uiDocument.rootVisualElement;
             root.Clear();
 
             ApplyScale(root);
 
             root.style.backgroundColor = StyleKeyword.Null; // Ensure it's not overridden
-            root.RegisterCallback<AttachToPanelEvent>(_ => ApplyColors(root));
+            root.RegisterCallback<AttachToPanelEvent>(_ =>
+            {
+                ApplyColors(root);
+                ApplySafeArea();
+            });
 
+            _isPortrait = null;
             var isLeft = _panelSide == PanelSide.Left;
             var layout = IsPortrait
                 ? _layoutPortraitUxml
@@ -136,6 +217,8 @@ namespace Ff.DevSuite.View
             layout.CloneTree(root);
 
             root.styleSheets.Add(_layoutUss);
+
+            _panelRootLayout = root.Q<VisualElement>(className: "devsuite-panel-root") ?? root.Q<VisualElement>("root");
 
             _logsContainer = root.Q<VisualElement>("logs-container");
             _logsPanelView = new LogsPanelView(_logsUxml, _logsUss);
@@ -190,6 +273,7 @@ namespace Ff.DevSuite.View
 
             ApplyColors(root);
             UpdateVisibility();
+            ApplySafeArea();
         }
 
         private void OnDestroy()
@@ -206,6 +290,12 @@ namespace Ff.DevSuite.View
                 _context = null;
             }
 
+            ResetViews();
+        }
+
+        private void ResetViews()
+        {
+            _lastHierarchyVisible = false;
             _logsPanelView?.Reset();
             _commandsFullPanelView?.Reset();
             _commandsPinnedPanelView?.Reset();
@@ -215,6 +305,27 @@ namespace Ff.DevSuite.View
             _inspectorPanelView?.Reset();
             _pickSelectionPanelView?.Reset();
             _selectionFrameView?.Reset();
+
+            _logsPanelView = null;
+            _commandsFullPanelView = null;
+            _commandsPinnedPanelView = null;
+            _performancePanelView = null;
+            _controlView = null;
+            _hierarchyPanelView = null;
+            _inspectorPanelView = null;
+            _pickSelectionPanelView = null;
+            _selectionFrameView = null;
+
+            _logsContainer = null;
+            _commandsFullContainer = null;
+            _basicContainer = null;
+            _pinnedContainer = null;
+            _performancePanelContainer = null;
+            _controlContainer = null;
+            _hierarchyContainer = null;
+            _inspectorContainer = null;
+            _panelRootLayout = null;
+            _lastSafeAreaInsets = null;
         }
 
         private void ApplyColors(VisualElement root)
@@ -242,7 +353,6 @@ namespace Ff.DevSuite.View
             // Scale from the top-left corner
             root.style.transformOrigin = new StyleTransformOrigin(new TransformOrigin(0, 0, 0));
 
-            // Adjust size so the scaled element still covers the full screen
             float percent = 100f / _uiScale;
             root.style.width = Length.Percent(percent);
             root.style.height = Length.Percent(percent);
@@ -253,8 +363,84 @@ namespace Ff.DevSuite.View
             var uiDocument = GetComponent<UIDocument>();
             if (uiDocument != null && uiDocument.rootVisualElement != null)
             {
+#if UNITY_EDITOR
+                if (Application.isPlaying && uiDocument.rootVisualElement.childCount == 0 && _uiDocument != null)
+                {
+                    BuildUI();
+                    return;
+                }
+#endif
                 ApplyScale(uiDocument.rootVisualElement);
                 ApplyColors(uiDocument.rootVisualElement);
+                ApplySafeArea();
+            }
+        }
+
+        private void ApplySafeArea()
+        {
+            if (_panelRootLayout == null && _uiDocument != null && _uiDocument.rootVisualElement != null)
+            {
+                _panelRootLayout = _uiDocument.rootVisualElement.Q<VisualElement>(className: "devsuite-panel-root")
+                                ?? _uiDocument.rootVisualElement.Q<VisualElement>("root");
+            }
+
+            if (_panelRootLayout == null || _uiDocument == null)
+            {
+                return;
+            }
+
+            var root = _uiDocument.rootVisualElement;
+            if (root == null || Screen.width <= 0 || Screen.height <= 0)
+            {
+                return;
+            }
+
+            var safeArea = Screen.safeArea;
+            float left = 0f, top = 0f, right = 0f, bottom = 0f;
+            var converted = false;
+
+            if (root.panel != null)
+            {
+                try
+                {
+                    var screenTopLeftLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, Vector2.zero));
+                    var safeTopLeftLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(safeArea.xMin, Screen.height - safeArea.yMax)));
+                    var screenBottomRightLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(Screen.width, Screen.height)));
+                    var safeBottomRightLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(safeArea.xMax, Screen.height - safeArea.yMin)));
+
+                    left = Mathf.Max(0f, safeTopLeftLocal.x - screenTopLeftLocal.x);
+                    top = Mathf.Max(0f, safeTopLeftLocal.y - screenTopLeftLocal.y);
+                    right = Mathf.Max(0f, screenBottomRightLocal.x - safeBottomRightLocal.x);
+                    bottom = Mathf.Max(0f, screenBottomRightLocal.y - safeBottomRightLocal.y);
+                    converted = true;
+                }
+                catch
+                {
+                    converted = false;
+                }
+            }
+
+            if (!converted)
+            {
+                var scale = _uiScale > 0 ? _uiScale : 1f;
+                left = Mathf.Max(0f, safeArea.xMin / scale);
+                top = Mathf.Max(0f, (Screen.height - safeArea.yMax) / scale);
+                right = Mathf.Max(0f, (Screen.width - safeArea.xMax) / scale);
+                bottom = Mathf.Max(0f, safeArea.yMin / scale);
+            }
+
+            if (!_lastSafeAreaInsets.HasValue ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.left, left) ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.top, top) ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.right, right) ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.bottom, bottom))
+            {
+                _lastSafeAreaInsets = (left, top, right, bottom);
+
+                _panelRootLayout.style.paddingLeft = left;
+                _panelRootLayout.style.paddingTop = top;
+                _panelRootLayout.style.paddingRight = right;
+                _panelRootLayout.style.paddingBottom = bottom;
             }
         }
 
@@ -271,11 +457,18 @@ namespace Ff.DevSuite.View
                 _basicContainer.style.width = expanded ? _controlWidth : StyleKeyword.Null;
             }
 
+            var isHierarchyVisible = expanded && _context.HierarchyVisible;
+            if (isHierarchyVisible && !_lastHierarchyVisible)
+            {
+                _hierarchyPanelView?.Refresh();
+            }
+            _lastHierarchyVisible = isHierarchyVisible;
+
             _logsContainer.style.display = expanded && _context.LogsVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _commandsFullContainer.style.display = expanded && _context.CommandsVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _pinnedContainer.style.display = expanded && _context.PinnedCommandsVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _performancePanelContainer.style.display = expanded && _context.MetricsVisible ? DisplayStyle.Flex : DisplayStyle.None;
-            _hierarchyContainer.style.display = expanded && _context.HierarchyVisible ? DisplayStyle.Flex : DisplayStyle.None;
+            _hierarchyContainer.style.display = isHierarchyVisible ? DisplayStyle.Flex : DisplayStyle.None;
             _inspectorContainer.style.display = expanded && _context.InspectorVisible ? DisplayStyle.Flex : DisplayStyle.None;
 
             if ((!expanded || !_context.HierarchyVisible) && _context.PickModeActive)

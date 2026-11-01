@@ -17,8 +17,13 @@ namespace Ff.DevSuite.View
 
         private readonly Button _pickBtn;
         private readonly Button _refreshBtn;
+        private readonly Button _autoRefreshBtn;
+        private readonly VisualElement _autoRefreshInfoRow;
+        private readonly Label _autoRefreshInfoLabel;
+        private float _lastAutoRefreshTime;
         private readonly Button _copyBtn;
         private readonly TextField _filterField;
+        private readonly Button _clearFilterBtn;
         private readonly Button _prevBtn;
         private readonly Button _nextBtn;
         private readonly Button _regexBtn;
@@ -104,6 +109,37 @@ namespace Ff.DevSuite.View
                 DevSuiteUiUtils.ShowIconButtonClickedFeedback(_refreshBtn);
             };
 
+            _autoRefreshBtn = root.Q<Button>("autoRefreshBtn");
+            if (_autoRefreshBtn != null)
+            {
+                _autoRefreshBtn.enableRichText = true;
+                _autoRefreshBtn.clicked += () =>
+                {
+                    if (_context != null)
+                    {
+                        _context.HierarchyAutoRefresh = !_context.HierarchyAutoRefresh;
+                    }
+                    UpdateAutoRefreshState();
+                };
+            }
+
+            _autoRefreshInfoRow = root.Q<VisualElement>("autoRefreshInfoRow");
+            _autoRefreshInfoLabel = root.Q<Label>("autoRefreshInfoLabel");
+            const string autoRefreshHint = "Use the \"Auto\" button above to enable auto-updating.";
+            if (_autoRefreshInfoRow != null)
+            {
+                _autoRefreshInfoRow.tooltip = autoRefreshHint;
+            }
+            if (_autoRefreshInfoLabel != null)
+            {
+                _autoRefreshInfoLabel.enableRichText = true;
+                _autoRefreshInfoLabel.text = "⚠ <i>Auto-refresh mode is disabled</i>";
+                _autoRefreshInfoLabel.tooltip = autoRefreshHint;
+                _autoRefreshInfoLabel.style.color = new StyleColor(new Color(1f, 204f / 255f, 0f, 1f));
+                _autoRefreshInfoLabel.style.unityFontStyleAndWeight = FontStyle.Normal;
+            }
+            UpdateAutoRefreshState();
+
             _copyBtn = root.Q<Button>("copyBtn");
             if (_copyBtn != null)
             {
@@ -119,7 +155,24 @@ namespace Ff.DevSuite.View
             _filterField = root.Q<TextField>("filterField");
             DevSuiteUiUtils.SetupInputFieldFocus(_filterField);
             _filterField.RegisterValueChangedCallback(evt => HandleSearchChanged(evt.newValue));
-            _filterField.RegisterCallback<FocusOutEvent>(evt => _filterField.SetValueWithoutNotify(_context.HierarchyPattern));
+            _filterField.RegisterCallback<FocusOutEvent>(evt =>
+            {
+                _filterField.SetValueWithoutNotify(_context.HierarchyPattern);
+                UpdateClearFilterButton();
+            });
+
+            _clearFilterBtn = root.Q<Button>("clearFilterBtn");
+            if (_clearFilterBtn != null)
+            {
+                _clearFilterBtn.text = "\uf00d";
+                _clearFilterBtn.clicked += () =>
+                {
+                    _context.HierarchyPattern = "";
+                    _filterField.value = "";
+                    UpdateClearFilterButton();
+                };
+            }
+            UpdateClearFilterButton();
 
             _prevBtn = root.Q<Button>("prevBtn");
             _prevBtn.text = "\uf104"; // angle-left
@@ -240,6 +293,8 @@ namespace Ff.DevSuite.View
                 _context.OnEveryFrame -= HandleOnEveryFrame;
                 _context.OnPickModeChanged -= HandlePickModeChanged;
                 _context.OnHierarchyChanged -= HandleHierarchyChanged;
+                SceneManager.sceneLoaded -= HandleSceneLoaded;
+                SceneManager.sceneUnloaded -= HandleSceneUnloaded;
             }
 
             _context = context;
@@ -248,6 +303,8 @@ namespace Ff.DevSuite.View
             _context.OnEveryFrame += HandleOnEveryFrame;
             _context.OnPickModeChanged += HandlePickModeChanged;
             _context.OnHierarchyChanged += HandleHierarchyChanged;
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+            SceneManager.sceneUnloaded += HandleSceneUnloaded;
 
             _pickBtn.EnableInClassList("active", _context.PickModeActive);
             if (_context.PickModeActive)
@@ -256,6 +313,7 @@ namespace Ff.DevSuite.View
             }
 
             _filterField.SetValueWithoutNotify(_context.HierarchyPattern);
+            UpdateClearFilterButton();
             _searchByRegex = _context.HierarchySearchRegex;
             _searchByName = _context.HierarchySearchByName;
             _searchByType = _context.HierarchySearchByType;
@@ -265,6 +323,35 @@ namespace Ff.DevSuite.View
             UpdateSearchRegex(_filterField.value);
             PrecomputeSearch();
             RebuildFlatList();
+            UpdateAutoRefreshState();
+        }
+
+        public void Refresh()
+        {
+            if (_context != null)
+            {
+                _context.NotifyHierarchyChanged();
+            }
+            else
+            {
+                UpdateSearchRegex(_filterField?.value);
+                PrecomputeSearch();
+                RebuildFlatList();
+            }
+        }
+
+        private void UpdateAutoRefreshState()
+        {
+            bool autoRefresh = _context != null && _context.HierarchyAutoRefresh;
+            if (_autoRefreshBtn != null)
+            {
+                _autoRefreshBtn.EnableInClassList("active", autoRefresh);
+                _autoRefreshBtn.text = autoRefresh ? "Auto" : "<s>Auto</s>";
+            }
+            if (_autoRefreshInfoRow != null)
+            {
+                _autoRefreshInfoRow.style.display = autoRefresh ? DisplayStyle.None : DisplayStyle.Flex;
+            }
         }
 
         public void Reset()
@@ -277,10 +364,23 @@ namespace Ff.DevSuite.View
                 _context.OnEveryFrame -= HandleOnEveryFrame;
                 _context.OnPickModeChanged -= HandlePickModeChanged;
                 _context.OnHierarchyChanged -= HandleHierarchyChanged;
+                SceneManager.sceneLoaded -= HandleSceneLoaded;
+                SceneManager.sceneUnloaded -= HandleSceneUnloaded;
             }
 
             _flatItems.Clear();
             UpdateVisibleRows();
+            UpdateAutoRefreshState();
+        }
+
+        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            Refresh();
+        }
+
+        private void HandleSceneUnloaded(Scene scene)
+        {
+            Refresh();
         }
 
         private void HandlePickModeChanged(bool active)
@@ -385,6 +485,7 @@ namespace Ff.DevSuite.View
         private void HandleContextChanged()
         {
             _pickBtn.EnableInClassList("active", _context.PickModeActive);
+            UpdateAutoRefreshState();
 
             var regex = _context.HierarchySearchRegex;
             var name = _context.HierarchySearchByName;
@@ -498,6 +599,7 @@ namespace Ff.DevSuite.View
             {
                 _filterField.SetValueWithoutNotify(_context.HierarchyPattern);
             }
+            UpdateClearFilterButton();
 
             _searchByRegex = _context.HierarchySearchRegex;
             _searchByName = _context.HierarchySearchByName;
@@ -513,6 +615,13 @@ namespace Ff.DevSuite.View
         private void HandleSearchChanged(string query)
         {
             _context.HierarchyPattern = query;
+            UpdateClearFilterButton();
+        }
+
+        private void UpdateClearFilterButton()
+        {
+            var hasText = !string.IsNullOrEmpty(_filterField?.value);
+            _clearFilterBtn.style.display = hasText ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private void HandleSearchOptionsChanged()
@@ -1140,7 +1249,22 @@ namespace Ff.DevSuite.View
 
         private void HandleOnEveryFrame()
         {
-            SyncActivityStates();
+            if (_context != null && _context.HierarchyAutoRefresh)
+            {
+                if (Time.unscaledTime - _lastAutoRefreshTime >= 0.5f)
+                {
+                    _lastAutoRefreshTime = Time.unscaledTime;
+                    RebuildFlatList();
+                }
+                else
+                {
+                    SyncActivityStates();
+                }
+            }
+            else
+            {
+                SyncActivityStates();
+            }
         }
 
         private void SyncActivityStates()

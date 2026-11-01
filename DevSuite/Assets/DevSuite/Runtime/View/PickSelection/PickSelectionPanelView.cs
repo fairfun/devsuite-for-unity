@@ -426,7 +426,7 @@ namespace Ff.DevSuite.View
             }
 
             // 1. UI Toolkit UIDocuments
-            var uiDocs = Object.FindObjectsOfType<UIDocument>();
+            var uiDocs = Object.FindObjectsByType<UIDocument>(FindObjectsSortMode.None);
             foreach (var doc in uiDocs)
             {
                 if (doc == null || !doc.gameObject.activeInHierarchy || IsGameObjectInDevSuite(doc.gameObject))
@@ -449,7 +449,7 @@ namespace Ff.DevSuite.View
             // 2. Canvas UI objects (uGUI RectTransforms)
             var matchingUI = new List<(GameObject go, int depth, float area, float hitDistance, int sortingOrder, bool isRaycastTarget)>();
 
-            var graphics = Object.FindObjectsOfType<UnityEngine.UI.Graphic>();
+            var graphics = Object.FindObjectsByType<UnityEngine.UI.Graphic>(FindObjectsSortMode.None);
             foreach (var graphic in graphics)
             {
                 if (graphic == null || !graphic.gameObject.activeInHierarchy || IsGameObjectInDevSuite(graphic.gameObject))
@@ -483,7 +483,7 @@ namespace Ff.DevSuite.View
             }
 
             // Also check Selectables (Buttons, Toggles, etc.) that might not have a Graphic directly on their GameObject
-            var selectables = Object.FindObjectsOfType<UnityEngine.UI.Selectable>();
+            var selectables = Object.FindObjectsByType<UnityEngine.UI.Selectable>(FindObjectsSortMode.None);
             foreach (var selectable in selectables)
             {
                 if (selectable == null || !selectable.gameObject.activeInHierarchy || IsGameObjectInDevSuite(selectable.gameObject))
@@ -584,9 +584,9 @@ namespace Ff.DevSuite.View
                 }
 
                 // Cache active scene renderers and colliders
-                var allRenderers = Object.FindObjectsOfType<Renderer>();
-                var allColliders3D = Object.FindObjectsOfType<Collider>();
-                var allColliders2D = Object.FindObjectsOfType<Collider2D>();
+                var allRenderers = Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None);
+                var allColliders3D = Object.FindObjectsByType<Collider>(FindObjectsSortMode.None);
+                var allColliders2D = Object.FindObjectsByType<Collider2D>(FindObjectsSortMode.None);
 
                 foreach (var cam in cameras)
                 {

@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.IO;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace Ff.DevSuite.View.Editor
@@ -14,7 +15,16 @@ namespace Ff.DevSuite.View.Editor
             Debug.Log("[DevSuite] Domain reload finished.");
         }
 
-        [MenuItem("Tools/DevSuite/Utils/Clear PlayerPrefs", priority = 111)]
+        [MenuItem("Tools/DevSuite/Utils/Reload Domain and Scene", priority = 111)]
+        public static void ReloadDomainAndScene()
+        {
+            if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                EditorSceneManager.OpenScene(EditorSceneManager.GetActiveScene().path, OpenSceneMode.Single);
+            EditorUtility.RequestScriptReload();
+            Debug.Log("[DevSuite] Domain and scene reload finished.");
+        }
+
+        [MenuItem("Tools/DevSuite/Utils/Clear PlayerPrefs", priority = 112)]
         public static void ClearPlayerPrefs()
         {
             PlayerPrefs.DeleteAll();
@@ -22,7 +32,7 @@ namespace Ff.DevSuite.View.Editor
             Debug.Log("[DevSuite] PlayerPrefs cleared.");
         }
 
-        [MenuItem("Tools/DevSuite/Utils/Clear Persistent Data", priority = 112)]
+        [MenuItem("Tools/DevSuite/Utils/Clear Persistent Data", priority = 113)]
         public static void ClearPersistentData()
         {
             var path = Application.persistentDataPath;
@@ -41,7 +51,7 @@ namespace Ff.DevSuite.View.Editor
             }
         }
 
-        [MenuItem("Tools/DevSuite/Utils/Clear Asset Bundles", priority = 113)]
+        [MenuItem("Tools/DevSuite/Utils/Clear Asset Bundles", priority = 114)]
         public static void ClearAssetBundles()
         {
             if (Caching.ClearCache())

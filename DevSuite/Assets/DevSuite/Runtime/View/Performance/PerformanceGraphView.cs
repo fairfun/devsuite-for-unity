@@ -46,11 +46,9 @@ namespace Ff.DevSuite.View
             RegisterCallback<PointerDownEvent>(
                 evt =>
                 {
-                    if (evt.button == 0 && _context != null)
+                    if (evt.button == 0)
                     {
-                        var isCollapsed = _context.IsPerformanceGraphCollapsed(_dataProvider);
-                        _context.SetPerformanceGraphCollapsed(_dataProvider, !isCollapsed);
-                        UpdateViewState();
+                        ToggleCollapsed();
                         evt.StopPropagation();
                     }
                 }
@@ -66,6 +64,13 @@ namespace Ff.DevSuite.View
             _context = context;
             SetMaxValuesCount(_context?.PerformanceGraphTicksCapacity ?? _dataProvider?.CurrentCounterCapacity ?? BaseGraphDataProvider.CounterLength);
             Subscribe();
+            UpdateViewState();
+        }
+
+        internal void ToggleCollapsed()
+        {
+            var isCollapsed = _context.IsPerformanceGraphCollapsed(_dataProvider);
+            _context.SetPerformanceGraphCollapsed(_dataProvider, !isCollapsed);
             UpdateViewState();
         }
 

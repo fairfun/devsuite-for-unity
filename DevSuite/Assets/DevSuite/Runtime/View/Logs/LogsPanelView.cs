@@ -14,6 +14,7 @@ namespace Ff.DevSuite.View
         private readonly List<VisualElement> _allMessageElements = new();
 
         private readonly TextField _filterField;
+        private readonly Button _clearFilterBtn;
         private readonly Button _regexButton;
 
         private readonly Button _ordinaryButton;
@@ -71,9 +72,23 @@ namespace Ff.DevSuite.View
                     if (_context != null)
                     {
                         _filterField.SetValueWithoutNotify(_context.LogsPattern);
+                        UpdateClearFilterButton();
                     }
                 }
             );
+
+            _clearFilterBtn = root.Q<Button>("clearFilterBtn");
+            if (_clearFilterBtn != null)
+            {
+                _clearFilterBtn.text = "\uf00d";
+                _clearFilterBtn.clicked += () =>
+                {
+                    _context.LogsPattern = "";
+                    _filterField.value = "";
+                    UpdateClearFilterButton();
+                };
+            }
+            UpdateClearFilterButton();
 
             _regexButton = root.Q<Button>("regexButton");
             _regexButton.clicked += HandleRegexPressed;
@@ -224,7 +239,6 @@ namespace Ff.DevSuite.View
                         if (isEnter)
                         {
                             evt.StopImmediatePropagation();
-                            evt.PreventDefault();
                             HandleCliSend();
                         }
                         else if (isUp)
@@ -232,7 +246,6 @@ namespace Ff.DevSuite.View
                             if (NavigateCliHistory(-1))
                             {
                                 evt.StopImmediatePropagation();
-                                evt.PreventDefault();
                             }
                         }
                         else if (isDown)
@@ -240,13 +253,12 @@ namespace Ff.DevSuite.View
                             if (NavigateCliHistory(1))
                             {
                                 evt.StopImmediatePropagation();
-                                evt.PreventDefault();
                             }
                         }
                         else if (isTab)
                         {
                             evt.StopImmediatePropagation();
-                            evt.PreventDefault();
+                            _cliInputField.focusController?.IgnoreEvent(evt);
                             HandleCliTab();
                         }
                     },
@@ -261,7 +273,7 @@ namespace Ff.DevSuite.View
                             || evt.direction == NavigationMoveEvent.Direction.Next)
                         {
                             evt.StopImmediatePropagation();
-                            evt.PreventDefault();
+                            _cliInputField.focusController?.IgnoreEvent(evt);
                         }
                     },
                     TrickleDown.TrickleDown
@@ -415,6 +427,7 @@ namespace Ff.DevSuite.View
             _clearButton.text = "\uf2ed";
 
             _filterField.SetValueWithoutNotify(_context.LogsPattern);
+            UpdateClearFilterButton();
             UpdateView();
         }
 
@@ -1030,6 +1043,7 @@ namespace Ff.DevSuite.View
             {
                 _filterField.SetValueWithoutNotify(_context.LogsPattern);
             }
+            UpdateClearFilterButton();
         }
 
         private bool _isHandlingMessage;
@@ -1099,6 +1113,13 @@ namespace Ff.DevSuite.View
             }
 
             _context.LogsPattern = newText;
+            UpdateClearFilterButton();
+        }
+
+        private void UpdateClearFilterButton()
+        {
+            var hasText = !string.IsNullOrEmpty(_filterField?.value);
+            _clearFilterBtn.style.display = hasText ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private void HandleRegexPressed()

@@ -89,6 +89,7 @@ namespace Ff.DevSuite
 #if UNITY_6000_0_OR_NEWER
             return;
 #endif
+#pragma warning disable CS0162
             var scrollSize = DefaultUnity2022MouseWheelScrollSize;
 
             var defaultScrollSize = scrollView.mouseWheelScrollSize > 0f
@@ -110,12 +111,13 @@ namespace Ff.DevSuite
 
             scrollView.RegisterCallback<AttachToPanelEvent>(evt => Apply(evt.destinationPanel));
             scrollView.RegisterCallback<DetachFromPanelEvent>(_ => scrollView.mouseWheelScrollSize = defaultScrollSize);
+#pragma warning restore CS0162
         }
 
         private static Label _activeTooltipLabel;
         private static Action _dismissActiveTooltip;
 
-        private static void DismissActiveTooltip()
+        internal static void DismissActiveTooltip()
         {
             if (_activeTooltipLabel != null)
             {
@@ -217,7 +219,7 @@ namespace Ff.DevSuite
             return tooltipLabel;
         }
 
-        private static Label ShowTooltip(VisualElement root, string text, Vector2 pointerPosition, bool isTouch, Func<Vector2> getCurrentPointerPosition = null)
+        internal static Label ShowTooltip(VisualElement root, string text, Vector2 pointerPosition, bool isTouch, Func<Vector2> getCurrentPointerPosition = null)
         {
             DismissActiveTooltip();
 
@@ -386,7 +388,6 @@ namespace Ff.DevSuite
                             suppressNextClick = true;
                             DismissActiveTooltip();
                             evt.StopImmediatePropagation();
-                            evt.PreventDefault();
                         }
                     }
                     else
@@ -410,7 +411,6 @@ namespace Ff.DevSuite
                     {
                         suppressNextClick = false;
                         evt.StopImmediatePropagation();
-                        evt.PreventDefault();
                     }
                 },
                 TrickleDown.TrickleDown

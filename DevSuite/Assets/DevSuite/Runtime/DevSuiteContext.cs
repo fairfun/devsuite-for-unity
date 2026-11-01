@@ -33,24 +33,19 @@ using Key =
 
 [assembly: InternalsVisibleTo("DevSuite.Editor")]
 [assembly: InternalsVisibleTo("DevSuite.Examples")]
+[assembly: InternalsVisibleTo("DevSuite.Samples.Asteroids")]
 
 namespace Ff.DevSuite
 {
     public interface IDevSuiteContext : IDisposable
     {
         CommandAttributesParserApi AttributesParserApi { get; }
-        [Obsolete("Use AttributesParserApi instead. Will be removed in version 1.0.")]
-        CommandAttributesParserApi AttributesParser { get; }
         DevSuiteCommandsApi CommandsApi { get; }
         DevSuitePerformanceGraphsApi PerformanceGraphsApi { get; }
         IDisposable SuspendEvents(object requestor);
         bool Disposed { get; }
         void Initialize(MonoBehaviour coroutineStarter, IList<Assembly> staticCommandsAssemblies = null, ISavedPrefs savedPrefs = null, bool registerCommonCommands = true);
         void Reset();
-        [Obsolete("Use PerformanceGraphsApi.Register instead. Will be removed in version 1.0.")]
-        void RegisterPerformanceGraph<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider;
-        [Obsolete("Use PerformanceGraphsApi.SetSettings instead. Will be removed in version 1.0.")]
-        void SetPerformanceGraphSettings<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider;
         Func<string> BuildVersionToDisplay { get; set; }
         CopyToClipboardAction CopyToClipboardAction { get; set; }
         HierarchySearchByComponentFilter HierarchySearchByComponentFilter { get; set; }
@@ -189,9 +184,6 @@ namespace Ff.DevSuite
         }
 
         public CommandAttributesParserApi AttributesParserApi { get; internal set; }
-
-        [Obsolete("Use AttributesParserApi instead. Will be removed in version 1.0.")]
-        public CommandAttributesParserApi AttributesParser => AttributesParserApi;
         public DevSuiteCommandsApi CommandsApi { get; internal set; }
 
         public DevSuitePerformanceGraphsApi PerformanceGraphsApi { get; internal set; }
@@ -731,12 +723,6 @@ namespace Ff.DevSuite
             }
         }
 
-        [Obsolete("Use PerformanceGraphsApi.Register instead. Will be removed in version 1.0.")]
-        public void RegisterPerformanceGraph<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider
-        {
-            (PerformanceGraphsApi ??= new DevSuitePerformanceGraphsApi(this)).Register(provider, overrideSettings);
-        }
-
         internal void RegisterPerformanceGraphInternal<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider
         {
             if (overrideSettings != null)
@@ -788,12 +774,6 @@ namespace Ff.DevSuite
             Settings.Value.PerformanceGraphCollapsedState[provider.GetType().Name] = collapsed;
             Settings.ForceSave();
             OnPerformanceGraphCollapsedChanged?.Invoke(provider, collapsed);
-        }
-
-        [Obsolete("Use PerformanceGraphsApi.SetSettings instead. Will be removed in version 1.0.")]
-        public void SetPerformanceGraphSettings<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider
-        {
-            (PerformanceGraphsApi ??= new DevSuitePerformanceGraphsApi(this)).SetSettings<T>(settings);
         }
 
         internal void SetPerformanceGraphSettingsInternal<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider
@@ -1250,6 +1230,24 @@ namespace Ff.DevSuite
             set => SetSettingsValue(() => Settings.Value.InspectorAutoRefresh, v => Settings.Value.InspectorAutoRefresh = v, value);
         }
 
+        internal bool InspectorAutoUpdate
+        {
+            get => InspectorAutoRefresh;
+            set => InspectorAutoRefresh = value;
+        }
+
+        internal bool HierarchyAutoRefresh
+        {
+            get => (Settings?.Ready ?? false) && Settings.Value.HierarchyAutoRefresh;
+            set => SetSettingsValue(() => Settings.Value.HierarchyAutoRefresh, v => Settings.Value.HierarchyAutoRefresh = v, value);
+        }
+
+        internal bool HierarchyAutoUpdate
+        {
+            get => HierarchyAutoRefresh;
+            set => HierarchyAutoRefresh = value;
+        }
+
         internal bool InspectorAutoPause
         {
             get => !(Settings?.Ready ?? false) || Settings.Value.InspectorAutoPause;
@@ -1612,7 +1610,7 @@ namespace Ff.DevSuite
 
             var pinnedCategoryKey = new CategoryKey(PinnedCategoryId);
             Categories.Remove(pinnedCategoryKey);
-            _categoryPinned ??= new CommandCategory(PinnedCategoryId, float.MaxValue, null);
+            _categoryPinned ??= new CommandCategory(PinnedCategoryId, float.MaxValue, null).WithDescription(PinnedCategoryDescription);
             _groupPinned ??= new CommandGroup(DefaultGroupId, _categoryPinned.Id, default, default);
             Categories.Add(pinnedCategoryKey, _categoryPinned);
 
@@ -2952,12 +2950,14 @@ namespace Ff.DevSuite
             }
         }
 
+        private static string PinnedCategoryDescription { get; set; } = "Pinned commands.\n\nPinned commands stay accessible in the quick-access bar and persist across sessions via ISavedPrefs.\n\n<b><i>Hint: </i></b>Click the pin icon on any command to pin or unpin, or use <b><color=#ffc800>[Command(AlwaysPin = true)]</color></b> in code to pin permanently.";
+
         internal List<TreeCategory> GetPinnedList()
         {
             return new List<TreeCategory>
             {
                 new(
-                    new CommandCategory(PinnedMockId, 0, null),
+                    new CommandCategory(PinnedMockId, 0, null).WithDescription(PinnedCategoryDescription),
                     new List<TreeGroup>
                     {
                         new(
@@ -3005,6 +3005,7 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(23)][Key(23)] public List<string> CliCommandHistory { get; set; } = new();
         [DataMember][MemoryPackOrder(24)][Key(24)] public bool ShowSelectionFrame { get; set; } = true;
         [DataMember][MemoryPackOrder(25)][Key(25)] public bool HierarchySearchByComponent { get; set; }
+        [DataMember][MemoryPackOrder(26)][Key(26)] public bool HierarchyAutoRefresh { get; set; }
 
         public void InitializeDefaultsIfNeeded()
         {

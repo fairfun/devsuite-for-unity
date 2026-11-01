@@ -66,6 +66,8 @@ namespace Ff.DevSuite
 
             var inst1 = new DevSuiteTestingCategoryInstanceBased();
             context.AttributesParserApi?.RegisterInstance(inst1);
+            context.AttributesParserApi?.UnregisterInstance(inst1);
+            context.AttributesParserApi?.RegisterInstance(inst1);
 
             var inst2 = new DevSuiteTestingCategoryInstanceBased();
             context.AttributesParserApi?.RegisterInstance(inst2);
