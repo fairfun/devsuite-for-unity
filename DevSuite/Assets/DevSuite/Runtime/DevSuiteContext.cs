@@ -208,6 +208,7 @@ namespace Ff.DevSuite
         internal event Action OnEveryFrame;
         internal event Action OnPerformancePanelChanged;
         internal event Action<BaseGraphDataProvider, bool> OnPerformanceGraphCollapsedChanged;
+        internal event Action<BaseGraphDataProvider, bool> OnPerformanceGraphPinnedChanged;
         internal event Action OnLogMessagesChanged;
         internal event Action<LogMessageData> OnLogMessagesMessageAdded;
         internal event Action OnLogMessagesVisibilityChanged;
@@ -563,6 +564,7 @@ namespace Ff.DevSuite
             OnEveryFrame = null;
             OnPerformancePanelChanged = null;
             OnPerformanceGraphCollapsedChanged = null;
+            OnPerformanceGraphPinnedChanged = null;
             OnLogMessagesChanged = null;
             OnLogMessagesMessageAdded = null;
             OnLogMessagesVisibilityChanged = null;
@@ -774,6 +776,50 @@ namespace Ff.DevSuite
             Settings.Value.PerformanceGraphCollapsedState[provider.GetType().Name] = collapsed;
             Settings.ForceSave();
             OnPerformanceGraphCollapsedChanged?.Invoke(provider, collapsed);
+        }
+
+        internal bool IsPerformanceGraphPinned(BaseGraphDataProvider provider)
+        {
+            return CheckSettingsInitialized(true) && Settings.Value.PinnedPerformanceGraphs.Contains(provider.GetType().Name);
+        }
+
+        internal void SetPerformanceGraphPinned(BaseGraphDataProvider provider, bool pinned)
+        {
+            if (!CheckSettingsInitialized())
+            {
+                return;
+            }
+
+            var typeName = provider.GetType().Name;
+            var list = Settings.Value.PinnedPerformanceGraphs;
+            var changed = false;
+
+            if (pinned)
+            {
+                if (!list.Contains(typeName))
+                {
+                    list.Add(typeName);
+                    changed = true;
+                }
+            }
+            else
+            {
+                if (list.Remove(typeName))
+                {
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                Settings.ForceSave();
+                OnPerformanceGraphPinnedChanged?.Invoke(provider, pinned);
+            }
+        }
+
+        internal void TogglePerformanceGraphPinned(BaseGraphDataProvider provider)
+        {
+            SetPerformanceGraphPinned(provider, !IsPerformanceGraphPinned(provider));
         }
 
         internal void SetPerformanceGraphSettingsInternal<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider
@@ -2742,6 +2788,7 @@ namespace Ff.DevSuite
             foreach (var provider in _performancePanelProviders)
             {
                 OnPerformanceGraphCollapsedChanged?.Invoke(provider, IsPerformanceGraphCollapsed(provider));
+                OnPerformanceGraphPinnedChanged?.Invoke(provider, IsPerformanceGraphPinned(provider));
             }
             _onChangedDispatcher.Dispatch();
         }
@@ -2880,7 +2927,7 @@ namespace Ff.DevSuite
             {
                 foreach (var provider in PerformancePanelProviders)
                 {
-                    if (IsPerformanceGraphCollapsed(provider))
+                    if (IsPerformanceGraphCollapsed(provider) && !IsPerformanceGraphPinned(provider))
                     {
                         continue;
                     }
@@ -3006,6 +3053,7 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(24)][Key(24)] public bool ShowSelectionFrame { get; set; } = true;
         [DataMember][MemoryPackOrder(25)][Key(25)] public bool HierarchySearchByComponent { get; set; }
         [DataMember][MemoryPackOrder(26)][Key(26)] public bool HierarchyAutoRefresh { get; set; }
+        [DataMember][MemoryPackOrder(27)][Key(27)] public List<string> PinnedPerformanceGraphs { get; set; } = new();
 
         public void InitializeDefaultsIfNeeded()
         {
@@ -3015,6 +3063,7 @@ namespace Ff.DevSuite
             HiddenLogSeverity ??= new();
             VirtualButtonParameters ??= new();
             CliCommandHistory ??= new();
+            PinnedPerformanceGraphs ??= new();
         }
     }
 

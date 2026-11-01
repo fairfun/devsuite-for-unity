@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System;
+using System.Collections.Generic;
 using UnityEngine.Serialization;
+using Ff.DevSuite.Performance;
 
 namespace Ff.DevSuite.View
 {
@@ -16,6 +18,7 @@ namespace Ff.DevSuite.View
         [Header("Settings")]
         [SerializeField] private PanelSide _panelSide;
         [SerializeField] private LayoutMode _layoutMode;
+        [SerializeField] private PinnedPerformanceGraphsPosition _pinnedPerformanceGraphsPosition = PinnedPerformanceGraphsPosition.BottomLeft;
         [SerializeField] private float _controlWidth = 350;
         [SerializeField] private float _commandsWidth = 500;
         [SerializeField] private float _hierarchyWidth = 494;
@@ -30,6 +33,24 @@ namespace Ff.DevSuite.View
         [FormerlySerializedAs("_expandButtonVisibility")]
         [Tooltip("Configure expand button visibility when the panel is collapsed (Visible, Hidden, or ErrorOnly).")]
         [SerializeField] private ControlPanelExpandButtonVisibility _buttonExpandVisibility = ControlPanelExpandButtonVisibility.Visible;
+
+        public PinnedPerformanceGraphsPosition PinnedPerformanceGraphsPosition
+        {
+            get => _pinnedPerformanceGraphsPosition;
+            set
+            {
+                if (_pinnedPerformanceGraphsPosition == value)
+                    return;
+                _pinnedPerformanceGraphsPosition = value;
+                ApplyPinnedGraphsPosition();
+            }
+        }
+
+        public PinnedPerformanceGraphsPosition PinnedPerformanceGraphsMode
+        {
+            get => _pinnedPerformanceGraphsPosition;
+            set => PinnedPerformanceGraphsPosition = value;
+        }
 
         [Header("Main Layout")]
         [SerializeField] private VisualTreeAsset _layoutLandscapeRightUxml;
@@ -86,6 +107,8 @@ namespace Ff.DevSuite.View
         private VisualElement _hierarchyContainer;
         private VisualElement _inspectorContainer;
         private VisualElement _panelRootLayout;
+        private VisualElement _pinnedPerformanceContainer;
+        private readonly List<(BaseGraphDataProvider data, PerformanceGraphView view)> _pinnedGraphs = new();
         private bool _lastHierarchyVisible;
 
         private (int width, int height, Rect safeArea, float uiScale)? _lastScreen;
@@ -129,6 +152,8 @@ namespace Ff.DevSuite.View
             _uiDocument = GetComponent<UIDocument>();
             _context = DevSuiteContext.DefaultInternal;
             _context.OnChanged += UpdateVisibility;
+            _context.OnPerformanceGraphPinnedChanged += HandlePerformanceGraphPinnedChanged;
+            _context.OnPerformancePanelChanged += HandlePerformancePanelChanged;
 
             _lastScreen = (Screen.width, Screen.height, Screen.safeArea, _uiScale);
 
@@ -273,9 +298,16 @@ namespace Ff.DevSuite.View
             root.Add(_pickSelectionPanelView);
             _pickSelectionPanelView.Initialize(_context);
 
+            _pinnedPerformanceContainer = new VisualElement { name = "pinned-performance-container" };
+            _pinnedPerformanceContainer.AddToClassList("pinned-performance-container");
+            _pinnedPerformanceContainer.pickingMode = PickingMode.Ignore;
+            _pinnedPerformanceContainer.styleSheets.Add(_performanceUss);
+            root.Add(_pinnedPerformanceContainer);
+
             ApplyColors(root);
             UpdateVisibility();
             ApplySafeArea();
+            ApplyPinnedGraphsPosition();
         }
 
         private void OnDestroy()
@@ -289,6 +321,8 @@ namespace Ff.DevSuite.View
             if (_context != null)
             {
                 _context.OnChanged -= UpdateVisibility;
+                _context.OnPerformanceGraphPinnedChanged -= HandlePerformanceGraphPinnedChanged;
+                _context.OnPerformancePanelChanged -= HandlePerformancePanelChanged;
                 _context = null;
             }
 
@@ -307,6 +341,7 @@ namespace Ff.DevSuite.View
             _inspectorPanelView?.Reset();
             _pickSelectionPanelView?.Reset();
             _selectionFrameView?.Reset();
+            ResetPinnedGraphs();
 
             _logsPanelView = null;
             _commandsFullPanelView = null;
@@ -318,6 +353,8 @@ namespace Ff.DevSuite.View
             _pickSelectionPanelView = null;
             _selectionFrameView = null;
 
+            _pinnedPerformanceContainer?.RemoveFromHierarchy();
+            _pinnedPerformanceContainer = null;
             _logsContainer = null;
             _commandsFullContainer = null;
             _basicContainer = null;
@@ -375,6 +412,7 @@ namespace Ff.DevSuite.View
                 ApplyScale(uiDocument.rootVisualElement);
                 ApplyColors(uiDocument.rootVisualElement);
                 ApplySafeArea();
+                ApplyPinnedGraphsPosition();
 #if UNITY_EDITOR
                 if (Application.isPlaying && _panelRootLayout != null)
                 {
@@ -449,12 +487,15 @@ namespace Ff.DevSuite.View
                 _panelRootLayout.style.paddingTop = top;
                 _panelRootLayout.style.paddingRight = right;
                 _panelRootLayout.style.paddingBottom = bottom;
+
+                ApplyPinnedGraphsPosition();
             }
         }
 
         private void UpdateVisibility()
         {
             var expanded = _context.PanelExpanded;
+            UpdatePinnedPerformanceGraphs();
 
             if (IsPortrait)
             {
@@ -578,6 +619,223 @@ namespace Ff.DevSuite.View
             ApplyColors(GetComponent<UIDocument>().rootVisualElement);
         }
 
+        private void HandlePerformanceGraphPinnedChanged(BaseGraphDataProvider provider, bool isPinned)
+        {
+            UpdatePinnedPerformanceGraphs();
+        }
+
+        private void HandlePerformancePanelChanged()
+        {
+            UpdatePinnedPerformanceGraphs();
+        }
+
+        private void UpdatePinnedPerformanceGraphs()
+        {
+            if (_pinnedPerformanceContainer == null)
+            {
+                return;
+            }
+
+            if (_context == null || _context.PanelExpanded)
+            {
+                _pinnedPerformanceContainer.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var pinnedProviders = new List<BaseGraphDataProvider>();
+            foreach (var provider in _context.PerformancePanelProviders)
+            {
+                if (_context.IsPerformanceGraphPinned(provider))
+                {
+                    pinnedProviders.Add(provider);
+                }
+            }
+
+            if (pinnedProviders.Count == 0)
+            {
+                _pinnedPerformanceContainer.style.display = DisplayStyle.None;
+                ResetPinnedGraphs();
+                return;
+            }
+
+            _pinnedPerformanceContainer.style.display = DisplayStyle.Flex;
+
+            var matches = _pinnedGraphs.Count == pinnedProviders.Count;
+            if (matches)
+            {
+                for (var i = 0; i < pinnedProviders.Count; i++)
+                {
+                    if (_pinnedGraphs[i].data != pinnedProviders[i])
+                    {
+                        matches = false;
+                        break;
+                    }
+                }
+            }
+
+            if (matches)
+            {
+                foreach (var (_, view) in _pinnedGraphs)
+                {
+                    view.AlwaysExtended = true;
+                    view.IsPinnedMode = true;
+                    view.SetClickThrough(true);
+                    view.UpdateViewState();
+                }
+                UpdatePinnedGraphsLastClass();
+                SetPickingModeRecursive(_pinnedPerformanceContainer, PickingMode.Ignore);
+                return;
+            }
+
+            ResetPinnedGraphs();
+
+            for (var i = 0; i < pinnedProviders.Count; i++)
+            {
+                var provider = pinnedProviders[i];
+                var graphView = new PerformanceGraphView(provider, _context);
+                graphView.AlwaysExtended = true;
+                graphView.IsPinnedMode = true;
+                graphView.SetClickThrough(true);
+                _pinnedPerformanceContainer.Add(graphView);
+                _pinnedGraphs.Add((provider, graphView));
+            }
+
+            UpdatePinnedGraphsLastClass();
+            SetPickingModeRecursive(_pinnedPerformanceContainer, PickingMode.Ignore);
+            ApplyPinnedGraphsPosition();
+        }
+
+        private void UpdatePinnedGraphsLastClass()
+        {
+            if (_pinnedPerformanceContainer == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < _pinnedPerformanceContainer.childCount; i++)
+            {
+                var child = _pinnedPerformanceContainer[i];
+                if (i == _pinnedPerformanceContainer.childCount - 1)
+                {
+                    child.AddToClassList("graph-view--last");
+                }
+                else
+                {
+                    child.RemoveFromClassList("graph-view--last");
+                }
+            }
+        }
+
+        private void ResetPinnedGraphs()
+        {
+            foreach (var (_, view) in _pinnedGraphs)
+            {
+                view.Reset();
+            }
+            _pinnedGraphs.Clear();
+            _pinnedPerformanceContainer?.Clear();
+        }
+
+        private void ApplyPinnedGraphsPosition()
+        {
+            if (_pinnedPerformanceContainer == null)
+            {
+                return;
+            }
+
+            const float margin = 4f;
+            const float expandButtonOffset = 32f;
+
+            var insetsLeft = _lastSafeAreaInsets?.left ?? 0f;
+            var insetsTop = _lastSafeAreaInsets?.top ?? 0f;
+            var insetsRight = _lastSafeAreaInsets?.right ?? 0f;
+            var insetsBottom = _lastSafeAreaInsets?.bottom ?? 0f;
+
+            _pinnedPerformanceContainer.style.position = Position.Absolute;
+            _pinnedPerformanceContainer.style.top = StyleKeyword.Null;
+            _pinnedPerformanceContainer.style.bottom = StyleKeyword.Null;
+            _pinnedPerformanceContainer.style.left = StyleKeyword.Null;
+            _pinnedPerformanceContainer.style.right = StyleKeyword.Null;
+
+            switch (_pinnedPerformanceGraphsPosition)
+            {
+                case PinnedPerformanceGraphsPosition.TopLeft:
+                {
+                    var top = insetsTop + margin;
+                    if (_panelSide == PanelSide.Left)
+                    {
+                        top += expandButtonOffset;
+                    }
+                    _pinnedPerformanceContainer.style.top = top;
+                    _pinnedPerformanceContainer.style.left = insetsLeft + margin;
+                    _pinnedPerformanceContainer.style.width = 260f;
+                    _pinnedPerformanceContainer.style.alignItems = Align.FlexStart;
+                    break;
+                }
+                case PinnedPerformanceGraphsPosition.Top:
+                {
+                    _pinnedPerformanceContainer.style.top = insetsTop + margin;
+                    _pinnedPerformanceContainer.style.left = insetsLeft + margin;
+                    _pinnedPerformanceContainer.style.right = insetsRight + margin;
+                    _pinnedPerformanceContainer.style.width = StyleKeyword.Null;
+                    _pinnedPerformanceContainer.style.alignItems = Align.Center;
+                    break;
+                }
+                case PinnedPerformanceGraphsPosition.TopRight:
+                {
+                    var top = insetsTop + margin;
+                    if (_panelSide == PanelSide.Right)
+                    {
+                        top += expandButtonOffset;
+                    }
+                    _pinnedPerformanceContainer.style.top = top;
+                    _pinnedPerformanceContainer.style.right = insetsRight + margin;
+                    _pinnedPerformanceContainer.style.width = 260f;
+                    _pinnedPerformanceContainer.style.alignItems = Align.FlexEnd;
+                    break;
+                }
+                case PinnedPerformanceGraphsPosition.BottomLeft:
+                {
+                    _pinnedPerformanceContainer.style.bottom = insetsBottom + margin;
+                    _pinnedPerformanceContainer.style.left = insetsLeft + margin;
+                    _pinnedPerformanceContainer.style.width = 260f;
+                    _pinnedPerformanceContainer.style.alignItems = Align.FlexStart;
+                    break;
+                }
+                case PinnedPerformanceGraphsPosition.Bottom:
+                {
+                    _pinnedPerformanceContainer.style.bottom = insetsBottom + margin;
+                    _pinnedPerformanceContainer.style.left = insetsLeft + margin;
+                    _pinnedPerformanceContainer.style.right = insetsRight + margin;
+                    _pinnedPerformanceContainer.style.width = StyleKeyword.Null;
+                    _pinnedPerformanceContainer.style.alignItems = Align.Center;
+                    break;
+                }
+                case PinnedPerformanceGraphsPosition.BottomRight:
+                {
+                    _pinnedPerformanceContainer.style.bottom = insetsBottom + margin;
+                    _pinnedPerformanceContainer.style.right = insetsRight + margin;
+                    _pinnedPerformanceContainer.style.width = 260f;
+                    _pinnedPerformanceContainer.style.alignItems = Align.FlexEnd;
+                    break;
+                }
+            }
+        }
+
+        private static void SetPickingModeRecursive(VisualElement element, PickingMode mode)
+        {
+            if (element == null)
+            {
+                return;
+            }
+
+            element.pickingMode = mode;
+            for (var i = 0; i < element.childCount; i++)
+            {
+                SetPickingModeRecursive(element[i], mode);
+            }
+        }
+
         internal enum LayoutMode
         {
             Auto,
@@ -590,5 +848,25 @@ namespace Ff.DevSuite.View
             Right,
             Left,
         }
+    }
+
+    public enum PinnedPerformanceGraphsPosition
+    {
+        TopLeft,
+        Top,
+        TopRight,
+        BottomLeft,
+        Bottom,
+        BottomRight,
+    }
+
+    public enum PinnedPerformanceGraphsMode
+    {
+        TopLeft = PinnedPerformanceGraphsPosition.TopLeft,
+        Top = PinnedPerformanceGraphsPosition.Top,
+        TopRight = PinnedPerformanceGraphsPosition.TopRight,
+        BottomLeft = PinnedPerformanceGraphsPosition.BottomLeft,
+        Bottom = PinnedPerformanceGraphsPosition.Bottom,
+        BottomRight = PinnedPerformanceGraphsPosition.BottomRight,
     }
 }
