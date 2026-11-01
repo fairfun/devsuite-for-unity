@@ -18,6 +18,8 @@ namespace Ff.DevSuite.View
         [SerializeField] private LayoutMode _layoutMode;
         [SerializeField] private float _controlWidth = 350;
         [SerializeField] private float _commandsWidth = 500;
+        [SerializeField] private float _hierarchyWidth = 494;
+        [SerializeField] private float _inspectorWidth = 420;
         [SerializeField, Range(0.2f, 5f)] private float _uiScale = 1f;
         [SerializeField] private Color _panelBackgroundColor = new Color(40 / 255f, 40 / 255f, 40 / 255f, 0.95f);
         [SerializeField] private Color _panelOutlineColor = new Color(1f, 1f, 1f, 0.25f);
@@ -373,6 +375,12 @@ namespace Ff.DevSuite.View
                 ApplyScale(uiDocument.rootVisualElement);
                 ApplyColors(uiDocument.rootVisualElement);
                 ApplySafeArea();
+#if UNITY_EDITOR
+                if (Application.isPlaying && _panelRootLayout != null)
+                {
+                    UpdateVisibility();
+                }
+#endif
             }
         }
 
@@ -451,10 +459,15 @@ namespace Ff.DevSuite.View
             if (IsPortrait)
             {
                 _basicContainer.style.width = Length.Percent(100);
+                _basicContainer.style.maxWidth = StyleKeyword.Null;
+                _basicContainer.style.minWidth = StyleKeyword.Null;
+                _basicContainer.style.flexShrink = StyleKeyword.Null;
             }
             else
             {
                 _basicContainer.style.width = expanded ? _controlWidth : StyleKeyword.Null;
+                _basicContainer.style.maxWidth = expanded ? _controlWidth : StyleKeyword.Null;
+                _basicContainer.style.flexShrink = 1;
             }
 
             var isHierarchyVisible = expanded && _context.HierarchyVisible;
@@ -479,18 +492,25 @@ namespace Ff.DevSuite.View
             if (IsPortrait)
             {
                 _commandsFullContainer.style.width = StyleKeyword.Auto;
+                _commandsFullContainer.style.maxWidth = StyleKeyword.Null;
                 _commandsFullContainer.style.flexGrow = 1;
                 _commandsFullContainer.style.flexShrink = 1;
                 _commandsFullContainer.style.flexBasis = 0;
 
+                _logsContainer.style.width = StyleKeyword.Null;
+                _logsContainer.style.maxWidth = StyleKeyword.Null;
                 _logsContainer.style.flexGrow = 1;
                 _logsContainer.style.flexShrink = 1;
                 _logsContainer.style.flexBasis = 0;
 
+                _hierarchyContainer.style.width = StyleKeyword.Auto;
+                _hierarchyContainer.style.maxWidth = StyleKeyword.Null;
                 _hierarchyContainer.style.flexGrow = 1;
                 _hierarchyContainer.style.flexShrink = 1;
                 _hierarchyContainer.style.flexBasis = 0;
 
+                _inspectorContainer.style.width = StyleKeyword.Auto;
+                _inspectorContainer.style.maxWidth = StyleKeyword.Null;
                 _inspectorContainer.style.flexGrow = 1;
                 _inspectorContainer.style.flexShrink = 1;
                 _inspectorContainer.style.flexBasis = 0;
@@ -506,23 +526,29 @@ namespace Ff.DevSuite.View
             }
             else
             {
-                _commandsFullContainer.style.width = expanded ? _commandsWidth : StyleKeyword.Null;
-                _commandsFullContainer.style.flexGrow = StyleKeyword.Null;
-                _commandsFullContainer.style.flexShrink = StyleKeyword.Null;
-                _commandsFullContainer.style.flexBasis = StyleKeyword.Null;
+                _commandsFullContainer.style.width = StyleKeyword.Null;
+                _commandsFullContainer.style.maxWidth = expanded ? _commandsWidth : StyleKeyword.Null;
+                _commandsFullContainer.style.flexGrow = 1;
+                _commandsFullContainer.style.flexShrink = 1;
+                _commandsFullContainer.style.flexBasis = expanded ? _commandsWidth : StyleKeyword.Null;
 
                 _logsContainer.style.width = StyleKeyword.Null;
-                _logsContainer.style.flexGrow = StyleKeyword.Null;
-                _logsContainer.style.flexShrink = StyleKeyword.Null;
-                _logsContainer.style.flexBasis = StyleKeyword.Null;
+                _logsContainer.style.maxWidth = StyleKeyword.Null;
+                _logsContainer.style.flexGrow = 1;
+                _logsContainer.style.flexShrink = 1;
+                _logsContainer.style.flexBasis = 0;
 
-                _hierarchyContainer.style.flexGrow = StyleKeyword.Null;
-                _hierarchyContainer.style.flexShrink = StyleKeyword.Null;
-                _hierarchyContainer.style.flexBasis = StyleKeyword.Null;
+                _hierarchyContainer.style.width = StyleKeyword.Null;
+                _hierarchyContainer.style.maxWidth = expanded ? _hierarchyWidth : StyleKeyword.Null;
+                _hierarchyContainer.style.flexGrow = 1;
+                _hierarchyContainer.style.flexShrink = 1;
+                _hierarchyContainer.style.flexBasis = expanded ? _hierarchyWidth : StyleKeyword.Null;
 
-                _inspectorContainer.style.flexGrow = StyleKeyword.Null;
-                _inspectorContainer.style.flexShrink = StyleKeyword.Null;
-                _inspectorContainer.style.flexBasis = StyleKeyword.Null;
+                _inspectorContainer.style.width = StyleKeyword.Null;
+                _inspectorContainer.style.maxWidth = expanded ? _inspectorWidth : StyleKeyword.Null;
+                _inspectorContainer.style.flexGrow = 1;
+                _inspectorContainer.style.flexShrink = 1;
+                _inspectorContainer.style.flexBasis = expanded ? _inspectorWidth : StyleKeyword.Null;
 
                 _commandsFullContainer.style.alignSelf = Align.FlexStart;
                 _commandsFullContainer.style.maxHeight = Length.Percent(100);
