@@ -258,7 +258,11 @@ namespace Ff.DevSuite.View
                         else if (isTab)
                         {
                             evt.StopImmediatePropagation();
+#if UNITY_2023_2_OR_NEWER
                             _cliInputField.focusController?.IgnoreEvent(evt);
+#else
+                            evt.PreventDefault();
+#endif
                             HandleCliTab();
                         }
                     },
@@ -273,7 +277,11 @@ namespace Ff.DevSuite.View
                             || evt.direction == NavigationMoveEvent.Direction.Next)
                         {
                             evt.StopImmediatePropagation();
+#if UNITY_2023_2_OR_NEWER
                             _cliInputField.focusController?.IgnoreEvent(evt);
+#else
+                            evt.PreventDefault();
+#endif
                         }
                     },
                     TrickleDown.TrickleDown
