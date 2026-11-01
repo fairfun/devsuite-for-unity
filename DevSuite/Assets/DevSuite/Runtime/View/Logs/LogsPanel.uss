@@ -46,13 +46,14 @@
 }
 
 .logs-filter-icon {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
-    color: var(--text-color-inactive);
+    color: var(--text-color);
     font-size: 10px;
     padding: 0;
     margin: 0;
     margin-right: 2px;
+    -unity-text-align: middle-center;
 }
 
 .logs-filter-field {
@@ -80,7 +81,7 @@
 
 .logs-filter-clear-button,
 .logs-filter-clear-button.unity-button {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
     background-color: transparent;
     border-width: 0;
@@ -159,7 +160,7 @@
 }
 
 .logs-severity-icon {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
     font-size: 12px;
     margin: 0;
@@ -207,7 +208,7 @@
 }
 
 .logs-icon-btn {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
     font-size: 14px;
     width: 28px;
@@ -290,7 +291,7 @@
 }
 
 .log-item-copy-btn {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
     width: 22px;
     height: 22px;

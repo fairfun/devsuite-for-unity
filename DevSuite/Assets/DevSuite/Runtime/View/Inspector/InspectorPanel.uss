@@ -196,7 +196,7 @@
 }
 
 .inspector-icon-btn {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
     font-size: 14px;
     width: 28px;

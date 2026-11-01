@@ -435,10 +435,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Third-Party Notices
 
 This package includes third-party assets:
+- **[Lucide](https://lucide.dev)** by Lucide Contributors
+  - Icons licensed under [ISC License](https://github.com/lucide-icons/lucide/blob/main/LICENSE)
+  - See [Third Party Notices.md](Third%20Party%20Notices.md) for full license terms.
 - **[Font Awesome Free](https://fontawesome.com)** by Fonticons, Inc.
   - Fonts licensed under [SIL OFL 1.1](https://scripts.sil.org/OFL)
   - Icons licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-  - See [Third Party Notices.md](Third%20Party%20Notices.md) for full license terms.
+
 
 ## Author
 

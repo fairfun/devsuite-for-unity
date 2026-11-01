@@ -77,7 +77,7 @@ namespace Ff.DevSuite.View
 
         private void SetCollapsed(bool collapsed)
         {
-            _toggleLabel.text = collapsed ? "\uf0fe" : "\uf146";
+            _toggleLabel.text = collapsed ? "\ue173" : "\ue171";
             Content.style.display = collapsed ? DisplayStyle.None : DisplayStyle.Flex;
 
             var labelColor = _header.style.color.value;

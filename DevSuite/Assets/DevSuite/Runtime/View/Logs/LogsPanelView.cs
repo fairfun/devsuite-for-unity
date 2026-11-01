@@ -80,7 +80,7 @@ namespace Ff.DevSuite.View
             _clearFilterBtn = root.Q<Button>("clearFilterBtn");
             if (_clearFilterBtn != null)
             {
-                _clearFilterBtn.text = "\uf00d";
+                _clearFilterBtn.text = "\ue1b2";
                 _clearFilterBtn.clicked += () =>
                 {
                     _context.LogsPattern = "";
@@ -360,7 +360,7 @@ namespace Ff.DevSuite.View
             var copyBtn = new Button
             {
                 name = "copyBtn",
-                text = "\uf0c5",
+                text = "\ue09e",
                 tooltip = "Copy log message to clipboard.\n\n<b><i>Hint: </i></b>Customize copy behavior via <b><color=#ffc800>DevSuiteContext.Default.CopyToClipboardAction</color></b>.",
             };
             copyBtn.AddToClassList("log-item-copy-btn");
@@ -429,10 +429,10 @@ namespace Ff.DevSuite.View
             _context.OnLogMessagesVisibilityChanged += HandleLogMessagesVisibilityChanged;
             _context.OnFocusCliRequested += FocusCliInput;
 
-            _copyButton.text = "\uf0c5";
-            _saveButton.text = "\uf0c7";
-            _folderButton.text = "\uf07c";
-            _clearButton.text = "\uf2ed";
+            _copyButton.text = "\ue09e";
+            _saveButton.text = "\ue14d";
+            _folderButton.text = "\ue247";
+            _clearButton.text = "\ue18e";
 
             _filterField.SetValueWithoutNotify(_context.LogsPattern);
             UpdateClearFilterButton();
