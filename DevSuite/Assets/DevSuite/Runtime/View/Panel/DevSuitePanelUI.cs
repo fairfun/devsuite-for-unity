@@ -83,10 +83,12 @@ namespace Ff.DevSuite.View
         private VisualElement _controlContainer;
         private VisualElement _hierarchyContainer;
         private VisualElement _inspectorContainer;
+        private VisualElement _panelRootLayout;
         private bool _lastHierarchyVisible;
 
-        private int _lastScreenWidth;
-        private int _lastScreenHeight;
+        private (int width, int height, Rect safeArea, float uiScale)? _lastScreen;
+
+        private (float left, float top, float right, float bottom)? _lastSafeAreaInsets;
 
         private bool? _isPortrait;
         private bool IsPortrait => _isPortrait ??= _layoutMode switch
@@ -126,6 +128,8 @@ namespace Ff.DevSuite.View
             _context = DevSuiteContext.DefaultInternal;
             _context.OnChanged += UpdateVisibility;
 
+            _lastScreen = (Screen.width, Screen.height, Screen.safeArea, _uiScale);
+
             BuildUI();
         }
 
@@ -151,17 +155,34 @@ namespace Ff.DevSuite.View
 
         private void LateUpdate()
         {
-            if (_lastScreenWidth != Screen.width || _lastScreenHeight != Screen.height)
+            var screenSizeChanged = !_lastScreen.HasValue || _lastScreen.Value.width != Screen.width || _lastScreen.Value.height != Screen.height;
+            var safeAreaChanged = !_lastScreen.HasValue || _lastScreen.Value.safeArea != Screen.safeArea;
+            var scaleChanged = !_lastScreen.HasValue || !Mathf.Approximately(_lastScreen.Value.uiScale, _uiScale);
+
+            if (screenSizeChanged)
             {
-                _lastScreenWidth = Screen.width;
-                _lastScreenHeight = Screen.height;
                 var wasPortrait = _isPortrait;
                 _isPortrait = null;
                 if (wasPortrait.HasValue && wasPortrait.Value != IsPortrait)
                 {
+                    _lastScreen = (Screen.width, Screen.height, Screen.safeArea, _uiScale);
                     BuildUI();
                     return;
                 }
+            }
+
+            if (scaleChanged)
+            {
+                if (_uiDocument != null && _uiDocument.rootVisualElement != null)
+                {
+                    ApplyScale(_uiDocument.rootVisualElement);
+                }
+            }
+
+            if (screenSizeChanged || safeAreaChanged || scaleChanged)
+            {
+                _lastScreen = (Screen.width, Screen.height, Screen.safeArea, _uiScale);
+                ApplySafeArea();
             }
 
 #if UNITY_EDITOR
@@ -182,7 +203,11 @@ namespace Ff.DevSuite.View
             ApplyScale(root);
 
             root.style.backgroundColor = StyleKeyword.Null; // Ensure it's not overridden
-            root.RegisterCallback<AttachToPanelEvent>(_ => ApplyColors(root));
+            root.RegisterCallback<AttachToPanelEvent>(_ =>
+            {
+                ApplyColors(root);
+                ApplySafeArea();
+            });
 
             _isPortrait = null;
             var isLeft = _panelSide == PanelSide.Left;
@@ -192,6 +217,8 @@ namespace Ff.DevSuite.View
             layout.CloneTree(root);
 
             root.styleSheets.Add(_layoutUss);
+
+            _panelRootLayout = root.Q<VisualElement>(className: "devsuite-panel-root") ?? root.Q<VisualElement>("root");
 
             _logsContainer = root.Q<VisualElement>("logs-container");
             _logsPanelView = new LogsPanelView(_logsUxml, _logsUss);
@@ -246,6 +273,7 @@ namespace Ff.DevSuite.View
 
             ApplyColors(root);
             UpdateVisibility();
+            ApplySafeArea();
         }
 
         private void OnDestroy()
@@ -296,6 +324,8 @@ namespace Ff.DevSuite.View
             _controlContainer = null;
             _hierarchyContainer = null;
             _inspectorContainer = null;
+            _panelRootLayout = null;
+            _lastSafeAreaInsets = null;
         }
 
         private void ApplyColors(VisualElement root)
@@ -342,6 +372,75 @@ namespace Ff.DevSuite.View
 #endif
                 ApplyScale(uiDocument.rootVisualElement);
                 ApplyColors(uiDocument.rootVisualElement);
+                ApplySafeArea();
+            }
+        }
+
+        private void ApplySafeArea()
+        {
+            if (_panelRootLayout == null && _uiDocument != null && _uiDocument.rootVisualElement != null)
+            {
+                _panelRootLayout = _uiDocument.rootVisualElement.Q<VisualElement>(className: "devsuite-panel-root")
+                                ?? _uiDocument.rootVisualElement.Q<VisualElement>("root");
+            }
+
+            if (_panelRootLayout == null || _uiDocument == null)
+            {
+                return;
+            }
+
+            var root = _uiDocument.rootVisualElement;
+            if (root == null || Screen.width <= 0 || Screen.height <= 0)
+            {
+                return;
+            }
+
+            var safeArea = Screen.safeArea;
+            float left = 0f, top = 0f, right = 0f, bottom = 0f;
+            var converted = false;
+
+            if (root.panel != null)
+            {
+                try
+                {
+                    var screenTopLeftLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, Vector2.zero));
+                    var safeTopLeftLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(safeArea.xMin, Screen.height - safeArea.yMax)));
+                    var screenBottomRightLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(Screen.width, Screen.height)));
+                    var safeBottomRightLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(safeArea.xMax, Screen.height - safeArea.yMin)));
+
+                    left = Mathf.Max(0f, safeTopLeftLocal.x - screenTopLeftLocal.x);
+                    top = Mathf.Max(0f, safeTopLeftLocal.y - screenTopLeftLocal.y);
+                    right = Mathf.Max(0f, screenBottomRightLocal.x - safeBottomRightLocal.x);
+                    bottom = Mathf.Max(0f, screenBottomRightLocal.y - safeBottomRightLocal.y);
+                    converted = true;
+                }
+                catch
+                {
+                    converted = false;
+                }
+            }
+
+            if (!converted)
+            {
+                var scale = _uiScale > 0 ? _uiScale : 1f;
+                left = Mathf.Max(0f, safeArea.xMin / scale);
+                top = Mathf.Max(0f, (Screen.height - safeArea.yMax) / scale);
+                right = Mathf.Max(0f, (Screen.width - safeArea.xMax) / scale);
+                bottom = Mathf.Max(0f, safeArea.yMin / scale);
+            }
+
+            if (!_lastSafeAreaInsets.HasValue ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.left, left) ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.top, top) ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.right, right) ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.bottom, bottom))
+            {
+                _lastSafeAreaInsets = (left, top, right, bottom);
+
+                _panelRootLayout.style.paddingLeft = left;
+                _panelRootLayout.style.paddingTop = top;
+                _panelRootLayout.style.paddingRight = right;
+                _panelRootLayout.style.paddingBottom = bottom;
             }
         }
 
