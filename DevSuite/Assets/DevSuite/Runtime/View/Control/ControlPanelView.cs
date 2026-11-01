@@ -35,6 +35,7 @@ namespace Ff.DevSuite.View
 
         private const float ResetHoldDuration = 2.0f;
         private const float ResetClickThreshold = 0.2f;
+        public const float ToggleCooldownSeconds = 0.3f;
 
         private int _clickCount;
         private IVisualElementScheduledItem _clickResetTask;
@@ -44,7 +45,7 @@ namespace Ff.DevSuite.View
         private bool _resetHoldCancelled;
         private float _resetHoldStartTime;
         private IVisualElementScheduledItem _warningTask;
-        private float _lastToggleTime;
+        private float _lastToggleTime = -1f;
 
         private const string IconReset = "\uf2ed";
         private const string IconLogs = "\uf02d";
@@ -165,7 +166,7 @@ namespace Ff.DevSuite.View
 
         private void HandleExpandClicked()
         {
-            if (Time.unscaledTime - _lastToggleTime < 1.0f)
+            if (Time.realtimeSinceStartup - _lastToggleTime < ToggleCooldownSeconds)
             {
                 ShowCooldownFeedback();
                 return;
@@ -174,14 +175,14 @@ namespace Ff.DevSuite.View
             if (_context.PanelExpanded)
             {
                 // Always collapse on single click
-                _lastToggleTime = Time.unscaledTime;
+                _lastToggleTime = Time.realtimeSinceStartup;
                 ToggleContextValue(ctx => ctx.PanelExpanded = false);
                 return;
             }
 
             if (_activationMode == DevSuitePanelActivationMode.SingleClick)
             {
-                _lastToggleTime = Time.unscaledTime;
+                _lastToggleTime = Time.realtimeSinceStartup;
                 ToggleContextValue(ctx => ctx.PanelExpanded = true);
             }
             else if (_activationMode == DevSuitePanelActivationMode.MultiClick)
@@ -194,7 +195,7 @@ namespace Ff.DevSuite.View
                 {
                     _clickCount = 0;
                     _clickResetTask?.Pause();
-                    _lastToggleTime = Time.unscaledTime;
+                    _lastToggleTime = Time.realtimeSinceStartup;
                     ToggleContextValue(ctx => ctx.PanelExpanded = true);
                 }
             }
@@ -210,7 +211,7 @@ namespace Ff.DevSuite.View
             if (_context.PanelExpanded || _activationMode != DevSuitePanelActivationMode.Hold)
                 return;
 
-            if (Time.unscaledTime - _lastToggleTime < 0.5f)
+            if (Time.realtimeSinceStartup - _lastToggleTime < ToggleCooldownSeconds)
             {
                 ShowCooldownFeedback();
                 return;
@@ -219,7 +220,7 @@ namespace Ff.DevSuite.View
             _holdTask?.Pause();
             _holdTask = schedule.Execute(() =>
             {
-                _lastToggleTime = Time.unscaledTime;
+                _lastToggleTime = Time.realtimeSinceStartup;
                 ToggleContextValue(ctx => ctx.PanelExpanded = true);
                 _holdTask = null;
             }).StartingIn(2000);
@@ -695,6 +696,7 @@ namespace Ff.DevSuite.View
             SetResetProgress(0f);
             _hasUnseenErrors = false;
             _isPaused = false;
+            _lastToggleTime = -1f;
 
             if (_context != null)
             {
