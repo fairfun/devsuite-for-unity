@@ -80,6 +80,23 @@ namespace Ff.DevSuite
             [CommandButton] public static void Beta() { }
         }
 
+        public class TestInstanceTarget
+        {
+            public bool MethodCalled;
+
+            [CommandButton]
+            public void TestInstanceMethod()
+            {
+                MethodCalled = true;
+            }
+
+            [Command]
+            [CommandButton]
+            public void TestExplicitCommandMethod()
+            {
+            }
+        }
+
         private class TestMemorySavedPrefs : ISavedPrefs
         {
             private readonly Dictionary<string, object> _data = new();
@@ -527,6 +544,9 @@ namespace Ff.DevSuite
                 context.ClearAllSavedPrefs();
                 Assert(context.ShowSelectionFrame, "ShowSelectionFrame is restored to ON after ClearAllSavedPrefs");
                 Assert(testProp.Value == 99, "testProp value is reset to default after ClearAllSavedPrefs");
+
+                // Test 19: Instance commands registration, unregistration, re-registration and multi-instance
+                TestInstanceCommandsRegistration(context, Assert);
             }
             finally
             {
@@ -629,6 +649,52 @@ namespace Ff.DevSuite
                 Time.timeScale = originalTimeScale;
                 CommonCommands.TimeScale.Value = null;
             }
+        }
+
+        private static void TestInstanceCommandsRegistration(DevSuiteContext context, System.Action<bool, string> assert)
+        {
+            var inst1 = new TestInstanceTarget();
+            var inst2 = new TestInstanceTarget();
+
+            // 1. Initial register
+            context.AttributesParserApi.RegisterInstance(inst1);
+            var key1 = new CommandKey(nameof(TestInstanceTarget.TestInstanceMethod), null, null, inst1);
+            var keyExplicit1 = new CommandKey(nameof(TestInstanceTarget.TestExplicitCommandMethod), null, null, inst1);
+            assert(context.Commands.ContainsKey(key1), "inst1 TestInstanceMethod command registered");
+            assert(context.Commands.ContainsKey(keyExplicit1), "inst1 TestExplicitCommandMethod command registered");
+            assert(context.Commands.TryGetValue(key1, out var cmd1) && cmd1.Units.Count > 0, "inst1 TestInstanceMethod has unit attached");
+            assert(context.Commands.TryGetValue(keyExplicit1, out var cmdExp1) && cmdExp1.Units.Count > 0, "inst1 TestExplicitCommandMethod has unit attached");
+
+            // 2. Unregister inst1
+            context.AttributesParserApi.UnregisterInstance(inst1);
+            assert(!context.Commands.ContainsKey(key1), "inst1 TestInstanceMethod removed on unregister");
+            assert(!context.Commands.ContainsKey(keyExplicit1), "inst1 TestExplicitCommandMethod removed on unregister");
+
+            // 3. Re-register inst1 (must return commands and attach units without error)
+            context.AttributesParserApi.RegisterInstance(inst1);
+            assert(context.Commands.ContainsKey(key1), "inst1 TestInstanceMethod re-registered successfully");
+            assert(context.Commands.ContainsKey(keyExplicit1), "inst1 TestExplicitCommandMethod re-registered successfully");
+            assert(context.Commands.TryGetValue(key1, out var cmd1Re) && cmd1Re.Units.Count > 0, "inst1 TestInstanceMethod has unit attached on re-registration");
+            assert(context.Commands.TryGetValue(keyExplicit1, out var cmdExp1Re) && cmdExp1Re.Units.Count > 0, "inst1 TestExplicitCommandMethod has unit attached on re-registration");
+
+            // 4. Register another instance of the same type
+            context.AttributesParserApi.RegisterInstance(inst2);
+            var key2 = new CommandKey(nameof(TestInstanceTarget.TestInstanceMethod), null, null, inst2);
+            var keyExplicit2 = new CommandKey(nameof(TestInstanceTarget.TestExplicitCommandMethod), null, null, inst2);
+            assert(context.Commands.ContainsKey(key2), "inst2 TestInstanceMethod command registered for different instance");
+            assert(context.Commands.ContainsKey(keyExplicit2), "inst2 TestExplicitCommandMethod command registered for different instance");
+            assert(context.Commands.TryGetValue(key2, out var cmd2) && cmd2.Units.Count > 0, "inst2 TestInstanceMethod has unit attached");
+            assert(context.Commands.TryGetValue(keyExplicit2, out var cmdExp2) && cmdExp2.Units.Count > 0, "inst2 TestExplicitCommandMethod has unit attached");
+
+            // Verify both instances co-exist in context
+            assert(context.Commands.ContainsKey(key1), "inst1 still exists when inst2 is registered");
+            assert(context.Commands.ContainsKey(key2), "inst2 exists concurrently with inst1");
+
+            // Clean up
+            context.AttributesParserApi.UnregisterInstance(inst1);
+            context.AttributesParserApi.UnregisterInstance(inst2);
+            assert(!context.Commands.ContainsKey(key1), "inst1 cleaned up");
+            assert(!context.Commands.ContainsKey(key2), "inst2 cleaned up");
         }
     }
 }
