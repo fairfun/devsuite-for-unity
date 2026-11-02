@@ -569,25 +569,25 @@ namespace Ff.DevSuite.View
             {
                 _commandsFullContainer.style.width = StyleKeyword.Null;
                 _commandsFullContainer.style.maxWidth = expanded ? _commandsWidth : StyleKeyword.Null;
-                _commandsFullContainer.style.flexGrow = 1;
+                _commandsFullContainer.style.flexGrow = 0;
                 _commandsFullContainer.style.flexShrink = 1;
                 _commandsFullContainer.style.flexBasis = expanded ? _commandsWidth : StyleKeyword.Null;
 
                 _logsContainer.style.width = StyleKeyword.Null;
                 _logsContainer.style.maxWidth = StyleKeyword.Null;
-                _logsContainer.style.flexGrow = 1;
-                _logsContainer.style.flexShrink = 1;
-                _logsContainer.style.flexBasis = 0;
+                _logsContainer.style.flexGrow = StyleKeyword.Null;
+                _logsContainer.style.flexShrink = StyleKeyword.Null;
+                _logsContainer.style.flexBasis = StyleKeyword.Null;
 
                 _hierarchyContainer.style.width = StyleKeyword.Null;
                 _hierarchyContainer.style.maxWidth = expanded ? _hierarchyWidth : StyleKeyword.Null;
-                _hierarchyContainer.style.flexGrow = 1;
+                _hierarchyContainer.style.flexGrow = 0;
                 _hierarchyContainer.style.flexShrink = 1;
                 _hierarchyContainer.style.flexBasis = expanded ? _hierarchyWidth : StyleKeyword.Null;
 
                 _inspectorContainer.style.width = StyleKeyword.Null;
                 _inspectorContainer.style.maxWidth = expanded ? _inspectorWidth : StyleKeyword.Null;
-                _inspectorContainer.style.flexGrow = 1;
+                _inspectorContainer.style.flexGrow = 0;
                 _inspectorContainer.style.flexShrink = 1;
                 _inspectorContainer.style.flexBasis = expanded ? _inspectorWidth : StyleKeyword.Null;
 
