@@ -40,18 +40,12 @@ namespace Ff.DevSuite
     public interface IDevSuiteContext : IDisposable
     {
         CommandAttributesParserApi AttributesParserApi { get; }
-        [Obsolete("Use AttributesParserApi instead. Will be removed in version 1.0.")]
-        CommandAttributesParserApi AttributesParser { get; }
         DevSuiteCommandsApi CommandsApi { get; }
         DevSuitePerformanceGraphsApi PerformanceGraphsApi { get; }
         IDisposable SuspendEvents(object requestor);
         bool Disposed { get; }
         void Initialize(MonoBehaviour coroutineStarter, IList<Assembly> staticCommandsAssemblies = null, ISavedPrefs savedPrefs = null, bool registerCommonCommands = true);
         void Reset();
-        [Obsolete("Use PerformanceGraphsApi.Register instead. Will be removed in version 1.0.")]
-        void RegisterPerformanceGraph<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider;
-        [Obsolete("Use PerformanceGraphsApi.SetSettings instead. Will be removed in version 1.0.")]
-        void SetPerformanceGraphSettings<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider;
         Func<string> BuildVersionToDisplay { get; set; }
         CopyToClipboardAction CopyToClipboardAction { get; set; }
         HierarchySearchByComponentFilter HierarchySearchByComponentFilter { get; set; }
@@ -190,9 +184,6 @@ namespace Ff.DevSuite
         }
 
         public CommandAttributesParserApi AttributesParserApi { get; internal set; }
-
-        [Obsolete("Use AttributesParserApi instead. Will be removed in version 1.0.")]
-        public CommandAttributesParserApi AttributesParser => AttributesParserApi;
         public DevSuiteCommandsApi CommandsApi { get; internal set; }
 
         public DevSuitePerformanceGraphsApi PerformanceGraphsApi { get; internal set; }
@@ -217,6 +208,7 @@ namespace Ff.DevSuite
         internal event Action OnEveryFrame;
         internal event Action OnPerformancePanelChanged;
         internal event Action<BaseGraphDataProvider, bool> OnPerformanceGraphCollapsedChanged;
+        internal event Action<BaseGraphDataProvider, bool> OnPerformanceGraphPinnedChanged;
         internal event Action OnLogMessagesChanged;
         internal event Action<LogMessageData> OnLogMessagesMessageAdded;
         internal event Action OnLogMessagesVisibilityChanged;
@@ -572,6 +564,7 @@ namespace Ff.DevSuite
             OnEveryFrame = null;
             OnPerformancePanelChanged = null;
             OnPerformanceGraphCollapsedChanged = null;
+            OnPerformanceGraphPinnedChanged = null;
             OnLogMessagesChanged = null;
             OnLogMessagesMessageAdded = null;
             OnLogMessagesVisibilityChanged = null;
@@ -732,12 +725,6 @@ namespace Ff.DevSuite
             }
         }
 
-        [Obsolete("Use PerformanceGraphsApi.Register instead. Will be removed in version 1.0.")]
-        public void RegisterPerformanceGraph<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider
-        {
-            (PerformanceGraphsApi ??= new DevSuitePerformanceGraphsApi(this)).Register(provider, overrideSettings);
-        }
-
         internal void RegisterPerformanceGraphInternal<T>(T provider, GraphDataProviderSettings overrideSettings = null) where T : BaseGraphDataProvider
         {
             if (overrideSettings != null)
@@ -791,10 +778,48 @@ namespace Ff.DevSuite
             OnPerformanceGraphCollapsedChanged?.Invoke(provider, collapsed);
         }
 
-        [Obsolete("Use PerformanceGraphsApi.SetSettings instead. Will be removed in version 1.0.")]
-        public void SetPerformanceGraphSettings<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider
+        internal bool IsPerformanceGraphPinned(BaseGraphDataProvider provider)
         {
-            (PerformanceGraphsApi ??= new DevSuitePerformanceGraphsApi(this)).SetSettings<T>(settings);
+            return CheckSettingsInitialized(true) && Settings.Value.PinnedPerformanceGraphs.Contains(provider.GetType().Name);
+        }
+
+        internal void SetPerformanceGraphPinned(BaseGraphDataProvider provider, bool pinned)
+        {
+            if (!CheckSettingsInitialized())
+            {
+                return;
+            }
+
+            var typeName = provider.GetType().Name;
+            var list = Settings.Value.PinnedPerformanceGraphs;
+            var changed = false;
+
+            if (pinned)
+            {
+                if (!list.Contains(typeName))
+                {
+                    list.Add(typeName);
+                    changed = true;
+                }
+            }
+            else
+            {
+                if (list.Remove(typeName))
+                {
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                Settings.ForceSave();
+                OnPerformanceGraphPinnedChanged?.Invoke(provider, pinned);
+            }
+        }
+
+        internal void TogglePerformanceGraphPinned(BaseGraphDataProvider provider)
+        {
+            SetPerformanceGraphPinned(provider, !IsPerformanceGraphPinned(provider));
         }
 
         internal void SetPerformanceGraphSettingsInternal<T>(GraphDataProviderSettings settings) where T : BaseGraphDataProvider
@@ -2763,6 +2788,7 @@ namespace Ff.DevSuite
             foreach (var provider in _performancePanelProviders)
             {
                 OnPerformanceGraphCollapsedChanged?.Invoke(provider, IsPerformanceGraphCollapsed(provider));
+                OnPerformanceGraphPinnedChanged?.Invoke(provider, IsPerformanceGraphPinned(provider));
             }
             _onChangedDispatcher.Dispatch();
         }
@@ -2901,7 +2927,7 @@ namespace Ff.DevSuite
             {
                 foreach (var provider in PerformancePanelProviders)
                 {
-                    if (IsPerformanceGraphCollapsed(provider))
+                    if (IsPerformanceGraphCollapsed(provider) && !IsPerformanceGraphPinned(provider))
                     {
                         continue;
                     }
@@ -3027,6 +3053,7 @@ namespace Ff.DevSuite
         [DataMember][MemoryPackOrder(24)][Key(24)] public bool ShowSelectionFrame { get; set; } = true;
         [DataMember][MemoryPackOrder(25)][Key(25)] public bool HierarchySearchByComponent { get; set; }
         [DataMember][MemoryPackOrder(26)][Key(26)] public bool HierarchyAutoRefresh { get; set; }
+        [DataMember][MemoryPackOrder(27)][Key(27)] public List<string> PinnedPerformanceGraphs { get; set; } = new();
 
         public void InitializeDefaultsIfNeeded()
         {
@@ -3036,6 +3063,7 @@ namespace Ff.DevSuite
             HiddenLogSeverity ??= new();
             VirtualButtonParameters ??= new();
             CliCommandHistory ??= new();
+            PinnedPerformanceGraphs ??= new();
         }
     }
 

@@ -54,12 +54,4 @@ namespace Ff.DevSuite
             _context.SetPerformanceGraphCollapsed(provider, collapsed);
         }
     }
-
-    [Obsolete("Use DevSuitePerformanceGraphsApi instead. Will be removed in version 1.0.")]
-    public class DevSiutePerformanceGraphsApi : DevSuitePerformanceGraphsApi
-    {
-        public DevSiutePerformanceGraphsApi(DevSuiteContext context) : base(context)
-        {
-        }
-    }
 }

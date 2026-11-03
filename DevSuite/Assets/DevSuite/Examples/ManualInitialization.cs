@@ -1,13 +1,15 @@
-using Ff.DevSuite;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-internal class ManualInitialization : MonoBehaviour
+namespace Ff.DevSuite
 {
-    private void Awake()
+    internal class ManualInitialization : MonoBehaviour
     {
-        DevSuiteContext.Default.Initialize(this, new List<Assembly>());
-        DevSuiteCommandsTesting.RegisterAll(DevSuiteContext.Default);
+        private void Awake()
+        {
+            DevSuiteContext.Default.Initialize(this, new List<Assembly>());
+            DevSuiteCommandsTesting.RegisterAll(DevSuiteContext.Default);
+        }
     }
 }

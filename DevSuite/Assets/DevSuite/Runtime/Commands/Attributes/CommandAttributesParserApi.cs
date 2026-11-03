@@ -249,9 +249,9 @@ namespace Ff.DevSuite.Commands.Attributes
                 foreach (var member in members)
                 {
                     var command = _commandsForMembers[(member, instance)];
-                    if (_registeredItems.Contains(command))
+                    if (_registeredItems.Contains((command, instance)))
                         continue;
-                    _registeredItems.Add(command);
+                    _registeredItems.Add((command, instance));
 
                     AddCommandToContext(command);
                 }
@@ -280,6 +280,11 @@ namespace Ff.DevSuite.Commands.Attributes
                     {
                         associatedCommand = new CommandAttribute(attributeCommandUnit.CommandId ?? member.Name, attributeCommandUnit.CommandId, attributeCommandUnit.LineNumber);
                         ServeCommandAttribute(member, associatedCommand);
+                    }
+
+                    if (!_registeredItems.Contains((associatedCommand, instance)))
+                    {
+                        _registeredItems.Add((associatedCommand, instance));
                         AddCommandToContext(associatedCommand);
                     }
 
@@ -709,6 +714,7 @@ namespace Ff.DevSuite.Commands.Attributes
                 {
                     if (_commandsForMembers.TryGetValue((member, instance), out var command))
                     {
+                        _registeredItems.Remove((command, instance));
                         _context.CommandsApi.RemoveCommand(command.Id, command.GroupId, command.CategoryId, instance);
                     }
                 }
@@ -719,8 +725,10 @@ namespace Ff.DevSuite.Commands.Attributes
                 foreach (var (member, attribute) in attributes)
                 {
                     var commandUnit = attribute as CommandUnitAttribute;
-                    if (_commandsForUnits.TryGetValue(commandUnit, out var command))
+                    if (_commandsForMembers.TryGetValue((member, instance), out var command) ||
+                        _commandsForUnits.TryGetValue(commandUnit, out command))
                     {
+                        _registeredItems.Remove((command, instance));
                         _context.CommandsApi.RemoveCommand(command.Id, command.GroupId, command.CategoryId, instance);
                     }
                 }
@@ -832,14 +840,6 @@ namespace Ff.DevSuite.Commands.Attributes
             {
             }
             return null;
-        }
-    }
-
-    [Obsolete("Use CommandAttributesParserApi instead. Will be removed in version 1.0.")]
-    public class CommandAttributesParser : CommandAttributesParserApi
-    {
-        public CommandAttributesParser(DevSuiteContext context) : base(context)
-        {
         }
     }
 }

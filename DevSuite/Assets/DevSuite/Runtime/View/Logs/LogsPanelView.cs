@@ -11,7 +11,13 @@ namespace Ff.DevSuite.View
     internal class LogsPanelView : VisualElement
     {
         private DevSuiteContext _context;
-        private readonly List<VisualElement> _allMessageElements = new();
+        private const float RowHeight = 22f;
+        private readonly VisualElement _topSpacer;
+        private readonly VisualElement _itemsContainer;
+        private readonly VisualElement _bottomSpacer;
+        private readonly List<LogItemView> _itemPool = new();
+        private readonly List<LogMessageData> _filteredMessages = new();
+        private readonly Dictionary<LogMessageData, float> _expandedHeights = new();
 
         private readonly TextField _filterField;
         private readonly Button _clearFilterBtn;
@@ -80,7 +86,7 @@ namespace Ff.DevSuite.View
             _clearFilterBtn = root.Q<Button>("clearFilterBtn");
             if (_clearFilterBtn != null)
             {
-                _clearFilterBtn.text = "\uf00d";
+                _clearFilterBtn.text = "\ue1b2";
                 _clearFilterBtn.clicked += () =>
                 {
                     _context.LogsPattern = "";
@@ -136,7 +142,32 @@ namespace Ff.DevSuite.View
             _scrollView = root.Q<ScrollView>("logsScrollView");
             _scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             DevSuiteUiUtils.SetupScrollView(_scrollView);
-            _scrollView.verticalScroller.valueChanged += _ => ClearHovers();
+
+            _topSpacer = new VisualElement { name = "logsTopSpacer" };
+            _topSpacer.style.flexShrink = 0;
+            _topSpacer.style.flexGrow = 0;
+            _topSpacer.pickingMode = PickingMode.Ignore;
+            _scrollView.Add(_topSpacer);
+
+            _itemsContainer = new VisualElement { name = "logsItemsContainer" };
+            _itemsContainer.style.flexShrink = 0;
+            _itemsContainer.style.flexGrow = 0;
+            _itemsContainer.style.flexDirection = FlexDirection.Column;
+            _scrollView.Add(_itemsContainer);
+
+            _bottomSpacer = new VisualElement { name = "logsBottomSpacer" };
+            _bottomSpacer.style.flexShrink = 0;
+            _bottomSpacer.style.flexGrow = 0;
+            _bottomSpacer.pickingMode = PickingMode.Ignore;
+            _scrollView.Add(_bottomSpacer);
+
+            _scrollView.verticalScroller.valueChanged += _ =>
+            {
+                ClearHovers();
+                UpdateVisibleItems();
+            };
+            _scrollView.RegisterCallback<GeometryChangedEvent>(_ => UpdateVisibleItems());
+            _scrollView.RegisterCallback<PointerLeaveEvent>(_ => ClearHovers());
 
             _cliInputField = root.Q<TextField>("cliInputField");
             _cliGhostField = root.Q<TextField>("cliGhostField");
@@ -258,7 +289,11 @@ namespace Ff.DevSuite.View
                         else if (isTab)
                         {
                             evt.StopImmediatePropagation();
+#if UNITY_2023_2_OR_NEWER
                             _cliInputField.focusController?.IgnoreEvent(evt);
+#else
+                            evt.PreventDefault();
+#endif
                             HandleCliTab();
                         }
                     },
@@ -273,7 +308,11 @@ namespace Ff.DevSuite.View
                             || evt.direction == NavigationMoveEvent.Direction.Next)
                         {
                             evt.StopImmediatePropagation();
+#if UNITY_2023_2_OR_NEWER
                             _cliInputField.focusController?.IgnoreEvent(evt);
+#else
+                            evt.PreventDefault();
+#endif
                         }
                     },
                     TrickleDown.TrickleDown
@@ -296,119 +335,239 @@ namespace Ff.DevSuite.View
             DevSuiteUiUtils.SetupTooltips(this);
         }
 
-        private void ClearHovers()
+        internal DevSuiteContext Context => _context;
+
+        internal void ClearHovers()
         {
-            foreach (var el in _allMessageElements)
+            for (var i = 0; i < _itemPool.Count; i++)
             {
-                el.RemoveFromClassList("hover-active");
+                _itemPool[i].RemoveFromClassList("hover-active");
             }
         }
 
-        private VisualElement CreateLogItem(LogMessageData msg)
+        internal float GetCachedHeight(LogMessageData msg)
         {
-            var element = new VisualElement
-            {
-                name = "logItemContainer",
-            };
-            element.AddToClassList("log-item-container");
-            element.userData = msg;
+            return _expandedHeights.TryGetValue(msg, out var h) ? h : 0f;
+        }
 
-            var header = new VisualElement
-            {
-                name = "logItemHeader",
-            };
-            header.AddToClassList("log-item-header");
+        internal void SetCachedHeight(LogMessageData msg, float h)
+        {
+            _expandedHeights[msg] = h;
+            UpdateVisibleItems();
+        }
 
-            var messageLabel = new Label
+        internal void OnItemExpandedChanged(LogMessageData msg, LogItemView itemView)
+        {
+            if (!msg.Expanded)
             {
-                name = "messageLabel",
-            };
-            messageLabel.AddToClassList("log-item-message");
+                _expandedHeights.Remove(msg);
+            }
+            UpdateVisibleItems();
+        }
 
-            void UpdateExpandedState()
+        private float GetItemHeight(LogMessageData msg)
+        {
+            if (!msg.Expanded)
             {
-                if (msg.Expanded)
+                return RowHeight;
+            }
+
+            if (_expandedHeights.TryGetValue(msg, out var h) && h > 0f)
+            {
+                return h;
+            }
+
+            var lines = 1;
+            if (!string.IsNullOrEmpty(msg.CallStack))
+            {
+                for (var i = 0; i < msg.CallStack.Length; i++)
                 {
-                    messageLabel.text = msg.Message;
+                    if (msg.CallStack[i] == '\n')
+                    {
+                        lines++;
+                    }
+                }
+            }
+            if (!string.IsNullOrEmpty(msg.Message))
+            {
+                for (var i = 0; i < msg.Message.Length; i++)
+                {
+                    if (msg.Message[i] == '\n')
+                    {
+                        lines++;
+                    }
+                }
+            }
+            return RowHeight + (lines * 16f) + 12f;
+        }
+
+        private float GetViewportHeight()
+        {
+            var viewportHeight = _scrollView.contentViewport.resolvedStyle.height;
+            if (float.IsNaN(viewportHeight) || viewportHeight <= 0)
+            {
+                viewportHeight = _scrollView.resolvedStyle.height;
+            }
+            if (float.IsNaN(viewportHeight) || viewportHeight <= 0)
+            {
+                viewportHeight = 400f;
+            }
+            return viewportHeight;
+        }
+
+        private float GetTotalHeight()
+        {
+            if (_expandedHeights.Count == 0)
+            {
+                return _filteredMessages.Count * RowHeight;
+            }
+
+            var total = 0f;
+            for (var i = 0; i < _filteredMessages.Count; i++)
+            {
+                total += GetItemHeight(_filteredMessages[i]);
+            }
+            return total;
+        }
+
+        private void UpdateVisibleItems()
+        {
+            if (_scrollView == null || _filteredMessages == null)
+            {
+                return;
+            }
+
+            var totalCount = _filteredMessages.Count;
+            if (totalCount == 0)
+            {
+                _topSpacer.style.height = 0;
+                _bottomSpacer.style.height = 0;
+                for (var i = 0; i < _itemPool.Count; i++)
+                {
+                    _itemPool[i].style.display = DisplayStyle.None;
+                    _itemPool[i].Unbind();
+                }
+                return;
+            }
+
+            var viewportHeight = GetViewportHeight();
+            var totalHeight = GetTotalHeight();
+            var maxScrollY = Mathf.Max(0f, totalHeight - viewportHeight);
+            if (_scrollView.scrollOffset.y > maxScrollY)
+            {
+                _scrollView.scrollOffset = new Vector2(_scrollView.scrollOffset.x, maxScrollY);
+            }
+
+            const int buffer = 3;
+            var scrollY = Mathf.Max(0f, _scrollView.scrollOffset.y);
+
+            int firstVisibleIndex;
+            int lastVisibleIndex;
+            float topHeight;
+            float bottomHeight;
+
+            if (_expandedHeights.Count == 0)
+            {
+                firstVisibleIndex = Mathf.Clamp(Mathf.FloorToInt(scrollY / RowHeight) - buffer, 0, totalCount - 1);
+                var visibleCount = Mathf.CeilToInt(viewportHeight / RowHeight) + (buffer * 2);
+                lastVisibleIndex = Mathf.Clamp(firstVisibleIndex + visibleCount - 1, 0, totalCount - 1);
+                topHeight = firstVisibleIndex * RowHeight;
+                bottomHeight = Mathf.Max(0f, (totalCount - 1 - lastVisibleIndex) * RowHeight);
+            }
+            else
+            {
+                var targetMinY = Mathf.Max(0f, scrollY - (buffer * RowHeight));
+                var currentY = 0f;
+                firstVisibleIndex = 0;
+                topHeight = 0f;
+                var idx = 0;
+                while (idx < totalCount)
+                {
+                    var h = GetItemHeight(_filteredMessages[idx]);
+                    if (currentY + h >= targetMinY)
+                    {
+                        firstVisibleIndex = idx;
+                        topHeight = currentY;
+                        break;
+                    }
+                    currentY += h;
+                    idx++;
+                }
+                if (idx >= totalCount)
+                {
+                    firstVisibleIndex = Mathf.Max(0, totalCount - 1);
+                    topHeight = currentY;
+                }
+
+                var targetMaxY = scrollY + viewportHeight + (buffer * RowHeight);
+                lastVisibleIndex = firstVisibleIndex;
+                var runningY = topHeight;
+                for (var j = firstVisibleIndex; j < totalCount; j++)
+                {
+                    lastVisibleIndex = j;
+                    runningY += GetItemHeight(_filteredMessages[j]);
+                    if (runningY >= targetMaxY)
+                    {
+                        break;
+                    }
+                }
+
+                var remainingY = 0f;
+                for (var j = lastVisibleIndex + 1; j < totalCount; j++)
+                {
+                    remainingY += GetItemHeight(_filteredMessages[j]);
+                }
+                bottomHeight = remainingY;
+            }
+
+            var countToDisplay = lastVisibleIndex - firstVisibleIndex + 1;
+
+            while (_itemPool.Count < countToDisplay)
+            {
+                var item = new LogItemView(this);
+                _itemPool.Add(item);
+                _itemsContainer.Add(item);
+            }
+
+            _topSpacer.style.height = topHeight;
+            _bottomSpacer.style.height = bottomHeight;
+
+            for (var i = 0; i < _itemPool.Count; i++)
+            {
+                var item = _itemPool[i];
+                if (i < countToDisplay)
+                {
+                    var msgIndex = firstVisibleIndex + i;
+                    item.style.display = DisplayStyle.Flex;
+                    item.Bind(_filteredMessages[msgIndex], msgIndex == totalCount - 1);
                 }
                 else
                 {
-                    var firstLineEnd = msg.Message?.IndexOf('\n') ?? -1;
-                    messageLabel.text = firstLineEnd >= 0 ? msg.Message.Substring(0, firstLineEnd).TrimEnd('\r') : msg.Message;
+                    item.style.display = DisplayStyle.None;
+                    item.Unbind();
                 }
             }
+        }
 
-            UpdateExpandedState();
-
-            var color = msg.Level switch
+        private bool MatchesFilter(LogMessageData msg)
+        {
+            if (_context == null)
             {
-                GeneralizedLogSeverity.Ordinary => new Color(0.5f, 0.8f, 1f),
-                GeneralizedLogSeverity.Warning => new Color(1f, 0.8f, 0f),
-                GeneralizedLogSeverity.Error => new Color(1f, 0.4f, 0.4f),
-                _ => Color.white,
-            };
-            messageLabel.style.color = color;
+                return false;
+            }
 
-            var copyBtn = new Button
+            if (_context.HiddenLogSeverity.Contains(msg.Level))
             {
-                name = "copyBtn",
-                text = "\uf0c5",
-                tooltip = "Copy log message to clipboard.\n\n<b><i>Hint: </i></b>Customize copy behavior via <b><color=#ffc800>DevSuiteContext.Default.CopyToClipboardAction</color></b>.",
-            };
-            copyBtn.AddToClassList("log-item-copy-btn");
-            header.Add(copyBtn);
+                return false;
+            }
 
-            copyBtn.RegisterCallback<ClickEvent>(
-                evt =>
-                {
-                    DevSuiteUtils.CopyToClipboard(msg.MessageAndCallStack(), _context);
-                    DevSuiteUiUtils.ShowIconButtonClickedFeedback(copyBtn);
-                    Debug.Log("Copied the message into the clipboard");
-                }
-            );
-
-            var timeLabel = new Label
+            var filterRegex = _context.LogsFilterRegex;
+            if (filterRegex == null)
             {
-                name = "timeLabel",
-                text = $"<mspace=7>[{msg.Timestamp:HH:mm:ss.fff}]</mspace>",
-            };
-            timeLabel.AddToClassList("log-item-time");
-            header.Add(timeLabel);
-            header.Add(messageLabel);
+                return true;
+            }
 
-            var callStackLabel = new Label
-            {
-                name = "callStackLabel",
-                text = msg.CallStack,
-            };
-            callStackLabel.AddToClassList("log-item-callstack");
-            callStackLabel.style.display = msg.Expanded && !string.IsNullOrEmpty(msg.CallStack) ? DisplayStyle.Flex : DisplayStyle.None;
-
-            element.Add(header);
-            element.Add(callStackLabel);
-
-            messageLabel.RegisterCallback<ClickEvent>(
-                evt =>
-                {
-                    msg.Expanded = !msg.Expanded;
-                    UpdateExpandedState();
-                    callStackLabel.style.display = msg.Expanded && !string.IsNullOrEmpty(msg.CallStack) ? DisplayStyle.Flex : DisplayStyle.None;
-                }
-            );
-
-            element.RegisterCallback<PointerMoveEvent>(
-                evt =>
-                {
-                    if (!element.ClassListContains("hover-active"))
-                    {
-                        ClearHovers();
-                        element.AddToClassList("hover-active");
-                    }
-                }
-            );
-            element.RegisterCallback<PointerLeaveEvent>(evt => element.RemoveFromClassList("hover-active"));
-
-            return element;
+            return filterRegex.IsMatch(msg.Message) || (msg.CallStack != null && filterRegex.IsMatch(msg.CallStack));
         }
 
         public void Initialize(DevSuiteContext context)
@@ -421,10 +580,10 @@ namespace Ff.DevSuite.View
             _context.OnLogMessagesVisibilityChanged += HandleLogMessagesVisibilityChanged;
             _context.OnFocusCliRequested += FocusCliInput;
 
-            _copyButton.text = "\uf0c5";
-            _saveButton.text = "\uf0c7";
-            _folderButton.text = "\uf07c";
-            _clearButton.text = "\uf2ed";
+            _copyButton.text = "\ue09e";
+            _saveButton.text = "\ue14d";
+            _folderButton.text = "\ue247";
+            _clearButton.text = "\ue18e";
 
             _filterField.SetValueWithoutNotify(_context.LogsPattern);
             UpdateClearFilterButton();
@@ -498,8 +657,15 @@ namespace Ff.DevSuite.View
             _cliInputField?.SetValueWithoutNotify(string.Empty);
             _cliGhostField?.SetValueWithoutNotify(string.Empty);
             HideCliTooltip();
-            _scrollView.Clear();
-            _allMessageElements.Clear();
+            _filteredMessages.Clear();
+            _expandedHeights.Clear();
+            _topSpacer.style.height = 0;
+            _bottomSpacer.style.height = 0;
+            for (var i = 0; i < _itemPool.Count; i++)
+            {
+                _itemPool[i].style.display = DisplayStyle.None;
+                _itemPool[i].Unbind();
+            }
             _ordinaryCount = 0;
             _warningCount = 0;
             _errorCount = 0;
@@ -1077,16 +1243,16 @@ namespace Ff.DevSuite.View
                 var scroller = _scrollView.verticalScroller;
                 var wasAtBottom = scroller.highValue <= 0 || scroller.value >= scroller.highValue - 1f;
 
-                var element = CreateLogItem(message);
-                _allMessageElements.Add(element);
-                _scrollView.Add(element);
-                UpdateItemVisibility(element, message);
-
-                // Only auto-scroll if the user was already at the bottom
-                //if (wasAtBottom)
-                //{
-                //    _scrollView.verticalScroller.value = _scrollView.verticalScroller.highValue;
-                //}
+                if (MatchesFilter(message))
+                {
+                    _filteredMessages.Add(message);
+                    if (wasAtBottom)
+                    {
+                        var maxScroll = Mathf.Max(0f, GetTotalHeight() - GetViewportHeight());
+                        _scrollView.scrollOffset = new Vector2(_scrollView.scrollOffset.x, maxScroll);
+                    }
+                    UpdateVisibleItems();
+                }
             }
             catch (InvalidOperationException)
             {
@@ -1197,8 +1363,8 @@ namespace Ff.DevSuite.View
             }
 
             var allMessages = _context.AllLogMessages;
-            _allMessageElements.Clear();
-            _scrollView.Clear();
+            _filteredMessages.Clear();
+            _expandedHeights.Clear();
             _ordinaryCount = 0;
             _warningCount = 0;
             _errorCount = 0;
@@ -1218,36 +1384,170 @@ namespace Ff.DevSuite.View
                     _errorCount++;
                 }
 
-                var element = CreateLogItem(m);
-                _allMessageElements.Add(element);
-                _scrollView.Add(element);
+                if (MatchesFilter(m))
+                {
+                    _filteredMessages.Add(m);
+                }
             }
 
             UpdateSeverityButtons();
-            UpdateVisibility();
-
-            // Scroll to end only if content overflows the viewport
-            //    _scrollView.verticalScroller.value = _scrollView.verticalScroller.highValue;
+            UpdateVisibleItems();
         }
 
         private void UpdateVisibility()
         {
-            for (var i = 0; i < _allMessageElements.Count; i++)
+            if (_context == null)
             {
-                var element = _allMessageElements[i];
-                var msg = (LogMessageData)element.userData;
-                UpdateItemVisibility(element, msg);
-                element.EnableInClassList("last-item", i == _allMessageElements.Count - 1);
+                return;
             }
+
+            var allMessages = _context.AllLogMessages;
+            _filteredMessages.Clear();
+            _expandedHeights.Clear();
+
+            foreach (var m in allMessages)
+            {
+                if (MatchesFilter(m))
+                {
+                    _filteredMessages.Add(m);
+                }
+            }
+
+            UpdateVisibleItems();
+        }
+    }
+
+    internal class LogItemView : VisualElement
+    {
+        private readonly LogsPanelView _owner;
+        private readonly VisualElement _header;
+        private readonly Label _timeLabel;
+        private readonly Label _messageLabel;
+        private readonly Button _copyBtn;
+        private readonly Label _callStackLabel;
+
+        private LogMessageData _boundMsg;
+
+        public LogItemView(LogsPanelView owner)
+        {
+            _owner = owner;
+            name = "logItemContainer";
+            AddToClassList("log-item-container");
+
+            _header = new VisualElement { name = "logItemHeader" };
+            _header.AddToClassList("log-item-header");
+
+            _timeLabel = new Label { name = "timeLabel" };
+            _timeLabel.AddToClassList("log-item-time");
+            _header.Add(_timeLabel);
+
+            _messageLabel = new Label { name = "messageLabel" };
+            _messageLabel.AddToClassList("log-item-message");
+            _header.Add(_messageLabel);
+
+            _copyBtn = new Button
+            {
+                name = "copyBtn",
+                text = "\ue09e",
+                tooltip = "Copy log message to clipboard.\n\n<b><i>Hint: </i></b>Customize copy behavior via <b><color=#ffc800>DevSuiteContext.Default.CopyToClipboardAction</color></b>.",
+            };
+            _copyBtn.AddToClassList("log-item-copy-btn");
+            _copyBtn.RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopImmediatePropagation();
+                if (_boundMsg != null && _owner.Context != null)
+                {
+                    DevSuiteUtils.CopyToClipboard(_boundMsg.MessageAndCallStack(), _owner.Context);
+                    DevSuiteUiUtils.ShowIconButtonClickedFeedback(_copyBtn);
+                    Debug.Log("Copied the message into the clipboard");
+                }
+            });
+            _header.Add(_copyBtn);
+
+            _callStackLabel = new Label { name = "callStackLabel" };
+            _callStackLabel.AddToClassList("log-item-callstack");
+
+            Add(_header);
+            Add(_callStackLabel);
+
+            _messageLabel.RegisterCallback<ClickEvent>(evt =>
+            {
+                if (_boundMsg == null)
+                {
+                    return;
+                }
+                _boundMsg.Expanded = !_boundMsg.Expanded;
+                _owner.OnItemExpandedChanged(_boundMsg, this);
+            });
+
+            RegisterCallback<PointerMoveEvent>(evt =>
+            {
+                if (!ClassListContains("hover-active"))
+                {
+                    _owner.ClearHovers();
+                    AddToClassList("hover-active");
+                }
+            });
+
+            RegisterCallback<PointerLeaveEvent>(evt => RemoveFromClassList("hover-active"));
+
+            RegisterCallback<GeometryChangedEvent>(evt =>
+            {
+                if (_boundMsg != null && _boundMsg.Expanded)
+                {
+                    var h = evt.newRect.height;
+                    if (h > 0 && Math.Abs(h - _owner.GetCachedHeight(_boundMsg)) > 1f)
+                    {
+                        _owner.SetCachedHeight(_boundMsg, h);
+                    }
+                }
+            });
         }
 
-        private void UpdateItemVisibility(VisualElement element, LogMessageData msg)
+        public void Bind(LogMessageData msg, bool isLast)
         {
-            var filterRegex = _context.LogsFilterRegex;
-            var matchesFilter = (filterRegex?.IsMatch(msg.Message) ?? true) || (msg.CallStack != null && (filterRegex?.IsMatch(msg.CallStack) ?? true));
-            var notHidden = !_context.HiddenLogSeverity.Contains(msg.Level);
+            _boundMsg = msg;
+            userData = msg;
 
-            element.style.display = matchesFilter && notHidden ? DisplayStyle.Flex : DisplayStyle.None;
+            _timeLabel.text = $"<mspace=7>[{msg.Timestamp:HH:mm:ss.fff}]</mspace>";
+
+            var color = msg.Level switch
+            {
+                GeneralizedLogSeverity.Ordinary => new Color(0.5f, 0.8f, 1f),
+                GeneralizedLogSeverity.Warning => new Color(1f, 0.8f, 0f),
+                GeneralizedLogSeverity.Error => new Color(1f, 0.4f, 0.4f),
+                _ => Color.white,
+            };
+            _messageLabel.style.color = color;
+
+            EnableInClassList("expanded", msg.Expanded);
+            if (msg.Expanded)
+            {
+                _messageLabel.text = msg.Message;
+                _messageLabel.style.whiteSpace = WhiteSpace.Normal;
+                _callStackLabel.text = msg.CallStack;
+                _callStackLabel.style.display = !string.IsNullOrEmpty(msg.CallStack) ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+            else
+            {
+                var firstLineEnd = msg.Message?.IndexOf('\n') ?? -1;
+                _messageLabel.text = firstLineEnd >= 0 ? msg.Message.Substring(0, firstLineEnd).TrimEnd('\r') : msg.Message;
+                _messageLabel.style.whiteSpace = WhiteSpace.NoWrap;
+                _callStackLabel.text = string.Empty;
+                _callStackLabel.style.display = DisplayStyle.None;
+            }
+
+            EnableInClassList("last-item", isLast);
+            RemoveFromClassList("hover-active");
+        }
+
+        public void Unbind()
+        {
+            _boundMsg = null;
+            userData = null;
+            RemoveFromClassList("hover-active");
+            RemoveFromClassList("expanded");
+            RemoveFromClassList("last-item");
         }
     }
 }

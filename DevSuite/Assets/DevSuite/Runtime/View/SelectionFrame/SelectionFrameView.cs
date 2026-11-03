@@ -835,13 +835,13 @@ namespace Ff.DevSuite.View
             painter.strokeColor = strokeColor;
             painter.lineCap = LineCap.Round;
 
+            painter.BeginPath();
             for (var i = 0; i < visibleCount; i++)
             {
-                painter.BeginPath();
                 painter.MoveTo(_edgesBuffer[i].pA);
                 painter.LineTo(_edgesBuffer[i].pB);
-                painter.Stroke();
             }
+            painter.Stroke();
 
             DrawCornerBrackets(painter, screenMinX, screenMinY, screenMaxX, screenMaxY, strokeColor);
         }
@@ -887,9 +887,6 @@ namespace Ff.DevSuite.View
             painter.BeginPath();
             painter.MoveTo(new Vector2(p.x - 4f, p.y));
             painter.LineTo(new Vector2(p.x + 4f, p.y));
-            painter.Stroke();
-
-            painter.BeginPath();
             painter.MoveTo(new Vector2(p.x, p.y - 4f));
             painter.LineTo(new Vector2(p.x, p.y + 4f));
             painter.Stroke();
@@ -907,32 +904,28 @@ namespace Ff.DevSuite.View
             painter.lineCap = LineCap.Butt;
             painter.lineJoin = LineJoin.Miter;
 
-            // Top-Left
             painter.BeginPath();
+
+            // Top-Left
             painter.MoveTo(new Vector2(minX + bracketLen, minY));
             painter.LineTo(new Vector2(minX, minY));
             painter.LineTo(new Vector2(minX, minY + bracketLen));
-            painter.Stroke();
 
             // Top-Right
-            painter.BeginPath();
             painter.MoveTo(new Vector2(maxX - bracketLen, minY));
             painter.LineTo(new Vector2(maxX, minY));
             painter.LineTo(new Vector2(maxX, minY + bracketLen));
-            painter.Stroke();
 
             // Bottom-Left
-            painter.BeginPath();
             painter.MoveTo(new Vector2(minX, maxY - bracketLen));
             painter.LineTo(new Vector2(minX, maxY));
             painter.LineTo(new Vector2(minX + bracketLen, maxY));
-            painter.Stroke();
 
             // Bottom-Right
-            painter.BeginPath();
             painter.MoveTo(new Vector2(maxX - bracketLen, maxY));
             painter.LineTo(new Vector2(maxX, maxY));
             painter.LineTo(new Vector2(maxX, maxY - bracketLen));
+
             painter.Stroke();
         }
 

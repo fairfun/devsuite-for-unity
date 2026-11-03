@@ -80,6 +80,23 @@ namespace Ff.DevSuite
             [CommandButton] public static void Beta() { }
         }
 
+        public class TestInstanceTarget
+        {
+            public bool MethodCalled;
+
+            [CommandButton]
+            public void TestInstanceMethod()
+            {
+                MethodCalled = true;
+            }
+
+            [Command]
+            [CommandButton]
+            public void TestExplicitCommandMethod()
+            {
+            }
+        }
+
         private class TestMemorySavedPrefs : ISavedPrefs
         {
             private readonly Dictionary<string, object> _data = new();
@@ -527,6 +544,12 @@ namespace Ff.DevSuite
                 context.ClearAllSavedPrefs();
                 Assert(context.ShowSelectionFrame, "ShowSelectionFrame is restored to ON after ClearAllSavedPrefs");
                 Assert(testProp.Value == 99, "testProp value is reset to default after ClearAllSavedPrefs");
+
+                // Test 19: Instance commands registration, unregistration, re-registration and multi-instance
+                TestInstanceCommandsRegistration(context, Assert);
+
+                // Test 20: Pinned performance graphs functionality and persistence
+                TestPinnedPerformanceGraphs(context, prefs, Assert);
             }
             finally
             {
@@ -629,6 +652,153 @@ namespace Ff.DevSuite
                 Time.timeScale = originalTimeScale;
                 CommonCommands.TimeScale.Value = null;
             }
+        }
+
+        private static void TestInstanceCommandsRegistration(DevSuiteContext context, System.Action<bool, string> assert)
+        {
+            var inst1 = new TestInstanceTarget();
+            var inst2 = new TestInstanceTarget();
+
+            // 1. Initial register
+            context.AttributesParserApi.RegisterInstance(inst1);
+            var key1 = new CommandKey(nameof(TestInstanceTarget.TestInstanceMethod), null, null, inst1);
+            var keyExplicit1 = new CommandKey(nameof(TestInstanceTarget.TestExplicitCommandMethod), null, null, inst1);
+            assert(context.Commands.ContainsKey(key1), "inst1 TestInstanceMethod command registered");
+            assert(context.Commands.ContainsKey(keyExplicit1), "inst1 TestExplicitCommandMethod command registered");
+            assert(context.Commands.TryGetValue(key1, out var cmd1) && cmd1.Units.Count > 0, "inst1 TestInstanceMethod has unit attached");
+            assert(context.Commands.TryGetValue(keyExplicit1, out var cmdExp1) && cmdExp1.Units.Count > 0, "inst1 TestExplicitCommandMethod has unit attached");
+
+            // 2. Unregister inst1
+            context.AttributesParserApi.UnregisterInstance(inst1);
+            assert(!context.Commands.ContainsKey(key1), "inst1 TestInstanceMethod removed on unregister");
+            assert(!context.Commands.ContainsKey(keyExplicit1), "inst1 TestExplicitCommandMethod removed on unregister");
+
+            // 3. Re-register inst1 (must return commands and attach units without error)
+            context.AttributesParserApi.RegisterInstance(inst1);
+            assert(context.Commands.ContainsKey(key1), "inst1 TestInstanceMethod re-registered successfully");
+            assert(context.Commands.ContainsKey(keyExplicit1), "inst1 TestExplicitCommandMethod re-registered successfully");
+            assert(context.Commands.TryGetValue(key1, out var cmd1Re) && cmd1Re.Units.Count > 0, "inst1 TestInstanceMethod has unit attached on re-registration");
+            assert(context.Commands.TryGetValue(keyExplicit1, out var cmdExp1Re) && cmdExp1Re.Units.Count > 0, "inst1 TestExplicitCommandMethod has unit attached on re-registration");
+
+            // 4. Register another instance of the same type
+            context.AttributesParserApi.RegisterInstance(inst2);
+            var key2 = new CommandKey(nameof(TestInstanceTarget.TestInstanceMethod), null, null, inst2);
+            var keyExplicit2 = new CommandKey(nameof(TestInstanceTarget.TestExplicitCommandMethod), null, null, inst2);
+            assert(context.Commands.ContainsKey(key2), "inst2 TestInstanceMethod command registered for different instance");
+            assert(context.Commands.ContainsKey(keyExplicit2), "inst2 TestExplicitCommandMethod command registered for different instance");
+            assert(context.Commands.TryGetValue(key2, out var cmd2) && cmd2.Units.Count > 0, "inst2 TestInstanceMethod has unit attached");
+            assert(context.Commands.TryGetValue(keyExplicit2, out var cmdExp2) && cmdExp2.Units.Count > 0, "inst2 TestExplicitCommandMethod has unit attached");
+
+            // Verify both instances co-exist in context
+            assert(context.Commands.ContainsKey(key1), "inst1 still exists when inst2 is registered");
+            assert(context.Commands.ContainsKey(key2), "inst2 exists concurrently with inst1");
+
+            // Clean up
+            context.AttributesParserApi.UnregisterInstance(inst1);
+            context.AttributesParserApi.UnregisterInstance(inst2);
+            assert(!context.Commands.ContainsKey(key1), "inst1 cleaned up");
+            assert(!context.Commands.ContainsKey(key2), "inst2 cleaned up");
+        }
+
+        private static void TestPinnedPerformanceGraphs(DevSuiteContext context, ISavedPrefs prefs, System.Action<bool, string> assert)
+        {
+            var provider = context.PerformancePanelProviders.Count > 0
+                ? context.PerformancePanelProviders[0]
+                : new Ff.DevSuite.Performance.FrameTimeGraphDataProvider();
+
+            // 1. Initial state: not pinned
+            assert(!context.IsPerformanceGraphPinned(provider), "provider is not pinned initially");
+
+            // 2. Track event firing
+            var eventFired = false;
+            Ff.DevSuite.Performance.BaseGraphDataProvider eventProvider = null;
+            var eventPinned = false;
+            context.OnPerformanceGraphPinnedChanged += (p, pinned) =>
+            {
+                eventFired = true;
+                eventProvider = p;
+                eventPinned = pinned;
+            };
+
+            // 3. Pin provider
+            context.SetPerformanceGraphPinned(provider, true);
+            assert(eventFired && eventProvider == provider && eventPinned, "OnPerformanceGraphPinnedChanged fired with (provider, true)");
+            assert(context.IsPerformanceGraphPinned(provider), "context.IsPerformanceGraphPinned returns true after pinning");
+
+            // 4. Persistence across sessions
+            var reloadedSettings = new SavedPrefsProperty<PersistentSettings>("DevSuiteContext_Settings", new PersistentSettings(), true, prefs);
+            reloadedSettings.Value.InitializeDefaultsIfNeeded();
+            assert(reloadedSettings.Value.PinnedPerformanceGraphs.Contains(provider.GetType().Name), "Pinned graph saved in DevsuiteContext between sessions");
+
+            // 5. Toggle pinned
+            eventFired = false;
+            context.TogglePerformanceGraphPinned(provider);
+            assert(eventFired && eventProvider == provider && !eventPinned, "OnPerformanceGraphPinnedChanged fired with (provider, false) after toggle");
+            assert(!context.IsPerformanceGraphPinned(provider), "context.IsPerformanceGraphPinned is false after toggle");
+
+            // 6. Pin again then ClearSettings
+            context.SetPerformanceGraphPinned(provider, true);
+            assert(context.IsPerformanceGraphPinned(provider), "provider pinned again before ClearSettings");
+            context.ClearSettings();
+            assert(!context.IsPerformanceGraphPinned(provider), "ClearSettings clears pinned graphs");
+
+            // 7. Verify PinnedPerformanceGraphsPosition enum and properties
+            var go = new GameObject("TestDevPanel");
+            try
+            {
+                var panelUI = go.AddComponent<Ff.DevSuite.View.DevSuitePanelUI>();
+                assert(panelUI.PinnedPerformanceGraphsPosition == Ff.DevSuite.View.PinnedPerformanceGraphsPosition.BottomLeft, "Default pinned performance graphs mode is BottomLeft");
+                assert(panelUI.PinnedPerformanceGraphsMode == Ff.DevSuite.View.PinnedPerformanceGraphsPosition.BottomLeft, "PinnedPerformanceGraphsMode alias matches BottomLeft");
+
+                panelUI.PinnedPerformanceGraphsPosition = Ff.DevSuite.View.PinnedPerformanceGraphsPosition.TopRight;
+                assert(panelUI.PinnedPerformanceGraphsPosition == Ff.DevSuite.View.PinnedPerformanceGraphsPosition.TopRight, "PinnedPerformanceGraphsPosition changes to TopRight");
+
+                panelUI.PinnedPerformanceGraphsMode = Ff.DevSuite.View.PinnedPerformanceGraphsPosition.TopLeft;
+                assert(panelUI.PinnedPerformanceGraphsPosition == Ff.DevSuite.View.PinnedPerformanceGraphsPosition.TopLeft, "PinnedPerformanceGraphsMode sets TopLeft");
+
+                panelUI.PinnedPerformanceGraphsPosition = Ff.DevSuite.View.PinnedPerformanceGraphsPosition.Bottom;
+                assert(panelUI.PinnedPerformanceGraphsPosition == Ff.DevSuite.View.PinnedPerformanceGraphsPosition.Bottom, "PinnedPerformanceGraphsPosition changes to Bottom");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+            }
+
+            // 8. Verify click-through behavior on PerformanceGraphView
+            var graphView = new Ff.DevSuite.View.PerformanceGraphView(provider, context);
+            assert(!graphView.ClickThrough, "graphView is not click-through initially");
+            assert(graphView.pickingMode == UnityEngine.UIElements.PickingMode.Position, "pickingMode is Position initially");
+            graphView.SetClickThrough(true);
+            assert(graphView.ClickThrough, "graphView is click-through after SetClickThrough(true)");
+            assert(graphView.pickingMode == UnityEngine.UIElements.PickingMode.Ignore, "pickingMode is Ignore after SetClickThrough(true)");
+            assert(graphView.tooltip == null, "tooltip is null in click-through mode");
+            graphView.UpdateViewState();
+            assert(graphView.tooltip == null, "tooltip remains null after UpdateViewState in click-through mode");
+
+            // 9. Verify pinned performance graphs remain extended regardless of collapsed state on main view
+            context.SetPerformanceGraphCollapsed(provider, true);
+            assert(context.IsPerformanceGraphCollapsed(provider), "provider is collapsed on main view");
+
+            var normalView = new Ff.DevSuite.View.PerformanceGraphView(provider, context);
+            assert(normalView.IsCollapsed, "normal view is collapsed when context is collapsed");
+            assert(normalView.ClassListContains("graph-view--collapsed"), "normal view has collapsed class");
+
+            var pinnedView = new Ff.DevSuite.View.PerformanceGraphView(provider, context);
+            pinnedView.AlwaysExtended = true;
+            assert(!pinnedView.IsCollapsed, "pinned view with AlwaysExtended is not collapsed");
+            assert(!pinnedView.ClassListContains("graph-view--collapsed"), "pinned view does not have collapsed class");
+
+            var clickThroughView = new Ff.DevSuite.View.PerformanceGraphView(provider, context);
+            clickThroughView.SetClickThrough(true);
+            assert(clickThroughView.AlwaysExtended, "SetClickThrough(true) sets AlwaysExtended to true");
+            assert(!clickThroughView.IsCollapsed, "clickThroughView is not collapsed");
+            assert(!clickThroughView.ClassListContains("graph-view--collapsed"), "clickThroughView does not have collapsed class");
+
+            // 10. Verify pinned mode flag
+            assert(!normalView.IsPinnedMode, "normalView has IsPinnedMode == false");
+            pinnedView.IsPinnedMode = true;
+            assert(pinnedView.IsPinnedMode, "pinnedView has IsPinnedMode == true");
+            assert(clickThroughView.IsPinnedMode, "clickThroughView sets IsPinnedMode == true via SetClickThrough");
         }
     }
 }

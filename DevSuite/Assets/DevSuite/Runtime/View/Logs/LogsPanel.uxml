@@ -2,21 +2,21 @@
     <ui:VisualElement name="logs-panel-root" class="logs-panel-container">
         <ui:VisualElement class="logs-toolbar" style="flex-direction: row;">
             <ui:VisualElement class="logs-filter-container">
-                <ui:Label text="&#xf0b0;" class="logs-filter-icon"/>
+                <ui:Label text="&#xe0dc;" class="logs-filter-icon"/>
                 <ui:TextField name="filterField" class="logs-filter-field" tabindex="-1" focusable="false" tooltip="Filter log messages and stack traces.&#10;&#10;Supports Smart Search (e.g. &quot;NRE&quot; matches NullReferenceException) or exact substrings. Toggle &quot;.*&quot; for Regex mode."/>
-                <ui:Button name="clearFilterBtn" class="logs-filter-clear-button ff-filter-clear-button" text="&#xf00d;" tooltip="Clear filter" style="display: none;"/>
+                <ui:Button name="clearFilterBtn" class="logs-filter-clear-button ff-filter-clear-button" text="&#xe1b2;" tooltip="Clear filter" style="display: none;"/>
             </ui:VisualElement>
             <ui:Button name="regexButton" text=".*" class="logs-severity-btn logs-regex-btn" tooltip="Toggle Regex filter mode.&#10;&#10;When enabled, the search query is evaluated as a C# regular expression against message text and stack traces."/>
             <ui:Button name="ordinaryButton" class="logs-severity-btn ordinary" tooltip="Toggle Info logs visibility.&#10;&#10;Click to show/hide. Badge displays message count.">
-                <ui:Label text="&#xf4ad;" class="logs-severity-icon" picking-mode="Ignore"/>
+                <ui:Label text="&#xe117;" class="logs-severity-icon" picking-mode="Ignore"/>
                 <ui:Label name="ordinaryCount" text="0" class="logs-severity-count" picking-mode="Ignore"/>
             </ui:Button>
             <ui:Button name="warningButton" class="logs-severity-btn warning" tooltip="Toggle Warning logs visibility.&#10;&#10;Click to show/hide. Badge displays message count.">
-                <ui:Label text="&#xf071;" class="logs-severity-icon" picking-mode="Ignore"/>
+                <ui:Label text="&#xe193;" class="logs-severity-icon" picking-mode="Ignore"/>
                 <ui:Label name="warningCount" text="0" class="logs-severity-count" picking-mode="Ignore"/>
             </ui:Button>
             <ui:Button name="errorButton" class="logs-severity-btn error" tooltip="Toggle Error logs visibility.&#10;&#10;Click to show/hide. Badge displays message count. When Error logs are hidden, incoming errors trigger an alert blink on the expand button.">
-                <ui:Label text="&#xf06a;" class="logs-severity-icon" picking-mode="Ignore"/>
+                <ui:Label text="&#xe077;" class="logs-severity-icon" picking-mode="Ignore"/>
                 <ui:Label name="errorCount" text="0" class="logs-severity-count" picking-mode="Ignore"/>
             </ui:Button>
             <ui:Button name="copyButton" class="logs-icon-btn" tooltip="Copy filtered logs to clipboard.&#10;&#10;&lt;b&gt;&lt;i&gt;Hint: &lt;/i&gt;&lt;/b&gt;Customize copy behavior via &lt;b&gt;&lt;color=#ffc800&gt;DevSuiteContext.Default.CopyToClipboardAction&lt;/color&gt;&lt;/b&gt;."/>

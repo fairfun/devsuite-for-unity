@@ -139,7 +139,7 @@ namespace Ff.DevSuite.View
                     var filterPanel = new VisualElement();
                     filterPanel.AddToClassList("ff-commands-filter-panel");
 
-                    var filterIcon = new Label("\uf0b0");
+                    var filterIcon = new Label("\ue0dc");
                     filterIcon.AddToClassList("ff-commands-filter-icon");
                     filterPanel.Add(filterIcon);
 
@@ -176,7 +176,7 @@ namespace Ff.DevSuite.View
                         updateClearFilterVisibility("");
                     })
                     {
-                        text = "\uf00d",
+                        text = "\ue1b2",
                         tooltip = "Clear filter",
                     };
                     clearFilterButton.AddToClassList("ff-commands-filter-clear-button");
@@ -402,7 +402,7 @@ namespace Ff.DevSuite.View
                     var checkmark = toggle.Q<VisualElement>("unity-checkmark");
                     if (checkmark != null)
                     {
-                        var icon = new Label("\uf00c");
+                        var icon = new Label("\ue06c");
                         icon.AddToClassList("ff-commands-unit-toggle-icon");
                         checkmark.Add(icon);
                     }
@@ -674,7 +674,7 @@ namespace Ff.DevSuite.View
                     var checkmark = hasValueToggle.Q<VisualElement>("unity-checkmark");
                     if (checkmark != null)
                     {
-                        var icon = new Label("\uf00c");
+                        var icon = new Label("\ue06c");
                         icon.AddToClassList("ff-commands-unit-toggle-icon");
                         checkmark.Add(icon);
                     }
