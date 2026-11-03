@@ -37,7 +37,7 @@
 .devsuite-panel-root > #commands-full-container {
     max-width: 500px;
     min-width: 200px;
-    flex-grow: 1;
+    flex-grow: 0;
     flex-shrink: 1;
     flex-basis: 500px;
     margin-right: var(--margin-size);
@@ -51,7 +51,7 @@
 .devsuite-panel-root > #hierarchy-container {
     max-width: 494px;
     min-width: 200px;
-    flex-grow: 1;
+    flex-grow: 0;
     flex-shrink: 1;
     flex-basis: 494px;
     margin-right: var(--margin-size);
@@ -65,7 +65,7 @@
 .devsuite-panel-root > #inspector-container {
     max-width: 420px;
     min-width: 200px;
-    flex-grow: 1;
+    flex-grow: 0;
     flex-shrink: 1;
     flex-basis: 420px;
     margin-right: var(--margin-size);
