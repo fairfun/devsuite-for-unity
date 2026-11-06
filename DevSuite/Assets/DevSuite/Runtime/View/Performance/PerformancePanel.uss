@@ -74,3 +74,63 @@
     background-color: transparent;
     -unity-text-align: middle-left;
 }
+
+.ff-performance-graph-pin-btn {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 18px;
+    height: 18px;
+    -unity-font-definition: resource('Lucide SDF');
+    -unity-text-generator: standard;
+    font-size: 11px;
+    color: var(--text-color);
+    background-color: rgba(0, 0, 0, 0.6);
+    border-width: 0;
+    border-radius: 3px;
+    padding: 0;
+    margin: 0;
+    opacity: 0.6;
+    cursor: arrow;
+    -unity-text-align: middle-center;
+}
+
+.ff-performance-graph-pin-btn:hover {
+    opacity: 1;
+    color: var(--text-color);
+    background-color: rgba(0, 0, 0, 0.85);
+}
+
+.ff-performance-graph-pin-btn:active {
+    scale: 0.88;
+}
+
+.ff-performance-graph-pin-btn.pinned {
+    opacity: 1;
+    color: var(--text-color);
+}
+
+.graph-view--collapsed .ff-performance-graph-pin-btn {
+    top: 2px;
+    right: 3px;
+}
+
+.pinned-performance-container {
+    position: absolute;
+    flex-direction: column;
+}
+
+.pinned-performance-container .graph-view {
+    width: 260px;
+    background-color: rgba(0, 0, 0, 0.35);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.pinned-performance-container .ff-performance-graph-info {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.pinned-performance-container .ff-performance-graph-pin-btn {
+    display: none;
+}

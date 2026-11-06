@@ -136,7 +136,7 @@
 }
 
 .ff-toggle-icon {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
     color: var(--text-color);
     font-size: 11px;
@@ -158,7 +158,7 @@
 /* Shared search/filter clear button ('x') */
 .ff-filter-clear-button,
 .ff-filter-clear-button.unity-button {
-    -unity-font-definition: resource('Font Awesome 7 Free-Solid-900 SDF');
+    -unity-font-definition: resource('Lucide SDF');
     -unity-text-generator: standard;
     background-color: transparent;
     border-width: 0;

@@ -22,8 +22,45 @@ namespace Ff.DevSuite.View
         private static readonly Color ColorBad = new(194 / 255f, 53 / 255f, 37 / 255f);             // #ca413c
         private static readonly Color ColorReference = new(148 / 255f, 53 / 255f, 30 / 255f, 0.5f); // #ca413c99
 
+        private const string IconPinned = "\ue259";
+        private const string IconUnpinned = "\ue2b6";
+
         private readonly Label _infoLabel;
+        private readonly Button _pinButton;
         private float _lastUpdateTime = -1f;
+        private bool _isClickThrough;
+        private bool _alwaysExtended;
+        private bool _isPinnedMode;
+
+        internal bool ClickThrough => _isClickThrough;
+
+        internal bool AlwaysExtended
+        {
+            get => _alwaysExtended;
+            set
+            {
+                if (_alwaysExtended != value)
+                {
+                    _alwaysExtended = value;
+                    UpdateViewState();
+                }
+            }
+        }
+
+        internal bool IsPinnedMode
+        {
+            get => _isPinnedMode;
+            set
+            {
+                if (_isPinnedMode != value)
+                {
+                    _isPinnedMode = value;
+                    MarkDirtyRepaint();
+                }
+            }
+        }
+
+        internal bool IsCollapsed => !_alwaysExtended && _context != null && _context.IsPerformanceGraphCollapsed(_dataProvider);
 
         public PerformanceGraphView(BaseGraphDataProvider dataProvider, DevSuiteContext context = null)
         {
@@ -43,11 +80,33 @@ namespace Ff.DevSuite.View
             _infoLabel.AddToClassList("ff-performance-graph-info");
             Add(_infoLabel);
 
+            _pinButton = new Button();
+            _pinButton.AddToClassList("ff-performance-graph-pin-btn");
+            _pinButton.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
+            _pinButton.RegisterCallback<MouseDownEvent>(evt => evt.StopPropagation());
+            _pinButton.clicked += () =>
+            {
+                if (_context != null && _dataProvider != null)
+                {
+                    _context.TogglePerformanceGraphPinned(_dataProvider);
+                }
+            };
+            Add(_pinButton);
+
             RegisterCallback<PointerDownEvent>(
                 evt =>
                 {
+                    if (_isClickThrough)
+                    {
+                        return;
+                    }
+
                     if (evt.button == 0)
                     {
+                        if (evt.target == _pinButton || _pinButton.Contains(evt.target as VisualElement))
+                        {
+                            return;
+                        }
                         ToggleCollapsed();
                         evt.StopPropagation();
                     }
@@ -69,6 +128,11 @@ namespace Ff.DevSuite.View
 
         internal void ToggleCollapsed()
         {
+            if (_alwaysExtended)
+            {
+                return;
+            }
+
             var isCollapsed = _context.IsPerformanceGraphCollapsed(_dataProvider);
             _context.SetPerformanceGraphCollapsed(_dataProvider, !isCollapsed);
             UpdateViewState();
@@ -102,8 +166,8 @@ namespace Ff.DevSuite.View
                 SetMaxValuesCount(maxCount);
             }
 
-            tooltip = _dataProvider?.Settings?.Tooltip;
-            var isCollapsed = _context != null && _context.IsPerformanceGraphCollapsed(_dataProvider);
+            tooltip = _isClickThrough ? null : _dataProvider?.Settings?.Tooltip;
+            var isCollapsed = IsCollapsed;
             if (isCollapsed)
             {
                 AddToClassList("graph-view--collapsed");
@@ -122,7 +186,63 @@ namespace Ff.DevSuite.View
                     _infoLabel.text = $"- {_dataProvider.Label}";
                 }
             }
+
+            if (_pinButton != null)
+            {
+                var isPinned = _context != null && _context.IsPerformanceGraphPinned(_dataProvider);
+                _pinButton.text = isPinned ? IconPinned : IconUnpinned;
+                _pinButton.EnableInClassList("pinned", isPinned);
+                _pinButton.tooltip = isPinned ? "Unpin graph" : "Pin graph to screen when DevSuite is collapsed";
+                if (_isClickThrough)
+                {
+                    _pinButton.style.display = DisplayStyle.None;
+                    _pinButton.pickingMode = PickingMode.Ignore;
+                }
+            }
+
             MarkDirtyRepaint();
+        }
+
+        internal void SetClickThrough(bool clickThrough)
+        {
+            _isClickThrough = clickThrough;
+            _isPinnedMode = clickThrough;
+            if (clickThrough)
+            {
+                _alwaysExtended = true;
+            }
+
+            SetPickingModeRecursive(this, clickThrough ? PickingMode.Ignore : PickingMode.Position);
+            if (_infoLabel != null)
+            {
+                _infoLabel.pickingMode = PickingMode.Ignore;
+            }
+
+            if (_pinButton != null)
+            {
+                _pinButton.style.display = clickThrough ? DisplayStyle.None : DisplayStyle.Flex;
+                if (clickThrough)
+                {
+                    _pinButton.pickingMode = PickingMode.Ignore;
+                }
+            }
+
+            tooltip = clickThrough ? null : _dataProvider?.Settings?.Tooltip;
+            UpdateViewState();
+        }
+
+        private static void SetPickingModeRecursive(VisualElement element, PickingMode mode)
+        {
+            if (element == null)
+            {
+                return;
+            }
+
+            element.pickingMode = mode;
+            for (var i = 0; i < element.childCount; i++)
+            {
+                SetPickingModeRecursive(element[i], mode);
+            }
         }
 
         private readonly StringBuilder _labelStringBuilder = new();
@@ -174,7 +294,7 @@ namespace Ff.DevSuite.View
 
         internal void AddValue(BaseGraphDataProvider.DataPoint point)
         {
-            if (_context != null && _context.IsPerformanceGraphCollapsed(_dataProvider))
+            if (IsCollapsed)
             {
                 return;
             }
@@ -202,7 +322,7 @@ namespace Ff.DevSuite.View
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            if (_context != null && _context.IsPerformanceGraphCollapsed(_dataProvider))
+            if (IsCollapsed)
             {
                 return;
             }
@@ -304,6 +424,10 @@ namespace Ff.DevSuite.View
                     }
 
                     finalColor = Color.Lerp(ColorGood, ColorBad, (float)currentToReference);
+                    if (_isPinnedMode)
+                    {
+                        finalColor.a = 0.65f;
+                    }
 
                     yMin = rect.height - barHeight;
                     curIdx = (curIdx + 1) % _maxValuesCount;
@@ -343,28 +467,32 @@ namespace Ff.DevSuite.View
                 var refY = rect.height - (rect.height * refHeightPercent);
                 const float refThickness = 2f;
 
+                var refColor = _isPinnedMode
+                    ? new Color(ColorReference.r, ColorReference.g, ColorReference.b, ColorReference.a * 0.7f)
+                    : ColorReference;
+
                 _verticesBuffer[refVOffset + 0] = new Vertex
                 {
                     position = new Vector3(0, refY, 0),
-                    tint = ColorReference,
+                    tint = refColor,
                     uv = Vector2.zero,
                 };
                 _verticesBuffer[refVOffset + 1] = new Vertex
                 {
                     position = new Vector3(rect.width, refY, 0),
-                    tint = ColorReference,
+                    tint = refColor,
                     uv = Vector2.zero,
                 };
                 _verticesBuffer[refVOffset + 2] = new Vertex
                 {
                     position = new Vector3(rect.width, refY + refThickness, 0),
-                    tint = ColorReference,
+                    tint = refColor,
                     uv = Vector2.zero,
                 };
                 _verticesBuffer[refVOffset + 3] = new Vertex
                 {
                     position = new Vector3(0, refY + refThickness, 0),
-                    tint = ColorReference,
+                    tint = refColor,
                     uv = Vector2.zero,
                 };
             }
@@ -391,15 +519,25 @@ namespace Ff.DevSuite.View
             Unsubscribe();
             _dataProvider.OnUpdate += HandleDataProviderUpdate;
             _context.OnPerformanceGraphCollapsedChanged += HandleCollapsedChanged;
+            _context.OnPerformanceGraphPinnedChanged += HandlePinnedChanged;
         }
 
         private void Unsubscribe()
         {
             _dataProvider.OnUpdate -= HandleDataProviderUpdate;
             _context.OnPerformanceGraphCollapsedChanged -= HandleCollapsedChanged;
+            _context.OnPerformanceGraphPinnedChanged -= HandlePinnedChanged;
         }
 
         private void HandleCollapsedChanged(BaseGraphDataProvider provider, bool isCollapsed)
+        {
+            if (provider == _dataProvider)
+            {
+                UpdateViewState();
+            }
+        }
+
+        private void HandlePinnedChanged(BaseGraphDataProvider provider, bool isPinned)
         {
             if (provider == _dataProvider)
             {

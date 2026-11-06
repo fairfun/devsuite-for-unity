@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System;
+using System.Collections.Generic;
 using UnityEngine.Serialization;
+using Ff.DevSuite.Performance;
 
 namespace Ff.DevSuite.View
 {
@@ -16,8 +18,11 @@ namespace Ff.DevSuite.View
         [Header("Settings")]
         [SerializeField] private PanelSide _panelSide;
         [SerializeField] private LayoutMode _layoutMode;
+        [SerializeField] private PinnedPerformanceGraphsPosition _pinnedPerformanceGraphsPosition = PinnedPerformanceGraphsPosition.BottomLeft;
         [SerializeField] private float _controlWidth = 350;
         [SerializeField] private float _commandsWidth = 500;
+        [SerializeField] private float _hierarchyWidth = 494;
+        [SerializeField] private float _inspectorWidth = 420;
         [SerializeField, Range(0.2f, 5f)] private float _uiScale = 1f;
         [SerializeField] private Color _panelBackgroundColor = new Color(40 / 255f, 40 / 255f, 40 / 255f, 0.95f);
         [SerializeField] private Color _panelOutlineColor = new Color(1f, 1f, 1f, 0.25f);
@@ -28,6 +33,24 @@ namespace Ff.DevSuite.View
         [FormerlySerializedAs("_expandButtonVisibility")]
         [Tooltip("Configure expand button visibility when the panel is collapsed (Visible, Hidden, or ErrorOnly).")]
         [SerializeField] private ControlPanelExpandButtonVisibility _buttonExpandVisibility = ControlPanelExpandButtonVisibility.Visible;
+
+        public PinnedPerformanceGraphsPosition PinnedPerformanceGraphsPosition
+        {
+            get => _pinnedPerformanceGraphsPosition;
+            set
+            {
+                if (_pinnedPerformanceGraphsPosition == value)
+                    return;
+                _pinnedPerformanceGraphsPosition = value;
+                ApplyPinnedGraphsPosition();
+            }
+        }
+
+        public PinnedPerformanceGraphsPosition PinnedPerformanceGraphsMode
+        {
+            get => _pinnedPerformanceGraphsPosition;
+            set => PinnedPerformanceGraphsPosition = value;
+        }
 
         [Header("Main Layout")]
         [SerializeField] private VisualTreeAsset _layoutLandscapeRightUxml;
@@ -83,10 +106,14 @@ namespace Ff.DevSuite.View
         private VisualElement _controlContainer;
         private VisualElement _hierarchyContainer;
         private VisualElement _inspectorContainer;
+        private VisualElement _panelRootLayout;
+        private VisualElement _pinnedPerformanceContainer;
+        private readonly List<(BaseGraphDataProvider data, PerformanceGraphView view)> _pinnedGraphs = new();
         private bool _lastHierarchyVisible;
 
-        private int _lastScreenWidth;
-        private int _lastScreenHeight;
+        private (int width, int height, Rect safeArea, float uiScale)? _lastScreen;
+
+        private (float left, float top, float right, float bottom)? _lastSafeAreaInsets;
 
         private bool? _isPortrait;
         private bool IsPortrait => _isPortrait ??= _layoutMode switch
@@ -125,6 +152,10 @@ namespace Ff.DevSuite.View
             _uiDocument = GetComponent<UIDocument>();
             _context = DevSuiteContext.DefaultInternal;
             _context.OnChanged += UpdateVisibility;
+            _context.OnPerformanceGraphPinnedChanged += HandlePerformanceGraphPinnedChanged;
+            _context.OnPerformancePanelChanged += HandlePerformancePanelChanged;
+
+            _lastScreen = (Screen.width, Screen.height, Screen.safeArea, _uiScale);
 
             BuildUI();
         }
@@ -151,17 +182,34 @@ namespace Ff.DevSuite.View
 
         private void LateUpdate()
         {
-            if (_lastScreenWidth != Screen.width || _lastScreenHeight != Screen.height)
+            var screenSizeChanged = !_lastScreen.HasValue || _lastScreen.Value.width != Screen.width || _lastScreen.Value.height != Screen.height;
+            var safeAreaChanged = !_lastScreen.HasValue || _lastScreen.Value.safeArea != Screen.safeArea;
+            var scaleChanged = !_lastScreen.HasValue || !Mathf.Approximately(_lastScreen.Value.uiScale, _uiScale);
+
+            if (screenSizeChanged)
             {
-                _lastScreenWidth = Screen.width;
-                _lastScreenHeight = Screen.height;
                 var wasPortrait = _isPortrait;
                 _isPortrait = null;
                 if (wasPortrait.HasValue && wasPortrait.Value != IsPortrait)
                 {
+                    _lastScreen = (Screen.width, Screen.height, Screen.safeArea, _uiScale);
                     BuildUI();
                     return;
                 }
+            }
+
+            if (scaleChanged)
+            {
+                if (_uiDocument != null && _uiDocument.rootVisualElement != null)
+                {
+                    ApplyScale(_uiDocument.rootVisualElement);
+                }
+            }
+
+            if (screenSizeChanged || safeAreaChanged || scaleChanged)
+            {
+                _lastScreen = (Screen.width, Screen.height, Screen.safeArea, _uiScale);
+                ApplySafeArea();
             }
 
 #if UNITY_EDITOR
@@ -182,7 +230,11 @@ namespace Ff.DevSuite.View
             ApplyScale(root);
 
             root.style.backgroundColor = StyleKeyword.Null; // Ensure it's not overridden
-            root.RegisterCallback<AttachToPanelEvent>(_ => ApplyColors(root));
+            root.RegisterCallback<AttachToPanelEvent>(_ =>
+            {
+                ApplyColors(root);
+                ApplySafeArea();
+            });
 
             _isPortrait = null;
             var isLeft = _panelSide == PanelSide.Left;
@@ -192,6 +244,8 @@ namespace Ff.DevSuite.View
             layout.CloneTree(root);
 
             root.styleSheets.Add(_layoutUss);
+
+            _panelRootLayout = root.Q<VisualElement>(className: "devsuite-panel-root") ?? root.Q<VisualElement>("root");
 
             _logsContainer = root.Q<VisualElement>("logs-container");
             _logsPanelView = new LogsPanelView(_logsUxml, _logsUss);
@@ -244,8 +298,16 @@ namespace Ff.DevSuite.View
             root.Add(_pickSelectionPanelView);
             _pickSelectionPanelView.Initialize(_context);
 
+            _pinnedPerformanceContainer = new VisualElement { name = "pinned-performance-container" };
+            _pinnedPerformanceContainer.AddToClassList("pinned-performance-container");
+            _pinnedPerformanceContainer.pickingMode = PickingMode.Ignore;
+            _pinnedPerformanceContainer.styleSheets.Add(_performanceUss);
+            root.Add(_pinnedPerformanceContainer);
+
             ApplyColors(root);
             UpdateVisibility();
+            ApplySafeArea();
+            ApplyPinnedGraphsPosition();
         }
 
         private void OnDestroy()
@@ -259,6 +321,8 @@ namespace Ff.DevSuite.View
             if (_context != null)
             {
                 _context.OnChanged -= UpdateVisibility;
+                _context.OnPerformanceGraphPinnedChanged -= HandlePerformanceGraphPinnedChanged;
+                _context.OnPerformancePanelChanged -= HandlePerformancePanelChanged;
                 _context = null;
             }
 
@@ -277,6 +341,7 @@ namespace Ff.DevSuite.View
             _inspectorPanelView?.Reset();
             _pickSelectionPanelView?.Reset();
             _selectionFrameView?.Reset();
+            ResetPinnedGraphs();
 
             _logsPanelView = null;
             _commandsFullPanelView = null;
@@ -288,6 +353,8 @@ namespace Ff.DevSuite.View
             _pickSelectionPanelView = null;
             _selectionFrameView = null;
 
+            _pinnedPerformanceContainer?.RemoveFromHierarchy();
+            _pinnedPerformanceContainer = null;
             _logsContainer = null;
             _commandsFullContainer = null;
             _basicContainer = null;
@@ -296,6 +363,8 @@ namespace Ff.DevSuite.View
             _controlContainer = null;
             _hierarchyContainer = null;
             _inspectorContainer = null;
+            _panelRootLayout = null;
+            _lastSafeAreaInsets = null;
         }
 
         private void ApplyColors(VisualElement root)
@@ -342,20 +411,104 @@ namespace Ff.DevSuite.View
 #endif
                 ApplyScale(uiDocument.rootVisualElement);
                 ApplyColors(uiDocument.rootVisualElement);
+                ApplySafeArea();
+                ApplyPinnedGraphsPosition();
+#if UNITY_EDITOR
+                if (Application.isPlaying && _panelRootLayout != null)
+                {
+                    UpdateVisibility();
+                }
+#endif
+            }
+        }
+
+        private void ApplySafeArea()
+        {
+            if (_panelRootLayout == null && _uiDocument != null && _uiDocument.rootVisualElement != null)
+            {
+                _panelRootLayout = _uiDocument.rootVisualElement.Q<VisualElement>(className: "devsuite-panel-root")
+                                ?? _uiDocument.rootVisualElement.Q<VisualElement>("root");
+            }
+
+            if (_panelRootLayout == null || _uiDocument == null)
+            {
+                return;
+            }
+
+            var root = _uiDocument.rootVisualElement;
+            if (root == null || Screen.width <= 0 || Screen.height <= 0)
+            {
+                return;
+            }
+
+            var safeArea = Screen.safeArea;
+            float left = 0f, top = 0f, right = 0f, bottom = 0f;
+            var converted = false;
+
+            if (root.panel != null)
+            {
+                try
+                {
+                    var screenTopLeftLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, Vector2.zero));
+                    var safeTopLeftLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(safeArea.xMin, Screen.height - safeArea.yMax)));
+                    var screenBottomRightLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(Screen.width, Screen.height)));
+                    var safeBottomRightLocal = root.WorldToLocal(RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(safeArea.xMax, Screen.height - safeArea.yMin)));
+
+                    left = Mathf.Max(0f, safeTopLeftLocal.x - screenTopLeftLocal.x);
+                    top = Mathf.Max(0f, safeTopLeftLocal.y - screenTopLeftLocal.y);
+                    right = Mathf.Max(0f, screenBottomRightLocal.x - safeBottomRightLocal.x);
+                    bottom = Mathf.Max(0f, screenBottomRightLocal.y - safeBottomRightLocal.y);
+                    converted = true;
+                }
+                catch
+                {
+                    converted = false;
+                }
+            }
+
+            if (!converted)
+            {
+                var scale = _uiScale > 0 ? _uiScale : 1f;
+                left = Mathf.Max(0f, safeArea.xMin / scale);
+                top = Mathf.Max(0f, (Screen.height - safeArea.yMax) / scale);
+                right = Mathf.Max(0f, (Screen.width - safeArea.xMax) / scale);
+                bottom = Mathf.Max(0f, safeArea.yMin / scale);
+            }
+
+            if (!_lastSafeAreaInsets.HasValue ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.left, left) ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.top, top) ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.right, right) ||
+                !Mathf.Approximately(_lastSafeAreaInsets.Value.bottom, bottom))
+            {
+                _lastSafeAreaInsets = (left, top, right, bottom);
+
+                _panelRootLayout.style.paddingLeft = left;
+                _panelRootLayout.style.paddingTop = top;
+                _panelRootLayout.style.paddingRight = right;
+                _panelRootLayout.style.paddingBottom = bottom;
+
+                ApplyPinnedGraphsPosition();
             }
         }
 
         private void UpdateVisibility()
         {
             var expanded = _context.PanelExpanded;
+            UpdatePinnedPerformanceGraphs();
 
             if (IsPortrait)
             {
                 _basicContainer.style.width = Length.Percent(100);
+                _basicContainer.style.maxWidth = StyleKeyword.Null;
+                _basicContainer.style.minWidth = StyleKeyword.Null;
+                _basicContainer.style.flexShrink = StyleKeyword.Null;
             }
             else
             {
                 _basicContainer.style.width = expanded ? _controlWidth : StyleKeyword.Null;
+                _basicContainer.style.maxWidth = expanded ? _controlWidth : StyleKeyword.Null;
+                _basicContainer.style.flexShrink = 1;
             }
 
             var isHierarchyVisible = expanded && _context.HierarchyVisible;
@@ -380,18 +533,25 @@ namespace Ff.DevSuite.View
             if (IsPortrait)
             {
                 _commandsFullContainer.style.width = StyleKeyword.Auto;
+                _commandsFullContainer.style.maxWidth = StyleKeyword.Null;
                 _commandsFullContainer.style.flexGrow = 1;
                 _commandsFullContainer.style.flexShrink = 1;
                 _commandsFullContainer.style.flexBasis = 0;
 
+                _logsContainer.style.width = StyleKeyword.Null;
+                _logsContainer.style.maxWidth = StyleKeyword.Null;
                 _logsContainer.style.flexGrow = 1;
                 _logsContainer.style.flexShrink = 1;
                 _logsContainer.style.flexBasis = 0;
 
+                _hierarchyContainer.style.width = StyleKeyword.Auto;
+                _hierarchyContainer.style.maxWidth = StyleKeyword.Null;
                 _hierarchyContainer.style.flexGrow = 1;
                 _hierarchyContainer.style.flexShrink = 1;
                 _hierarchyContainer.style.flexBasis = 0;
 
+                _inspectorContainer.style.width = StyleKeyword.Auto;
+                _inspectorContainer.style.maxWidth = StyleKeyword.Null;
                 _inspectorContainer.style.flexGrow = 1;
                 _inspectorContainer.style.flexShrink = 1;
                 _inspectorContainer.style.flexBasis = 0;
@@ -407,23 +567,29 @@ namespace Ff.DevSuite.View
             }
             else
             {
-                _commandsFullContainer.style.width = expanded ? _commandsWidth : StyleKeyword.Null;
-                _commandsFullContainer.style.flexGrow = StyleKeyword.Null;
-                _commandsFullContainer.style.flexShrink = StyleKeyword.Null;
-                _commandsFullContainer.style.flexBasis = StyleKeyword.Null;
+                _commandsFullContainer.style.width = StyleKeyword.Null;
+                _commandsFullContainer.style.maxWidth = expanded ? _commandsWidth : StyleKeyword.Null;
+                _commandsFullContainer.style.flexGrow = 0;
+                _commandsFullContainer.style.flexShrink = 1;
+                _commandsFullContainer.style.flexBasis = expanded ? _commandsWidth : StyleKeyword.Null;
 
                 _logsContainer.style.width = StyleKeyword.Null;
+                _logsContainer.style.maxWidth = StyleKeyword.Null;
                 _logsContainer.style.flexGrow = StyleKeyword.Null;
                 _logsContainer.style.flexShrink = StyleKeyword.Null;
                 _logsContainer.style.flexBasis = StyleKeyword.Null;
 
-                _hierarchyContainer.style.flexGrow = StyleKeyword.Null;
-                _hierarchyContainer.style.flexShrink = StyleKeyword.Null;
-                _hierarchyContainer.style.flexBasis = StyleKeyword.Null;
+                _hierarchyContainer.style.width = StyleKeyword.Null;
+                _hierarchyContainer.style.maxWidth = expanded ? _hierarchyWidth : StyleKeyword.Null;
+                _hierarchyContainer.style.flexGrow = 0;
+                _hierarchyContainer.style.flexShrink = 1;
+                _hierarchyContainer.style.flexBasis = expanded ? _hierarchyWidth : StyleKeyword.Null;
 
-                _inspectorContainer.style.flexGrow = StyleKeyword.Null;
-                _inspectorContainer.style.flexShrink = StyleKeyword.Null;
-                _inspectorContainer.style.flexBasis = StyleKeyword.Null;
+                _inspectorContainer.style.width = StyleKeyword.Null;
+                _inspectorContainer.style.maxWidth = expanded ? _inspectorWidth : StyleKeyword.Null;
+                _inspectorContainer.style.flexGrow = 0;
+                _inspectorContainer.style.flexShrink = 1;
+                _inspectorContainer.style.flexBasis = expanded ? _inspectorWidth : StyleKeyword.Null;
 
                 _commandsFullContainer.style.alignSelf = Align.FlexStart;
                 _commandsFullContainer.style.maxHeight = Length.Percent(100);
@@ -453,6 +619,223 @@ namespace Ff.DevSuite.View
             ApplyColors(GetComponent<UIDocument>().rootVisualElement);
         }
 
+        private void HandlePerformanceGraphPinnedChanged(BaseGraphDataProvider provider, bool isPinned)
+        {
+            UpdatePinnedPerformanceGraphs();
+        }
+
+        private void HandlePerformancePanelChanged()
+        {
+            UpdatePinnedPerformanceGraphs();
+        }
+
+        private void UpdatePinnedPerformanceGraphs()
+        {
+            if (_pinnedPerformanceContainer == null)
+            {
+                return;
+            }
+
+            if (_context == null || _context.PanelExpanded)
+            {
+                _pinnedPerformanceContainer.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var pinnedProviders = new List<BaseGraphDataProvider>();
+            foreach (var provider in _context.PerformancePanelProviders)
+            {
+                if (_context.IsPerformanceGraphPinned(provider))
+                {
+                    pinnedProviders.Add(provider);
+                }
+            }
+
+            if (pinnedProviders.Count == 0)
+            {
+                _pinnedPerformanceContainer.style.display = DisplayStyle.None;
+                ResetPinnedGraphs();
+                return;
+            }
+
+            _pinnedPerformanceContainer.style.display = DisplayStyle.Flex;
+
+            var matches = _pinnedGraphs.Count == pinnedProviders.Count;
+            if (matches)
+            {
+                for (var i = 0; i < pinnedProviders.Count; i++)
+                {
+                    if (_pinnedGraphs[i].data != pinnedProviders[i])
+                    {
+                        matches = false;
+                        break;
+                    }
+                }
+            }
+
+            if (matches)
+            {
+                foreach (var (_, view) in _pinnedGraphs)
+                {
+                    view.AlwaysExtended = true;
+                    view.IsPinnedMode = true;
+                    view.SetClickThrough(true);
+                    view.UpdateViewState();
+                }
+                UpdatePinnedGraphsLastClass();
+                SetPickingModeRecursive(_pinnedPerformanceContainer, PickingMode.Ignore);
+                return;
+            }
+
+            ResetPinnedGraphs();
+
+            for (var i = 0; i < pinnedProviders.Count; i++)
+            {
+                var provider = pinnedProviders[i];
+                var graphView = new PerformanceGraphView(provider, _context);
+                graphView.AlwaysExtended = true;
+                graphView.IsPinnedMode = true;
+                graphView.SetClickThrough(true);
+                _pinnedPerformanceContainer.Add(graphView);
+                _pinnedGraphs.Add((provider, graphView));
+            }
+
+            UpdatePinnedGraphsLastClass();
+            SetPickingModeRecursive(_pinnedPerformanceContainer, PickingMode.Ignore);
+            ApplyPinnedGraphsPosition();
+        }
+
+        private void UpdatePinnedGraphsLastClass()
+        {
+            if (_pinnedPerformanceContainer == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < _pinnedPerformanceContainer.childCount; i++)
+            {
+                var child = _pinnedPerformanceContainer[i];
+                if (i == _pinnedPerformanceContainer.childCount - 1)
+                {
+                    child.AddToClassList("graph-view--last");
+                }
+                else
+                {
+                    child.RemoveFromClassList("graph-view--last");
+                }
+            }
+        }
+
+        private void ResetPinnedGraphs()
+        {
+            foreach (var (_, view) in _pinnedGraphs)
+            {
+                view.Reset();
+            }
+            _pinnedGraphs.Clear();
+            _pinnedPerformanceContainer?.Clear();
+        }
+
+        private void ApplyPinnedGraphsPosition()
+        {
+            if (_pinnedPerformanceContainer == null)
+            {
+                return;
+            }
+
+            const float margin = 4f;
+            const float expandButtonOffset = 32f;
+
+            var insetsLeft = _lastSafeAreaInsets?.left ?? 0f;
+            var insetsTop = _lastSafeAreaInsets?.top ?? 0f;
+            var insetsRight = _lastSafeAreaInsets?.right ?? 0f;
+            var insetsBottom = _lastSafeAreaInsets?.bottom ?? 0f;
+
+            _pinnedPerformanceContainer.style.position = Position.Absolute;
+            _pinnedPerformanceContainer.style.top = StyleKeyword.Null;
+            _pinnedPerformanceContainer.style.bottom = StyleKeyword.Null;
+            _pinnedPerformanceContainer.style.left = StyleKeyword.Null;
+            _pinnedPerformanceContainer.style.right = StyleKeyword.Null;
+
+            switch (_pinnedPerformanceGraphsPosition)
+            {
+                case PinnedPerformanceGraphsPosition.TopLeft:
+                {
+                    var top = insetsTop + margin;
+                    if (_panelSide == PanelSide.Left)
+                    {
+                        top += expandButtonOffset;
+                    }
+                    _pinnedPerformanceContainer.style.top = top;
+                    _pinnedPerformanceContainer.style.left = insetsLeft + margin;
+                    _pinnedPerformanceContainer.style.width = 260f;
+                    _pinnedPerformanceContainer.style.alignItems = Align.FlexStart;
+                    break;
+                }
+                case PinnedPerformanceGraphsPosition.Top:
+                {
+                    _pinnedPerformanceContainer.style.top = insetsTop + margin;
+                    _pinnedPerformanceContainer.style.left = insetsLeft + margin;
+                    _pinnedPerformanceContainer.style.right = insetsRight + margin;
+                    _pinnedPerformanceContainer.style.width = StyleKeyword.Null;
+                    _pinnedPerformanceContainer.style.alignItems = Align.Center;
+                    break;
+                }
+                case PinnedPerformanceGraphsPosition.TopRight:
+                {
+                    var top = insetsTop + margin;
+                    if (_panelSide == PanelSide.Right)
+                    {
+                        top += expandButtonOffset;
+                    }
+                    _pinnedPerformanceContainer.style.top = top;
+                    _pinnedPerformanceContainer.style.right = insetsRight + margin;
+                    _pinnedPerformanceContainer.style.width = 260f;
+                    _pinnedPerformanceContainer.style.alignItems = Align.FlexEnd;
+                    break;
+                }
+                case PinnedPerformanceGraphsPosition.BottomLeft:
+                {
+                    _pinnedPerformanceContainer.style.bottom = insetsBottom + margin;
+                    _pinnedPerformanceContainer.style.left = insetsLeft + margin;
+                    _pinnedPerformanceContainer.style.width = 260f;
+                    _pinnedPerformanceContainer.style.alignItems = Align.FlexStart;
+                    break;
+                }
+                case PinnedPerformanceGraphsPosition.Bottom:
+                {
+                    _pinnedPerformanceContainer.style.bottom = insetsBottom + margin;
+                    _pinnedPerformanceContainer.style.left = insetsLeft + margin;
+                    _pinnedPerformanceContainer.style.right = insetsRight + margin;
+                    _pinnedPerformanceContainer.style.width = StyleKeyword.Null;
+                    _pinnedPerformanceContainer.style.alignItems = Align.Center;
+                    break;
+                }
+                case PinnedPerformanceGraphsPosition.BottomRight:
+                {
+                    _pinnedPerformanceContainer.style.bottom = insetsBottom + margin;
+                    _pinnedPerformanceContainer.style.right = insetsRight + margin;
+                    _pinnedPerformanceContainer.style.width = 260f;
+                    _pinnedPerformanceContainer.style.alignItems = Align.FlexEnd;
+                    break;
+                }
+            }
+        }
+
+        private static void SetPickingModeRecursive(VisualElement element, PickingMode mode)
+        {
+            if (element == null)
+            {
+                return;
+            }
+
+            element.pickingMode = mode;
+            for (var i = 0; i < element.childCount; i++)
+            {
+                SetPickingModeRecursive(element[i], mode);
+            }
+        }
+
         internal enum LayoutMode
         {
             Auto,
@@ -465,5 +848,25 @@ namespace Ff.DevSuite.View
             Right,
             Left,
         }
+    }
+
+    public enum PinnedPerformanceGraphsPosition
+    {
+        TopLeft,
+        Top,
+        TopRight,
+        BottomLeft,
+        Bottom,
+        BottomRight,
+    }
+
+    public enum PinnedPerformanceGraphsMode
+    {
+        TopLeft = PinnedPerformanceGraphsPosition.TopLeft,
+        Top = PinnedPerformanceGraphsPosition.Top,
+        TopRight = PinnedPerformanceGraphsPosition.TopRight,
+        BottomLeft = PinnedPerformanceGraphsPosition.BottomLeft,
+        Bottom = PinnedPerformanceGraphsPosition.Bottom,
+        BottomRight = PinnedPerformanceGraphsPosition.BottomRight,
     }
 }

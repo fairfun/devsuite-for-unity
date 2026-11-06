@@ -42,10 +42,9 @@ namespace DevSuite.Runtime.Utilities
 #endif
 
 #if UNITY_EDITOR
-            if (CommonCommands.CustomSystemInfoBuildTimeData != null)
-            {
-                _customData = CommonCommands.CustomSystemInfoBuildTimeData.Invoke();
-            }
+            var customData = CommonCommands.CustomSystemInfoBuildTimeData != null
+                ? CommonCommands.CustomSystemInfoBuildTimeData.Invoke()
+                : _customData;
 
             var custom = new List<string>();
             var common = new List<string>();
@@ -270,6 +269,7 @@ namespace DevSuite.Runtime.Utilities
             {
                 Debug.LogWarning($"[DevSuite] Failed to parse packages-lock.json: {e}");
             }
+            dependencies.Sort(StringComparer.Ordinal);
 
             var nugetDependencies = new List<string>();
             try
@@ -298,6 +298,7 @@ namespace DevSuite.Runtime.Utilities
             {
                 Debug.LogWarning($"[DevSuite] Failed to parse packages.config: {e}");
             }
+            nugetDependencies.Sort(StringComparer.Ordinal);
 
             var buildSettingsScenes = new List<string>();
             try
@@ -312,21 +313,43 @@ namespace DevSuite.Runtime.Utilities
                 Debug.LogWarning($"[DevSuite] Failed to read EditorBuildSettings scenes: {e}");
             }
 
-            _compilerDefinesOther = common;
-            _compilerDefinesExplicit = custom;
-            _playerSettings = settings;
-            _buildVersion = buildVersion;
-            _buildBundleVersion = bundleVersion;
-            _dependencies = dependencies;
-            _nugetDependencies = nugetDependencies;
-            _buildSettingsScenes = buildSettingsScenes;
+            var hasChanged = _buildVersion != buildVersion ||
+                             _buildBundleVersion != bundleVersion ||
+                             !ListsEqual(_compilerDefinesOther, common) ||
+                             !ListsEqual(_compilerDefinesExplicit, custom) ||
+                             !ListsEqual(_playerSettings, settings) ||
+                             !ListsEqual(_dependencies, dependencies) ||
+                             !ListsEqual(_nugetDependencies, nugetDependencies) ||
+                             !ListsEqual(_buildSettingsScenes, buildSettingsScenes) ||
+                             !ListsEqual(_customData, customData);
 
-            UnityEditor.EditorUtility.SetDirty(this);
-            UnityEditor.AssetDatabase.SaveAssets();
+            if (hasChanged)
+            {
+                _compilerDefinesOther = common;
+                _compilerDefinesExplicit = custom;
+                _playerSettings = settings;
+                _buildVersion = buildVersion;
+                _buildBundleVersion = bundleVersion;
+                _dependencies = dependencies;
+                _nugetDependencies = nugetDependencies;
+                _buildSettingsScenes = buildSettingsScenes;
+                _customData = customData;
+
+                UnityEditor.EditorUtility.SetDirty(this);
+                UnityEditor.AssetDatabase.SaveAssetIfDirty(this);
+            }
 #endif
         }
 
 #if UNITY_EDITOR
+        private static bool ListsEqual(List<string> a, List<string> b)
+        {
+            if (a is null && b is null)
+                return true;
+            if (a is null || b is null)
+                return false;
+            return a.SequenceEqual(b);
+        }
         private static void SortDirectives(List<string> list)
         {
             list.Sort((a, b) =>
@@ -411,7 +434,7 @@ namespace DevSuite.Runtime.Utilities
 
         public void OnPreprocessBuild(UnityEditor.Build.Reporting.BuildReport report)
         {
-            DevSuiteBuildTimeData.Default.UpdateData(isBuilding: true);
+            DevSuiteBuildTimeData.Default?.UpdateData(isBuilding: true);
         }
     }
 #endif

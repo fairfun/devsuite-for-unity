@@ -134,7 +134,7 @@ namespace Ff.DevSuite.View
                 var checkmark = _goActivityToggle.Q<VisualElement>("unity-checkmark");
                 if (checkmark != null)
                 {
-                    var icon = new Label("\uf00c");
+                    var icon = new Label("\ue06c");
                     icon.AddToClassList("ff-toggle-icon");
                     checkmark.Add(icon);
                 }
@@ -143,7 +143,7 @@ namespace Ff.DevSuite.View
             _refreshBtn = root.Q<Button>("refreshBtn");
             if (_refreshBtn != null)
             {
-                _refreshBtn.text = "\uf021"; // sync icon
+                _refreshBtn.text = "\ue145"; // sync icon
                 _refreshBtn.clicked += () =>
                 {
                     RefreshInspectorValues();
@@ -197,7 +197,7 @@ namespace Ff.DevSuite.View
             _copyBtn = root.Q<Button>("copyBtn");
             if (_copyBtn != null)
             {
-                _copyBtn.text = "\uf0c5"; // copy icon
+                _copyBtn.text = "\ue09e"; // copy icon
                 _copyBtn.clicked += () =>
                 {
                     if (_context.SelectedGameObjects.Count > 0)
@@ -409,7 +409,7 @@ namespace Ff.DevSuite.View
                     var checkmark = goToggle.Q<VisualElement>("unity-checkmark");
                     if (checkmark != null)
                     {
-                        var icon = new Label("\uf00c");
+                        var icon = new Label("\ue06c");
                         icon.AddToClassList("ff-toggle-icon");
                         checkmark.Add(icon);
                     }
@@ -488,7 +488,7 @@ namespace Ff.DevSuite.View
                 var monoCheckmark = enabledToggle.Q<VisualElement>("unity-checkmark");
                 if (monoCheckmark != null)
                 {
-                    var icon = new Label("\uf00c");
+                    var icon = new Label("\ue06c");
                     icon.AddToClassList("ff-toggle-icon");
                     monoCheckmark.Add(icon);
                 }

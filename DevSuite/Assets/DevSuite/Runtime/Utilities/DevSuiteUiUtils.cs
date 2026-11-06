@@ -15,7 +15,7 @@ namespace Ff.DevSuite
 
             var originalIcon = button.text;
             button.userData = originalIcon;
-            button.text = "\uf00c";
+            button.text = "\ue06c";
             button.schedule.Execute(
                 () =>
                 {
