@@ -122,7 +122,7 @@ DevSuite serves as a modern, 100% free, and open-source alternative to popular U
 
 ## Installation
 
-### Via OpenUPM
+### Via OpenUPM (Recommended)
 
 The package is available on the [openupm registry](https://openupm.com/packages/com.ff.devsuite/). It can be installed via [openupm-cli](https://github.com/openupm/openupm-cli):
 
@@ -142,6 +142,12 @@ openupm add com.ff.devsuite
    ```text
    https://github.com/fairfun/devsuite-for-unity.git?path=DevSuite/Assets/DevSuite#1.1.0
    ```
+
+### Via Unity Asset Store
+
+1. Open the [DevSuite page on the Unity Asset Store](https://assetstore.unity.com/packages/tools/utilities/devsuite-in-game-debug-runtime-cheats-suite-410994) and click **Add to My Assets**.
+2. In Unity, open the **Package Manager** (`Window > Package Manager`) and switch to **My Assets**.
+3. Select **DevSuite**, click **Download**, then **Import**.
 
 ### Via .unitypackage (Direct Import)
 
