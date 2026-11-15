@@ -159,7 +159,9 @@ public static class BuildUtil
             locationPathName = outputPath,
             target = target,
             targetGroup = buildTargetGroup,
-            options = BuildOptions.None
+            // Unity 6000.6 com.unity.collections 6.6.0 doesn't compile in release players
+            // (NativeArray<T>.ReadOnly ctor mismatch); Development defines ENABLE_UNITY_COLLECTIONS_CHECKS.
+            options = target == BuildTarget.Android ? BuildOptions.Development : BuildOptions.None
         };
 
         var report = BuildPipeline.BuildPlayer(options);
