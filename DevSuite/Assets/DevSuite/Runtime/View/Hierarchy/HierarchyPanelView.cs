@@ -700,7 +700,7 @@ namespace Ff.DevSuite.View
             var selfMatches = Matches(go, regex, query, searchByName, searchByType, searchByComponent, out var displayName);
             if (selfMatches)
             {
-                var id = go.GetInstanceID();
+                var id = go.GetDevSuiteId();
                 _matchingInstanceIds.Add(id);
                 _matchDisplayNames[id] = displayName;
             }
@@ -717,7 +717,7 @@ namespace Ff.DevSuite.View
 
             if (anyChildMatches)
             {
-                _descendantMatchingInstanceIds.Add(go.GetInstanceID());
+                _descendantMatchingInstanceIds.Add(go.GetDevSuiteId());
             }
 
             return selfMatches || anyChildMatches;
@@ -840,7 +840,7 @@ namespace Ff.DevSuite.View
         {
             if (go == null) return;
 
-            var instanceId = go.GetInstanceID();
+            var instanceId = go.GetDevSuiteId();
             var isMatching = _searchRegex == null || _matchingInstanceIds.Contains(instanceId);
             var hasMatchingDescendant = _searchRegex == null || _descendantMatchingInstanceIds.Contains(instanceId);
 
@@ -1103,7 +1103,7 @@ namespace Ff.DevSuite.View
             while (parent != null)
             {
                 var parentGo = parent.gameObject;
-                int parentId = parentGo.GetInstanceID();
+                int parentId = parentGo.GetDevSuiteId();
                 if (!ExpandedGameObjectInstanceIds.Contains(parentId))
                 {
                     ExpandedGameObjectInstanceIds.Add(parentId);
@@ -1131,7 +1131,7 @@ namespace Ff.DevSuite.View
                     var go = list[i];
                     if (go != null)
                     {
-                        _selectedInstanceIdsCache.Add(go.GetInstanceID());
+                        _selectedInstanceIdsCache.Add(go.GetDevSuiteId());
                     }
                 }
             }
@@ -1150,7 +1150,7 @@ namespace Ff.DevSuite.View
                 }
             }
 
-            if (SelectionAnchor == null || !_selectedInstanceIdsCache.Contains(SelectionAnchor.GetInstanceID()))
+            if (SelectionAnchor == null || !_selectedInstanceIdsCache.Contains(SelectionAnchor.GetDevSuiteId()))
             {
                 SelectionAnchor = _context.SelectedGameObject;
             }
@@ -1236,7 +1236,7 @@ namespace Ff.DevSuite.View
             {
                 return;
             }
-            if (_matchingInstanceIds.Contains(go.GetInstanceID()))
+            if (_matchingInstanceIds.Contains(go.GetDevSuiteId()))
             {
                 list.Add(go);
             }
@@ -1428,7 +1428,11 @@ namespace Ff.DevSuite.View
                     return "UI Toolkit";
                 }
 
+                #if DEVSUITE_UGUI
                 if (comp is Canvas or UnityEngine.UI.Graphic or CanvasRenderer)
+#else
+                if (comp is Canvas or CanvasRenderer)
+#endif
                 {
                     hasUI = true;
                 }
