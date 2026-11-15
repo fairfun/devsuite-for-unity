@@ -28,6 +28,11 @@
             "name": "com.github.messagepack-csharp",
             "expression": "",
             "define": "DEVSUITE_MESSAGEPACK"
+        },
+        {
+            "name": "com.unity.ugui",
+            "expression": "",
+            "define": "DEVSUITE_UGUI"
         }
     ],
     "noEngineReferences": false
