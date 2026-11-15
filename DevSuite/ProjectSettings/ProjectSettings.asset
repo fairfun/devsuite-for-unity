@@ -392,7 +392,7 @@ PlayerSettings:
   m_BuildTargetBatching:
   - m_BuildTarget: WebGL
     m_StaticBatching: 0
-    m_DynamicBatching: 1
+    m_DynamicBatching: 0
   m_BuildTargetShaderSettings: []
   m_BuildTargetGraphicsJobs: []
   m_BuildTargetGraphicsJobMode: []
