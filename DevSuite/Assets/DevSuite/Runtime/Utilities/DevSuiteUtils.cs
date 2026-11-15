@@ -19,6 +19,15 @@ namespace Ff.DevSuite
         }
 #endif
 
+        public static int GetDevSuiteId(this UnityEngine.Object obj)
+        {
+#if UNITY_6000_3_OR_NEWER
+            return obj.GetEntityId().GetHashCode();
+#else
+            return obj.GetInstanceID();
+#endif
+        }
+
         public static Regex NewLineRegex { get; } = new(@"[\r\n]+", RegexOptions.Compiled);
 
         public static TResult As<TSource, TResult>(this TSource source, Func<TSource, TResult> action)
@@ -835,6 +844,7 @@ namespace Ff.DevSuite
                 return true;
             }
 
+#if DEVSUITE_UGUI
             if (comp is UnityEngine.UI.Text uiText && !string.IsNullOrEmpty(uiText.text) && regex.IsMatch(uiText.text))
             {
                 matchPrefix = $"{typeName}.text=";
@@ -849,6 +859,7 @@ namespace Ff.DevSuite
                 return true;
             }
 
+#endif
             if (comp is Renderer renderer)
             {
                 var materials = renderer.sharedMaterials;
@@ -921,6 +932,7 @@ namespace Ff.DevSuite
                 }
             }
 
+#if DEVSUITE_UGUI
             if (comp is UnityEngine.UI.Image img)
             {
                 var sprite = img.sprite;
@@ -988,6 +1000,7 @@ namespace Ff.DevSuite
                     }
                 }
             }
+#endif
 
             if (comp is MeshFilter mf && mf.sharedMesh != null && regex.IsMatch(mf.sharedMesh.name))
             {
