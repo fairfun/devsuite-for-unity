@@ -412,7 +412,7 @@ namespace Ff.DevSuite.View
                 {
                     return;
                 }
-                var id = go.GetInstanceID();
+                var id = go.GetDevSuiteId();
                 if (addedIds.Add(id))
                 {
                     targets.Add(
@@ -449,6 +449,7 @@ namespace Ff.DevSuite.View
             // 2. Canvas UI objects (uGUI RectTransforms)
             var matchingUI = new List<(GameObject go, int depth, float area, float hitDistance, int sortingOrder, bool isRaycastTarget)>();
 
+#if DEVSUITE_UGUI
             var graphics = Object.FindObjectsByType<UnityEngine.UI.Graphic>(FindObjectsSortMode.None);
             foreach (var graphic in graphics)
             {
@@ -520,6 +521,7 @@ namespace Ff.DevSuite.View
                     matchingUI.Add((selectable.gameObject, depth, area, hitDistance, sortingOrder, true));
                 }
             }
+#endif
 
             matchingUI.Sort(
                 (a, b) =>
@@ -641,7 +643,7 @@ namespace Ff.DevSuite.View
                             return;
                         }
 
-                        if (!candidateIds.Add(go.GetInstanceID()))
+                        if (!candidateIds.Add(go.GetDevSuiteId()))
                         {
                             return;
                         }
